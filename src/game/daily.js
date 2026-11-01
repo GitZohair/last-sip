@@ -17,12 +17,12 @@ export function recordPour(seed, result) {
 }
 
 // Per-room letter grades by water lost there: A <3%, B <8%, C <15%, F otherwise. Plain text, paste-anywhere.
-export function receipt({ saves = 0, seed, number, rooms, water, time, finished, villain, duck, streak, official, order = [], falls = 0 }) {
+export function receipt({ saves = 0, seed, number, rooms, water, time, finished, villain, duck, streak, official, order = [], falls = 0, salt = 0 }) {
   const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
   const line = rooms.map(r => grade(r.lost)).join(' ');
   return [`LAST SIP #${number}${official ? '' : ' (practice)'}  ${finished ? Math.round(water * 100) + '% delivered' : 'DID NOT DELIVER'} in ${time.toFixed(1)}s`,
     order.length ? `Order  ${order.join(' + ')}` : '',
-    `Island  ${line}${falls ? `  |  ${falls} splash${falls > 1 ? 'es' : ''}` : ''}${saves ? `  |  ${saves} catch${saves > 1 ? 'es' : ''}` : ''}${duck ? '  |  golden duck' : ''}`,
+    `Island  ${line}${falls ? `  |  ${falls} splash${falls > 1 ? 'es' : ''}, ${Math.round(salt * 100)}% salty` : ''}${saves ? `  |  ${saves} catch${saves > 1 ? 'es' : ''}` : ''}${duck ? '  |  golden duck' : ''}`,
     villain ? `Most wanted: ${villain}` : 'Chat behaved. Suspicious.',
     streak > 1 ? `${streak}-day streak` : '', 'lastsip-seven.vercel.app'].filter(Boolean).join('\n');
 }

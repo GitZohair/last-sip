@@ -87,15 +87,15 @@ function orbit(dt) {
 }
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
-  const water = r.glass.state.water, time = r.t, score = r.won ? Math.round(water * 1000 + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0;
+  const water = r.glass.state.water, time = r.t, salt = r.salt || 0, score = r.won ? Math.round(water * 1000 * (1 - salt * .6) + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0; // seawater ruins the drink
   const villain = r.ledger.villain();
   if (villain) localStorage.setItem('lastsip:villain', JSON.stringify({ user: villain.name, image: lastEmote.get(villain.name) || null, title: 'MOST WANTED' }));
   const rooms = r.level.rooms.map(x => ({ key: x.key, lost: r.roomLoss[x.key] }));
   const d = official ? recordPour(seed, { finished: r.won, water, time, score }) : today(seed);
-  const text = receipt({ order: r.recipe.order.map(id => INGREDIENTS[id].label), falls: r.falls, saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
+  const text = receipt({ order: r.recipe.order.map(id => INGREDIENTS[id].label), falls: r.falls, salt, saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
   if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
   const board = await boards(seed).catch(() => null);
-  setTimeout(() => ui.results({ rooms, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
+  setTimeout(() => ui.results({ salt, rooms, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
 
 // ---------- boot
@@ -141,7 +141,7 @@ function loop(now) {
   cues?.update(dt, run, player, world.camera, run.wind);
   document.body.classList.toggle('dark', run.chaos.active.lights > 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
-  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice });
+  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt });
   world.render();
   player.pos.x = real.x; player.y = real.y; player.pos.z = real.z;
 }

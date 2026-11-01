@@ -43,7 +43,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const style = createStyle();
   const prompts = createPrompts(scene, hazards);
   const actors = createActors(scene, level, sfx);
-  const rule = todaysRule(seed), wind = rule === 'windy' ? createWind(scene, seed) : null;
+  const rule = todaysRule(seed), wind = createWind(scene, seed, rule === 'windy'); // always present: SEA BREEZE cards use it too
   if (rule === 'hungry') hazards.vacuum.hungry = true;
   const guide = createGuide(scene, { recipe, actors, level });
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
@@ -66,7 +66,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
   const api = {
-    fire: type => chaos.fire(type),
+    fire: type => type === 'storm' ? wind.gust(3.2) : chaos.fire(type),
     mod: (n, s) => mods.set(n, s),
     refill: f => { glass.state.water = Math.min(1, glass.state.water + f); },
     clearPuddles: () => chaos.clearPuddles(),
@@ -96,18 +96,36 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   };
 
   const trick = id => { const g = style.add(id); if (g) { hooks.trick?.(style.last); sfx.pop(style.combo); } };
-  // Falling in: splash, lose 30% of the drink, respawn at the last safe spot. Very clippable.
-  run.safe = { x: level.spawn.x, z: level.spawn.z }; run.falls = 0;
+  // FALLING IN: splash, the drink gets SALTIER (score drops), and you have to SWIM (slow, no hopping) to a beach
+  // or one of the plank ramps to climb back up. A viewer's lifebuoy skips all that. Very clippable.
+  const SWIM_Y = -2.2, SEA = new THREE.Color('#5d8f7c');
+  run.safe = { x: level.spawn.x, z: level.spawn.z }; run.falls = 0; run.salt = 0; run.swimming = false; run.climb = null;
+  const salty = () => glass.tint(run.filled ? recipe.color.clone().lerp(SEA, Math.min(.85, run.salt)) : SEA.clone().lerp(new THREE.Color('#bfe9ff'), 1 - run.salt));
   const fall = (room) => {
+    splash.emit({ x: player.pos.x, y: SWIM_Y + .4, z: player.pos.z }, { x: 0, z: 0 }, 30); sfx.splash(); gallery.shake(.6);
     if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
-      splash.emit({ x: player.pos.x, y: 0, z: player.pos.z }, { x: 0, z: 0 }, 24); sfx.splash(); hooks.rescued?.(run.buoy);
-      run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
+      hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
-    run.falls++; const before = glass.state.water; glass.state.water = before * .7; // lose 30% of what's in the glass run.roomLoss[room.key] += before - glass.state.water;
-    ledger.spill(before - glass.state.water, run.t, 'THE WATER'); hooks.spill?.('THE WATER', before - glass.state.water);
-    splash.emit({ x: player.pos.x, y: 0, z: player.pos.z }, { x: 0, z: 0 }, 24); sfx.splash(); avatar.emote('No', .8);
-    player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); style.combo = 1; hooks.fell?.(run.falls);
+    run.falls++; run.swimming = true; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
+    run.salt = Math.min(1, run.salt + .15); salty(); avatar.emote('No', .8);
+    ledger.blame(['THE SEA'], 'SALT', 2, run.t); style.combo = 1; hooks.fell?.(run.falls);
     if (run.falls === 1) hooks.clip?.('fell in');
+  };
+  // climbing out: any beach (sand islet) or a ramp exit point
+  function exitFor(p) {
+    for (const e of level.exits) if (Math.hypot(e.x - p.x, e.z - p.z) < 1.3) return { x: e.to.x, z: e.to.z };
+    for (const c of level.colliders) if (c.beach) {
+      const nx = Math.max(c.minX, Math.min(p.x, c.maxX)), nz = Math.max(c.minZ, Math.min(p.z, c.maxZ));
+      if (Math.hypot(p.x - nx, p.z - nz) < .75) return { x: Math.max(c.minX + .6, Math.min(p.x, c.maxX - .6)), z: Math.max(c.minZ + .6, Math.min(p.z, c.maxZ - .6)) };
+    }
+    return null;
+  }
+  run.nearestExit = p => { // for the route arrow while swimming
+    let best = null, bd = 1e9;
+    const consider = (x, z) => { const d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = { x, z }; } };
+    for (const e of level.exits) consider(e.x, e.z);
+    for (const c of level.colliders) if (c.beach) consider(Math.max(c.minX, Math.min(p.x, c.maxX)), Math.max(c.minZ, Math.min(p.z, c.maxZ)));
+    return best;
   };
   let stepDist = 0, sloshCd = 0, spillCd = 0, creakCd = 0, zzzCd = 2;
   const lipPos = new THREE.Vector3();
@@ -130,7 +148,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     voice.update(dt, player.keys, player.steady ? 0 : spd0);
     if (voice.loud) shake += .5; // yelling shakes your own hands
     const fx = chaos.step(dt); push.x += fx.push.x; push.z += fx.push.z;
-    if (wind) { if (wind.update(run.t, dt, player)) hazard = hazard || 'WIND'; push.x += wind.push.x; }
+    if (wind.update(run.t, dt, player)) hazard = hazard || 'WIND'; push.x += wind.push.x; if (wind.state === 'blow') glass.kick(wind.dir * .9 * dt * 10, 0);
     // timed hazards + the vacuum: hits shove the player and slosh the glass; blamed on the house
     for (const hit of hazards.update(run.t, player, dt, chaos, voice)) {
       if (hit.opened) { sfx.unlock2(); trick('shout'); continue; }
@@ -149,9 +167,21 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (vac < 1.6 && !run.vacClose) run.vacClose = true;
     if (run.vacClose && vac > 4.5) { run.vacClose = false; trick('outrun'); }
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
-    player.step(dt, { colliders: level.colliders, push, slip, gravity: mods.gravity, speedMul: mods.speed, mirror: mods.mirror, base: pit || level.open ? -12 : 0 });
-    if (player.grounded && !pit && player.y > -.05) { run.safe.x = player.pos.x; run.safe.z = player.pos.z; }
-    if (player.y < -1.4) fall(room);
+    if (run.climb) { // short climb-out tween onto the beach / ramp top
+      const c = run.climb; c.t += dt / .45; const k = Math.min(1, c.t);
+      player.pos.x = c.from.x + (c.to.x - c.from.x) * k; player.pos.z = c.from.z + (c.to.z - c.from.z) * k; player.y = SWIM_Y + (0 - SWIM_Y) * Math.sin(k * Math.PI / 2) + Math.sin(k * Math.PI) * .3;
+      player.vel.x = player.vel.z = 0; player.vy = 0;
+      if (k >= 1) { run.climb = null; player.y = 0; player.grounded = true; sfx.thud(.5); hooks.climbed?.(); }
+    } else {
+      player.step(dt, { colliders: level.colliders, push: run.swimming ? { x: push.x * .3, z: push.z * .3 } : push, slip, gravity: mods.gravity, speedMul: mods.speed * (run.swimming ? .45 : 1), mirror: mods.mirror, base: run.swimming ? SWIM_Y : pit || level.open ? -12 : 0, noJump: run.swimming });
+      if (player.grounded && !pit && !run.swimming && player.y > -.05) { run.safe.x = player.pos.x; run.safe.z = player.pos.z; }
+      if (!run.swimming && player.y < SWIM_Y) fall(room);
+      if (run.swimming) {
+        run.salt = Math.min(1, run.salt + dt * .03); if (Math.random() < dt * 2) salty();
+        const out = exitFor(player.pos);
+        if (out) { run.swimming = false; player.swimming = false; run.climb = { from: { x: player.pos.x, z: player.pos.z }, to: out, t: 0 }; }
+      }
+    }
     player.mirror = mods.mirror;
     // props: bananas make you slip-spin, everything else bonks the glass
     for (const { prop, speed } of props.step(dt, player, mods.on('moon') ? 5 : 18)) {
@@ -212,7 +242,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       else { player.vel.x += Math.sin(player.yaw) * 6; player.vel.z -= Math.cos(player.yaw) * 6; glass.kick((Math.random() - .5) * 2, 2); hooks.scream?.('dash'); }
     }
     // TODAY'S ORDER: pour in the 3 ingredients (hold E on their islets), then deliver to the hut.
-    recipe.update(run.t, dt, player, glass, (st, n) => { glass.tint(recipe.color); sfx.collect(n); trick('collect'); run.filled = true; hooks.collect?.(st.id, n, recipe.order.length); });
+    recipe.update(run.t, dt, player, glass, (st, n) => { run.filled = true; salty(); sfx.collect(n); trick('collect'); run.filled = true; hooks.collect?.(st.id, n, recipe.order.length); });
+    if (run.swimming) hazard = 'SWIM TO A BEACH OR RAMP';
     if (!hazard && recipe.near) hazard = 'HOLD E';
     const mate = hazards.mate;
     // Set pieces are signposted in the world (prompts.js); the HUD only gets a one-word hint.
@@ -227,7 +258,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
     return { room, hazard, calm: fx.calm, vacuum: vac, style, voice: { level: voice.level, lock: hazards.lock.near ? hazards.lock.charge : -1, alert: mate?.inRoom ? (mate.awake > 0 ? 1 : mate.alert) : -1 } };
   };
-  run.render = (dt, t) => { guide.update(t, player, run.state === 'play' || run.state === 'ready'); prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
+  run.render = (dt, t) => { guide.update(t, player, run.state === 'play' || run.state === 'ready', run); prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
   run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail(); if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
   return run;
 }

@@ -58,7 +58,7 @@ export function createChaseCam(camera) {
   let dist = 3.4;
   return function update(dt, player, colliders, eye = 1.6, roll = 0, shake = 0) {
     const back = 3.4, height = .95 + Math.max(0, player.pitch) * 1.8;
-    target.set(player.pos.x + Math.cos(player.yaw) * .8, player.y + eye * .7, player.pos.z + Math.sin(player.yaw) * .8); // well over the right shoulder: the drink (right hand) stays in view
+    target.set(player.pos.x + Math.cos(player.yaw) * .8, Math.max(player.y, -1.5) + eye * .7, player.pos.z + Math.sin(player.yaw) * .8); // well over the right shoulder: the drink (right hand) stays in view
     const dx = -Math.sin(player.yaw), dz = Math.cos(player.yaw);
     // shortest hit along the boom against walls/furniture taller than the camera ray
     let maxD = back;

@@ -18,6 +18,9 @@ function gradientTex() {
 }
 
 export function createGuide(scene, { recipe, actors, level }) {
+  // ramp markers: green "climb out here" signs, shown only while you're swimming
+  const exitTex = textTexture('CLIMB', { w: 256, h: 96, bg: '#2fbf71', fg: '#fff', font: '900 60px system-ui' });
+  const exitSigns = level.exits.map(e => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: exitTex, depthTest: false })); s.scale.set(1.1, .42, 1); s.position.set(e.x, .2, e.z); s.renderOrder = 9; s.visible = false; scene.add(s); return s; });
   const beamGeo = new THREE.CylinderGeometry(.55, .55, 24, 18, 1, true).translate(0, 12, 0), beamTex = gradientTex();
   const beam = (x, z, color) => { const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color, map: beamTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.position.set(x, 0, z); scene.add(m); return m; };
   const beams = recipe.stations.filter(s => s.want).map(s => ({ s, m: beam(s.x, s.z, INGREDIENTS[s.id].color) }));
@@ -67,14 +70,16 @@ export function createGuide(scene, { recipe, actors, level }) {
 
   return {
     goal,
-    update(t, player, playing) {
+    update(t, player, playing, run) {
+      const swim = !!run?.swimming;
+      for (const s of exitSigns) { s.visible = swim && Math.hypot(s.position.x - player.pos.x, s.position.z - player.pos.z) < 16; s.position.y = .2 + Math.sin(t * 5) * .1; }
       const fade = (x, z) => Math.min(1, Math.max(.12, (Math.hypot(x - player.pos.x, z - player.pos.z) - 2.5) / 9)); // thin out up close
       for (const b of beams) { b.m.visible = !b.s.got; b.m.material.opacity = (.75 + Math.sin(t * 3 + b.s.x) * .2) * fade(b.s.x, b.s.z); }
       hutBeam.visible = recipe.done; hutBeam.material.opacity = .8 + Math.sin(t * 5) * .2;
-      const p = player.pos, g = goal(p), dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
-      arrow.visible = playing && fd > 2.6;
+      const p = player.pos, ex = swim && run.nearestExit(p), g = ex ? { ...ex, color: '#5dffa0', final: { ...ex, x: ex.x + 99 } } : goal(p), dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
+      arrow.visible = playing && (swim || fd > 2.6);
       if (arrow.visible) {
-        const k = 2.4 + Math.sin(t * 6) * .15; arrow.position.set(p.x + dx / d * k, player.y + .14, p.z + dz / d * k);
+        const k = 2.4 + Math.sin(t * 6) * .15; arrow.position.set(p.x + dx / d * k, player.y + (swim ? .6 : .14), p.z + dz / d * k);
         arrow.rotation.y = Math.atan2(-dx, -dz); arrowMat.color.set(g.color);
       }
       for (const h of hops) { const near = Math.hypot(h.position.x - p.x, h.position.z - p.z); h.visible = near < 14; h.position.y = 1.1 + Math.sin(t * 4) * .08; }

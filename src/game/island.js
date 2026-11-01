@@ -15,15 +15,16 @@ const RUNS = [[0, -4, 0, -19], [0, -21, 0, -27.5], [-1, -16, -9, -16], [1, -16, 
 export const TOWERS = [[8, -26], [-8, -40], [8, -58], [-7, -73]];
 const ZONES = [['beach', 'THE BEACH', 6, -24], ['plaza', 'THE PLAZA', -24, -40], ['reef', 'THE REEF', -40, -72], ['hut', 'THE STREAM HUT', -72, -90]];
 
+const rampGeoX = new THREE.BoxGeometry(2.8, .08, .9), rampGeoZ = new THREE.BoxGeometry(.9, .08, 2.8), rampMat = new THREE.MeshLambertMaterial({ color: '#b07a4a' });
 const postGeo = new THREE.CylinderGeometry(.09, .11, 2.4, 10), postMat = new THREE.MeshLambertMaterial({ color: '#7a5233' });
 
 export async function buildIsland(scene) {
-  const colliders = [], jobs = [], statics = new THREE.Group(); scene.add(statics); // everything static is merged at the end
+  const colliders = [], exits = [], jobs = [], statics = new THREE.Group(); scene.add(statics); // everything static is merged at the end
   const put = (kit, name, x, y, z, rot = 0, s = 1) => { const p = model(kit, name).then(m => { m.scale.multiplyScalar(s); m.position.set(x, y, z); m.rotation.y = rot; statics.add(m); return m; }); jobs.push(p); return p; };
   for (const [key, [x, z]] of Object.entries(PADS)) {
     const big = key === 'start' || key === 'plaza' || key === 'hut', s = big ? 1.7 : 1.25;
     put('pirate', key === 'plaza' ? 'patch-sand' : 'patch-sand-foliage', x, -.25 * s, z, (x + z) % 3, s);
-    colliders.push({ minX: x - 3.2 * s, maxX: x + 3.2 * s, minZ: z - 2.5 * s, maxZ: z + 2.5 * s, top: 0 });
+    colliders.push({ minX: x - 3.2 * s, maxX: x + 3.2 * s, minZ: z - 2.5 * s, maxZ: z + 2.5 * s, top: 0, beach: true }); // beaches: swim up anywhere
   }
   for (const [x0, z0, x1, z1] of RUNS) { // dock tiles, top flush with y = 0
     const alongZ = x0 === x1, len = Math.abs(alongZ ? z1 - z0 : x1 - x0), n = Math.max(1, Math.round(len / 2.5));
@@ -31,6 +32,13 @@ export async function buildIsland(scene) {
       const k = (i + .5) / n, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
       put('pirate', 'platform', x, -.23, z, alongZ ? 0 : Math.PI / 2).then(m => { m.scale.x *= .76; });
       if (i % 2 === 0) for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * .9 : x, -1.1, alongZ ? z : z + side * .9); p.castShadow = true; statics.add(p); } // posts into the sea
+    }
+    // swim-up ramps every ~9 m, alternating sides: a sloped plank from the water to the board edge
+    for (let d = 3; d < len - 1.5; d += 9) {
+      const k = d / len, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k, side = (exits.length % 2 ? 1 : -1);
+      const ox = alongZ ? side : 0, oz = alongZ ? 0 : side; // outward from the board
+      const ramp = new THREE.Mesh(alongZ ? rampGeoX : rampGeoZ, rampMat); ramp.position.set(x + ox * 2.1, -.82, z + oz * 2.1); ramp.rotation.set(alongZ ? 0 : side * .62, 0, alongZ ? -side * .62 : 0); ramp.castShadow = true; statics.add(ramp);
+      exits.push({ x: x + ox * 3.1, z: z + oz * 3.1, to: { x: x + ox * .5, z: z + oz * .5 } });
     }
     const hw = .95;
     colliders.push(alongZ ? { minX: x0 - hw, maxX: x0 + hw, minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1), top: 0 } : { minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: z0 - hw, maxZ: z0 + hw, top: 0 });
@@ -61,7 +69,7 @@ export async function buildIsland(scene) {
   bake(statics);
   const rooms = ZONES.map(([key, name, z0, z1]) => ({ key, name, z0, z1, w: 40, len: z0 - z1, hazards: [], slots: [] }));
   return {
-    rooms, doors: [], walks: [], colliders, hazards: [], slots, towers, ground: -12, open: true,
+    rooms, doors: [], walks: [], colliders, exits, hazards: [], slots, towers, ground: -12, open: true,
     finish: { x: 0, z: -81.5, r: 1 }, spawn: { x: 0, z: 1.5, yaw: 0 }, length,
     roomAt: zz => rooms.find(x => zz <= x.z0 && zz > x.z1) || rooms.at(-1),
   };

@@ -10,10 +10,10 @@ Chat-interaction tools mostly turn viewers into a stream of anonymous effects. T
 - **You can fall off.** The boardwalks have no railings and two gaps to hop. Into the sea means a splash, 30% of your drink gone, and a respawn.
 - **Chat becomes characters with names.** `!sniper` (or 100+ bits, or a sub) puts that viewer on a lifeguard tower with a water cannon. A red laser paints the streamer, then it fires. `!barrel` (or a follow) rolls a named barrel down the boardwalk. When chat is quiet, the house sends its own.
 - **Chat can help, too.** Three viewers typing `!steady` send a named lifeguard who throws you a lifebuoy: your next fall is free, and the save is credited to them.
-- **A daily house rule.** Windy (telegraphed gusts), Hungry Bot, or Heavy Glass, the same for everyone that day.
+- **A daily house rule.** Windy (telegraphed gusts), Loose Cannon (it starts early and rolls faster), or Heavy Glass, the same for everyone that day.
 - **Readable chaos.** Light beams over the fruits you still need, a route arrow along the boards, a target ring that tightens as a sniper aims, danger lanes in front of barrels, screen-edge arrows for threats behind you, and a minimap.
 - **Blame is the point.** Every hit and every spilled drop is credited to the viewer who caused it: Spill Credits at the end, a Most Wanted poster hung on the island tomorrow, and a cross-channel Most Wanted board.
-- **Your voice is a controller.** Shout (mic, or hold V) to stun the beach bot that hunts you along your own trail.
+- **Your voice is a controller.** Shout (mic, or hold V) to spin out the Loose Cannon, a runaway pirate cannon that rolls after you along your own trail.
 - **Built to clip.** Snipes, splashes, catches and last sips trigger Twitch clips automatically when signed in.
 - **Zero setup.** Type a channel name and play: anonymous chat works without signing in. Signing in adds EventSub (bits, subs, follows, raids, channel points), auto-created rewards and auto-clips.
 

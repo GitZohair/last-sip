@@ -93,9 +93,9 @@ export const ui = {
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
-  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice }) {
+  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0 }) {
     const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
-    set('water', Math.round(water * 100)); $('water-fill').style.transform = `scaleY(${water})`;
+    set('water', Math.round(water * 100)); const sl = Math.round(salt * 100); if ($('salt').dataset.v !== String(sl)) { $('salt').dataset.v = sl; $('salt').textContent = sl ? `SALT ${sl}%` : ''; } $('water-fill').style.transform = `scaleY(${water})`;
     $('danger').style.transform = `scaleX(${danger})`; $('danger').dataset.hot = danger > .85 ? '1' : '';
     set('timer', Math.max(0, time).toFixed(1));
     if (room !== lastRoom) { lastRoom = room; set('room', room); const r = $('room'); r.classList.remove('enter'); void r.offsetWidth; r.classList.add('enter'); }
@@ -107,11 +107,11 @@ export const ui = {
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', water < .25 && water > .001);
   },
-  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board }) {
+  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0 }) {
     ui.show('results');
     set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
-    set('r-title', !won ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : water < .05 ? 'ONE. LAST. SIP.' : water > .7 ? 'Hydrated. Respect.' : 'Technically a drink.');
-    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>DRINK</span></div><div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
+    set('r-title', !won ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : salt > .4 ? 'Mostly seawater.' : water < .05 ? 'ONE. LAST. SIP.' : water > .7 ? 'Hydrated. Respect.' : 'Technically a drink.');
+    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>DRINK</span></div>${salt > .01 ? `<div><b>${Math.round(salt * 100)}%</b><span>SALTY</span></div>` : ''}<div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
     $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
     const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
     $('grades').innerHTML = rooms.map((x, i) => `<div class="g-${grade(x.lost)}" style="animation-delay:${.2 + i * .15}s"><b>${grade(x.lost)}</b><span>${x.key}</span></div>`).join('');

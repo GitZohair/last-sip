@@ -61,7 +61,7 @@ export function createHudCues(root) {
         else if (a.kind === 'barrel' && a.z < player.pos.z) edge(edges[i++], camera, { x: a.x, y: .5, z: a.z }, '#ffb020', 'barrel', '');
       }
       const vac = run.hazards.vacuum;
-      if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'vacuum', '');
+      if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'cannon', 'LOOSE CANNON');
       for (; i < edges.length; i++) edges[i].classList.remove('on');
       // wind: arrow points the way the gust pushes, in screen space
       const ws = wind?.state;
