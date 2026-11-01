@@ -177,6 +177,7 @@ function devShot(pos, look, fov = 50) {
   img.src = cv.toDataURL();
 }
 if (params.has('dev')) window.lastSip = { run: () => run, world, shot: devShot, frame: (n = 1) => { for (let i = 0; i < n; i++) { run.render(1 / 60, i / 60); } },
+  advance: (sec = 1) => { for (let i = 0; i < sec * 60; i++) loop(last + 1000 / 60); }, // run the REAL loop (sim + camera + render) while rAF is paused
   simulate, play, start, director, fakeChat: () => { chat = { channel: 'dev', close() {} }; },
   state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
   tp: (x, z) => player.reset({ x, z, yaw: 0 }), player: () => player,

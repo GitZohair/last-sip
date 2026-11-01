@@ -81,10 +81,12 @@ export async function createCharacter(scene) {
 export function createChaseCam(camera) {
   const target = new THREE.Vector3(), want = new THREE.Vector3();
   let dist = 3.4;
+  const look = new THREE.Vector3(); let init = false;
   return function update(dt, player, colliders, eye = 1.6, roll = 0, shake = 0) {
-    const back = 3.4, height = .95 + Math.max(0, player.pitch) * 1.8;
-    target.set(player.pos.x + Math.cos(player.yaw) * .8, Math.max(player.y, -1.5) + eye * .7, player.pos.z + Math.sin(player.yaw) * .8); // well over the right shoulder: the drink (right hand) stays in view
-    const dx = -Math.sin(player.yaw), dz = Math.cos(player.yaw);
+    const yaw = player.camYaw ?? player.yaw, back = 5.4, height = 1.55 + Math.max(0, player.pitch) * 2;
+    // a wider, higher view: the streamer, the tray and the boards ahead all fit; a little to the right so the tray stays clear
+    target.set(player.pos.x + Math.cos(yaw) * .45, Math.max(player.y, -1.5) + eye * .75, player.pos.z + Math.sin(yaw) * .45);
+    const dx = -Math.sin(yaw), dz = Math.cos(yaw);
     // shortest hit along the boom against walls/furniture taller than the camera ray
     let maxD = back;
     for (const c of colliders) {
@@ -94,10 +96,12 @@ export function createChaseCam(camera) {
     dist += (Math.max(.6, maxD - .2) - dist) * Math.min(1, dt * (maxD < dist ? 20 : 4));
     // as walls pull the boom in, rise over the head so the robot never fills the screen
     const squeeze = 1 - dist / back;
-    want.set(target.x + dx * dist, Math.min(2.65, target.y + height * dist / back + squeeze * 1.25), target.z + dz * dist);
-    camera.position.lerp(want, Math.min(1, dt * 14));
+    want.set(target.x + dx * dist, Math.min(3.6, target.y + height * dist / back + squeeze * 1.25), target.z + dz * dist);
+    if (!init) { camera.position.copy(want); init = true; }
+    camera.position.lerp(want, Math.min(1, dt * 7)); // softer follow: less rigid
     camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake;
-    camera.lookAt(target.x - dx * (1.5 + squeeze * 2), target.y + .1 - squeeze * .6 - player.pitch * 1.2, target.z - dz * (1.5 + squeeze * 2));
+    want.set(target.x - dx * (2.8 + squeeze * 2), target.y - .6 - squeeze * .6 - player.pitch * 1.6, target.z - dz * (2.6 + squeeze * 2));
+    look.lerp(want, Math.min(1, dt * 10)); camera.lookAt(look);
     camera.rotateZ(roll);
   };
 }
