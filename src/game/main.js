@@ -73,8 +73,8 @@ async function start(asPour) {
     spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
-    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), loaded: n => cues?.pop(`${n} DRINK${n > 1 ? 'S' : ''} LOADED`, '#c9a2ff'),
-    served: (c, tip) => cues?.pop(c.mood === 'happy' ? `+$${tip}  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true),
+    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: () => {}, // style tricks no longer pop text: tips are the only score fell: () => ui.big('SPLASH'), loaded: n => cues?.pop(`${n} DRINK${n > 1 ? 'S' : ''} LOADED`, '#c9a2ff'),
+    served: (c, tip) => cues?.pop(c.mood === 'happy' ? `+$${tip}${c.mult > 1 ? `  x${c.mult}` : ''}${c.quick ? '  QUICK' : ''}  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true),
     walkout: (c, v) => { cues?.pop(`${c.user} WALKED OUT`, '#ff5c7a', true); if (v) ui.feed(`Walkout blamed on ${v}`, 'muted', 'warning'); },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
     hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : kind === 'SNIPER' ? `SNIPED BY ${who}` : kind === 'BARREL' ? `ROLLED BY ${who}` : `${kind} FROM ${who}`, '#ff5c7a'),
@@ -98,7 +98,7 @@ function orbit(dt) {
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
   const sh = r.shift, time = r.t, salt = 0, water = sh.served ? sh.tips / (sh.served * 10) : 0;
-  const score = Math.round(sh.tips * 10 + r.style.points);
+  const score = sh.tips * 10; // tips are the score (style tricks are just flair now)
   const villain = r.ledger.villain();
   if (villain) localStorage.setItem('lastsip:villain', JSON.stringify({ user: villain.name, image: lastEmote.get(villain.name) || null, title: 'MOST WANTED' }));
   const rooms = [];
@@ -160,7 +160,7 @@ function loop(now) {
   cues?.update(dt, run, player, world.camera, run.wind);
   document.body.classList.toggle('dark', run.chaos.active.lights > 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
-  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt, tips: run.shift.tips, tray: run.glass.count, served: run.shift.served });
+  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt, tips: run.shift.tips, tray: run.glass.count, served: run.shift.served, streak: run.shift.streak });
   world.render();
   player.pos.x = real.x; player.y = real.y; player.pos.z = real.z;
 }

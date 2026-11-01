@@ -211,3 +211,6 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #ballot .opts b { margin-left: .35rem; opacity: .8; }
 #ballot > i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: #a970ff; transform-origin: left; }
 #ballot.result b { display: block; font: 900 1.4rem/1.1 system-ui; color: #ff5c7a; } #ballot.result span { font: 700 .75rem/1.3 system-ui; opacity: .85; }
+
+.style-box { display: none !important; } /* tips are the score now */
+#order span.streak { color: #ffd36b; border-color: #ffd36b; }

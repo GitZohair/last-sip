@@ -40,7 +40,7 @@ export async function createShift(scene, seed, tray) {
   const sign = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture('BAR', { w: 256, h: 96, bg: '#a970ff', fg: '#fff', font: '900 64px system-ui' }), depthTest: false })); sign.scale.set(1.4, .52, 1); sign.position.set(BAR.x, 2.6, BAR.z); sign.renderOrder = 9; scene.add(sign);
 
   const pool = new Map(); // raffle: name -> tickets
-  const S = { customers: [], tips: 0, served: 0, walkouts: 0, servedBy: [], log: [], next: 0, near: null, atBar: false, barRing };
+  const S = { customers: [], tips: 0, served: 0, walkouts: 0, servedBy: [], log: [], streak: 0, next: 0, near: null, atBar: false, barRing };
   S.enter = (name, tickets = 1) => { if (!S.customers.some(c => c.user === name && c.mood === 'wait')) pool.set(name, Math.max(pool.get(name) || 0, tickets)); };
   function draw() { // one name from the raffle, weighted by tickets
     const total = [...pool.values()].reduce((a, b) => a + b, 0); if (!total) return null;
@@ -81,10 +81,12 @@ export async function createShift(scene, seed, tray) {
         c.patience -= dt; c.fig.m.rotation.y = Math.atan2(px - c.x, pz - c.z); // watches you
         if (d < 4) S.near = c;
         if (d < 1.7 && !swim && tray.glasses.some(g => g.id === c.id)) {
-          const g = tray.take(c.id), tip = Math.max(0, Math.round(10 * g.water * (1 - g.salt * .7)));
+          const g = tray.take(c.id), clean = g.water >= .85 && g.salt <= 0, quick = c.patience / PATIENCE > .5;
+          S.streak = clean ? S.streak + 1 : 0; const mult = 1 + Math.min(4, Math.max(0, S.streak - 1)) * .25; // clean serves in a row multiply tips (up to x2)
+          const tip = Math.max(0, Math.round(10 * g.water * (1 - g.salt * .7) * mult) + (quick && clean ? 2 : 0)); c.mult = mult; c.quick = quick && clean;
           c.mood = g.water < .3 || tip < 3 ? 'angry' : 'happy'; c.t = 0; S.tips += tip; S.served++; S.servedBy.push(c.user); S.log.push({ user: c.user, tip, mood: c.mood });
           if (c.mood === 'happy') c.fig.cheer(); cb.served?.(c, tip, g.water);
-        } else if (c.patience <= 0) { c.mood = 'angry'; c.t = 0; S.walkouts++; S.log.push({ user: c.user, tip: 0, mood: 'walkout' }); tray.drop(c.id); cb.walkout?.(c); }
+        } else if (c.patience <= 0) { c.mood = 'angry'; c.t = 0; S.walkouts++; S.streak = 0; S.log.push({ user: c.user, tip: 0, mood: 'walkout' }); tray.drop(c.id); cb.walkout?.(c); }
       } else if ((c.t += dt) > 1.8) { // leaves: shrinks away
         const k = Math.max(0, 1 - (c.t - 1.8) * 3); c.fig.m.scale.setScalar(2 * k);
         if (k <= 0) { scene.remove(c.fig.m, c.bubble, c.tag); c.tex.dispose(); S.customers.splice(S.customers.indexOf(c), 1); continue; }

@@ -110,7 +110,7 @@ export const ui = {
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
-  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0, tips = 0, tray = 0, served = 0 }) {
+  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0, tips = 0, tray = 0, served = 0, streak = 0 }) {
     const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
     set('water', Math.round(water * 100)); const sl = Math.round(salt * 100); if ($('salt').dataset.v !== String(sl)) { $('salt').dataset.v = sl; $('salt').textContent = sl ? `SALT ${sl}%` : ''; } $('water-fill').style.transform = `scaleY(${water})`;
     $('danger').style.transform = `scaleX(${danger})`; $('danger').dataset.hot = danger > .85 ? '1' : '';
@@ -121,7 +121,7 @@ export const ui = {
     const near = Math.max(0, Math.min(1, 1 - (vacuum - 1) / 7)); $('vac').style.opacity = vacuum < 8 ? 1 : 0; $('vac-fill').style.transform = `scaleX(${near})`; $('vac').dataset.hot = vacuum < 2.5 ? '1' : '';
     if (voice) { const v = $('voice'); v.style.opacity = voice.lock >= 0 || voice.alert >= 0 ? 1 : 0; /* only when a set piece needs your voice */ $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
     if (style) { document.querySelector('.style-box').dataset.zero = style.points ? '' : '1'; set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
-    const ok = `${tips}|${tray}|${served}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span>TRAY ${tray}/5</span>`; }
+    const ok = `${tips}|${tray}|${served}|${streak}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span>TRAY ${tray}/5</span>${streak > 1 ? `<span class="streak">CLEAN x${Math.min(2, 1 + (streak - 1) * .25)}</span>` : ''}`; }
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', water < .25 && water > .001);
   },

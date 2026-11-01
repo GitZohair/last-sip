@@ -46,7 +46,9 @@ export function createProps(scene, colliders) {
       const p = list[i]; p.life -= dt;
       if (p.life <= 0 || p.pos.y < -10) { scene.remove(p.obj); list.splice(i, 1); continue; }
       p.vel.y -= gravity * dt; p.pos.addScaledVector(p.vel, dt);
-      if (p.pos.y < 0) { p.pos.y = 0; p.vel.y = Math.abs(p.vel.y) > 1 ? -p.vel.y * p.k.bounce : 0; p.vel.x *= .985; p.vel.z *= .985; p.spin *= .97; }
+      const floor = colliders.some(c => !c.disabled && c.top <= .1 && c.top > -.5 && p.pos.x > c.minX && p.pos.x < c.maxX && p.pos.z > c.minZ && p.pos.z < c.maxZ) ? 0 : -6; // off the boards = sinks
+      if (floor < 0 && p.pos.y < -.3) p.life = Math.min(p.life, 1.5);
+      if (p.pos.y < floor) { p.pos.y = floor; p.vel.y = Math.abs(p.vel.y) > 1 ? -p.vel.y * p.k.bounce : 0; p.vel.x *= .985; p.vel.z *= .985; p.spin *= .97; }
       // bounce off walls / furniture (sides only)
       tmp.x = p.pos.x; tmp.z = p.pos.z;
       for (const c of colliders) {
@@ -58,7 +60,7 @@ export function createProps(scene, colliders) {
       p.pos.x = tmp.x; p.pos.z = tmp.z;
       // player kicks props; props shove the player (lighter props shove less)
       const dx = p.pos.x - player.pos.x, dz = p.pos.z - player.pos.z, d = Math.hypot(dx, dz), R = p.k.r + .3;
-      if (d < R && p.pos.y < player.y + 1.2) {
+      if (d < R && p.pos.y < player.y + 1.2 && p.pos.y > player.y - .5 && !p.used) {
         const nx = dx / (d || 1), nz = dz / (d || 1), rel = (player.vel.x - p.vel.x) * nx + (player.vel.z - p.vel.z) * nz;
         p.pos.x = player.pos.x + nx * R; p.pos.z = player.pos.z + nz * R;
         if (rel > 0) { p.vel.x += nx * rel * 1.6 / p.k.mass * .4; p.vel.z += nz * rel * 1.6 / p.k.mass * .4; p.vel.y += rel * .5; p.spin += rel * 4; }

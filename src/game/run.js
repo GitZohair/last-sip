@@ -134,7 +134,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
       hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
-    run.falls++; run.swimming = true; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
+    run.falls++; shift.streak = 0; run.swimming = true; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
     run.salt = Math.min(1, run.salt + .35); glass.salt(.35); // every drink on the tray is now part seawater avatar.emote('No', .8);
     ledger.blame(['THE SEA'], 'SALT', 2, run.t); style.combo = 1; hooks.fell?.(run.falls);
     if (run.falls === 1) hooks.clip?.('fell in');
@@ -196,6 +196,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (vac < 1.6 && !run.vacClose) run.vacClose = true;
     if (run.vacClose && vac > 4.5) { run.vacClose = false; trick('outrun'); }
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
+    if (run.slip) { const s = run.slip; s.t -= dt; player.yaw += s.dir * 1.8 * Math.max(0, s.t / .55) * dt; slip = true; if (s.t <= 0) run.slip = null; } // eased spin, low traction
     if (run.climb) { // short climb-out tween onto the beach / ramp top
       const c = run.climb; c.t += dt / .45; const k = Math.min(1, c.t);
       player.pos.x = c.from.x + (c.to.x - c.from.x) * k; player.pos.z = c.from.z + (c.to.z - c.from.z) * k; player.y = SWIM_Y + (0 - SWIM_Y) * Math.sin(k * Math.PI / 2) + Math.sin(k * Math.PI) * .3;
@@ -214,7 +215,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     player.mirror = mods.mirror;
     // props: bananas make you slip-spin, everything else bonks the glass
     for (const { prop, speed } of props.step(dt, player, mods.on('moon') ? 5 : 18)) {
-      if (prop.k.slip && player.grounded) { player.yaw += (Math.random() > .5 ? 1 : -1) * 1.2; glass.kick((Math.random() - .5) * 3, 1.5); hazard = 'BANANA'; ledger.blame(['THE BANANA'], 'BANANA', .8, run.t); }
+      if (prop.k.slip && player.grounded && !run.slip) { // one slip per banana: a short spin + forward skid, the peel flies off
+        prop.used = true; prop.life = 1.2; prop.vel.set(player.vel.x * 1.5, 3, player.vel.z * 1.5); prop.spin = 25;
+        run.slip = { t: .55, dir: Math.random() > .5 ? 1 : -1 }; glass.kick((Math.random() - .5) * 3, 1.5); sfx.boing(); avatar.emote('No', .6);
+        hazard = 'BANANA'; ledger.blame(['THE BANANA'], 'BANANA', .8, run.t);
+      }
       else if (speed > 2) sfx.thud(.35), glass.kick((Math.random() - .5) * speed * .3, -speed * .2);
     }
     if (bounce && player.grounded && player.y > .25) { player.vy = bounce; player.grounded = false; sfx.boing(); glass.kick((Math.random() - .5) * 2, -2.5); trick('bounce'); }
