@@ -15,7 +15,7 @@ async function vacuum(scene, spawn) {
   let puffT = 0;
   const brush = { rotation: { y: 0 } };
   g.position.set(spawn.x, 0, spawn.z + 2); g.visible = false; scene.add(g); // hidden until it wakes, so it never fills the start camera
-  const trail = []; let speed = 0, wake = 6, cool = 0, stun = 0;
+  const trail = []; let speed = 0, wake = 6, cool = 0, stun = 0, back = 0, bx = 0, bz = 0;
   return {
     kind: 'vacuum', label: 'THE LOOSE CANNON', mesh: g,
     distance: 99,
@@ -29,7 +29,11 @@ async function vacuum(scene, spawn) {
       if (!g.visible) { g.visible = true; for (const p of puffs) { p.life = .7; p.m.position.set((Math.random() - .5) * .8, .3 + Math.random() * .5, (Math.random() - .5) * .8); p.m.visible = true; } } // pops in with a puff
       if (stun > 0) { stun -= dt; g.rotation.y += dt * 14; if (stun <= 0) { ring.material.color.set('#ff3b5c'); ring.material.emissive.set('#ff1e46'); } this.distance = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z); return null; }
       speed = Math.min(4.6, 2.2 + Math.max(0, t - wake) * .07) * (this.hungry ? 1.25 : 1);
-      let move = speed * dt;
+      if (back > 0) { // after a hit it recoils away from you and sulks, so it never sits on top of you
+        back -= dt; const k = Math.max(0, back - .9); g.position.x -= bx * k * 6 * dt; g.position.z -= bz * k * 6 * dt; trail.length = 0;
+        this.distance = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z); return null;
+      }
+      let move = this.distance < 1.4 && cool > 0 ? 0 : speed * dt;
       while (move > 0 && trail.length) {
         const p = trail[0], dx = p.x - g.position.x, dz = p.z - g.position.z, d = Math.hypot(dx, dz);
         if (d <= move) { g.position.x = p.x; g.position.z = p.z; trail.shift(); move -= d; }
@@ -42,7 +46,7 @@ async function vacuum(scene, spawn) {
       const dx = player.pos.x - g.position.x, dz = player.pos.z - g.position.z, d = Math.hypot(dx, dz);
       this.distance = d;
       ring.material.emissiveIntensity = 1 + Math.max(0, 3 - d) * 1.2 + Math.sin(t * 12) * .4;
-      if (d < 1.1 && cool <= 0 && player.y < .3 && player.y > -.3) { cool = 1.4; trail.length = 0; return { kind: 'vacuum', dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: 8 }; }
+      if (d < 1.1 && cool <= 0 && player.y < .3 && player.y > -.3) { cool = 2.6; back = 2; bx = dx / (d || 1); bz = dz / (d || 1); trail.length = 0; return { kind: 'vacuum', dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: 8 }; }
       return null;
     },
   };

@@ -1,33 +1,59 @@
-# LAST SIP — locked game design (v2)
+# LAST SIP — game design v3 (beach waiter)
 
-**One line:** *A daily stream ritual. You get up for water, and your chat is home alone with you.* Carry one glass from the kitchen to your stream desk through today's house while chat pulls a slot-machine lever on your life. Every spilled drop is blamed on a viewer.
+**One line:** *Your chat orders drinks. You serve them on a wobbly tray across a boardwalk island, and the same chat tries to knock you into the sea.*
 
-## Why people come back (the psychology we design for)
-| Hook | Borrowed from | Our version |
-|---|---|---|
-| One shared puzzle a day | Wordle | **One official POUR per day** on the global seed; unlimited practice. Only the Pour counts for leaderboards and streaks. A Pour is a stream *segment*. |
-| A spoiler-free brag | Wordle grid | **Emoji receipt**: one emoji per room for how it went, plus the villain. Paste it in Discord or X. |
-| Streaks / loss aversion | Duolingo | Daily streak + "glass streak" (days finishing above 50%). Shown on the intro, so streamers protect it. |
-| Variable reward | slot machines, gacha | **`!chaos` rolls a slot reel** shown on stream: common / rare / legendary cards. Viewers keep rolling for the legendary. |
-| Funny failure, clip moments | REPO, Peak, Getting Over It | Goofy physics, ragdoll-y knockbacks, bananas, a fridge from the ceiling. **LAST SIP MODE** below 15% water: slow-mo, heartbeat, vignette, drum roll. |
-| Near-miss | Jump King, Only Up | A finish under 5% water triggers a ONE. LAST. SIP. celebration and an auto-clip. |
-| Social proof | Wordle stats | "62% of streamers finished today · median 41% water" on the results screen. |
-| Personal stake for viewers | Twitch Predictions | Viewers land on **Spill Credits** and the global **Most Wanted** board (top spillers across all of Twitch today). Being a villain is the goal. |
-| Agency for the helpful | co-op | Help cards in the deck plus `!steady` (3 distinct viewers). Chat is a mix of saboteur and guardian. |
+## Why v2 didn't land
+- The goal ("pour 3 fruits, walk to the hut") was one long errand with no decisions; the job felt pointless.
+- Chat only ever hurt you, so viewers had one verb and the streamer had nothing to *give* chat.
+- There was too much on screen and no single thing to look at.
 
-## The chaos deck (random, data-driven, see `src/game/deck.js`)
-`!chaos` (or Bits/redemptions) draws a weighted card. Rarity: **common 70%, rare 25%, legendary 5%**. Roughly 1 in 4 cards *helps*, so chat never knows exactly what it's doing to you. Specific commands (`!bomb`, `!fridge`…) still exist but carry a longer cooldown. Cards include bombs, a banana peel barrage, a bouncy-ball pit, a rubber-duck stampede, moon gravity, a tilted house, mirror controls (legendary), a fridge rain, lights out, the floor is lava (stand on furniture), a giant glass, a tiny streamer, and help cards: refill, a lid for 5s, slow-mo, mop, a magnet hand.
+## The core loop (10-20 s, repeated for a 90 s shift)
+1. **ORDER.** A customer appears on an islet with a name tag and a drink bubble. With chat connected, **customers are viewers**: `!order` (or the first message from a new chatter) puts *that viewer* on the island waiting for a drink. With no chat, tourists from the daily seed fill in.
+2. **LOAD.** Walk into the **bar** (centre plaza). The tray loads one glass per waiting customer (max 5). More glasses = more tips per trip, but a taller, wobblier stack. *This is the risk/reward decision.*
+3. **CARRY.** The tray sloshes (one shared spring; upper glasses spill first). Snipers, barrels, sky drops, the Loose Cannon and wind all hit the tray.
+4. **SERVE.** Walk into a customer: they grab their glass and react. Tip = fill % (full = $10), minus salt if you fell in the sea. Under 30% gets an angry reaction and a 1-star line in chat-facing text ("1 STAR from @viewer").
+5. **PATIENCE.** Each customer waits about 30 s (a ring around them drains). If it runs out, they storm off and the walkout is blamed on the viewer who knocked you about most.
 
-## Goofy physics (see `src/game/props.js`)
-Loose props (fruit, cans, boxes, balls, ducks) are cheap spheres with bounce, friction and player kicks. Bombs blast them. Bananas make you slip and spin. Props bump the glass. Physics are deliberately exaggerated: high bounce, big knockbacks, no realism.
+**Score** = total tips (+ style). **The Pour** (daily, same seed for everyone) stays: the same customer spots, house script and rule, so tips compare across Twitch.
 
-## Twitch integration (all three tiers)
-1. **Zero setup:** type a channel name, and chat + Bits work anonymously.
-2. **Sign in with Twitch** (one click, implicit OAuth): EventSub WebSocket for Cheers, channel-point redemptions, follows, subs, raids and hype trains, each mapped to deck pulls. The game auto-creates its channel-point rewards and **auto-clips** big moments (Create Clip API).
-3. **Tips:** optional StreamElements/Streamlabs socket token for donation events (clearly optional).
+## What chat does (both sides of the counter)
+| Chat action | Effect |
+|---|---|
+| `!order` / new chatter | Becomes a named customer (help: more tips available) |
+| `!sniper`, bits 100+, sub | A named gunner on a watchtower fires a water cannon (telegraphed laser) |
+| `!barrel`, follow | A barrel lands on the planks ahead and rolls straight down them |
+| `!drop`, `!frame` | Furniture or a viewer's emote frame falls from the sky (shadow first) |
+| `!steady` x3 | Lifeguard throws a lifebuoy: next fall is free |
+| `!chaos`, channel points | Slot-reel card (wind, bananas, moon gravity, refill...) |
+| Quiet chat | THE HOUSE plays the same cards so a solo run (or a judge) sees everything |
 
-## Leaderboards (see `server/`)
-A Cloudflare Worker + KV. Score submissions carry the Twitch token, and the server validates it with Twitch to learn the real channel (so it can't be spoofed). Boards: **Today's Pour** (streamers), **Most Wanted** (viewers by spill across all channels), **Streaks**. With no server configured, a local board is shown and labeled as such.
+Every hit is credited to a viewer: **Spill Credits**, the **Most Wanted** poster tomorrow, the cross-Twitch board. Every served drink is credited too ("Served: @a, @b...").
 
-## Scoring
-`score = water% × 10 + max(0, 90 − time) × 6`; a DNF scores 0. The Pour is one official attempt per UTC day per channel.
+## Screen (one thing to look at)
+- Top: shift timer, tips $, tray count.
+- Next customer: one beam plus the route arrow. The bar beam shows when the tray is empty.
+- Threats: telegraphs in the world (shadow, laser ring, barrel lane, red tower flag), plus edge arrows only when off screen.
+- Hit: hit-stop, shake and a red flash from the hit's side. Minimap on M.
+
+## Cases we must handle
+- **Live chat**: customers come from chat, and saboteurs are named.
+- **Dead or no chat** (judge, small streamer): the house provides tourists and sabotage. Everything still happens.
+- **Fall in the sea**: swim to a beach or ramp, and the tray's drinks go salty (tips drop). A refill at the bar is fresh.
+- **Empty tray mid-trip**: go back to the bar; a customer who waits too long leaves.
+- **Laptop iGPU**: the same perf budget (batched statics, 2 lights, no post by default).
+- **On-stream readability**: big name tags, colour plus shape cues, no small text.
+
+## Hackathon fit
+- **Stage 1**: connects to Twitch (anonymous IRC, optional OAuth + EventSub + clips); built with Codex (session ID in the submission).
+- **Innovation**: chat is both the customers and the saboteurs, named and remembered; it is a daily Pour.
+- **Impact**: zero setup (type a channel), a 90 s segment that is clip-friendly by design.
+- **Tech**: fixed-step sim, slosh physics, moderated `!frame` images, Supabase boards, iGPU perf work.
+- **Design**: one verb, telegraphed chaos, a decluttered HUD.
+
+## Build order (each step small and committed)
+1. `tray.js`: a multi-glass tray with the same API as `glass.js`.
+2. `shift.js`: the bar, customer spots, chat or house customers, patience and tips.
+3. `run.js` wiring: replace the recipe and hut; the shift ends at 90 s.
+4. Guide beams, route arrow and minimap follow customers or the bar.
+5. HUD (tips, tray), results (tips, served, walkouts, credits), receipt, intro copy, `!order` in twitch.js.
+6. Playtest plus a perf check, then update PROGRESS.md and DEVPOST_SUBMISSION.md.
