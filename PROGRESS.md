@@ -46,3 +46,7 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 ## Session log
 - **2026-11-01 (Claude, later):** daily house rule; perf pass for laptop iGPUs; visual cue system + minimap; lifeguard viewer character; audit (island card names, fall cost, title).
 - **2026-11-01 (Claude):** indoor house → island redesign after user feedback; Kenney pirate kit + CC0 sounds; viewer characters; daily order; editorial front page with tabs; post FX.
+
+## Hit feedback (Claude, Nov 1)
+- Viewer hits (sniper, barrel, sky drop) now freeze the game for 70 ms, shake the camera, and flash red on the screen edge the hit came from (`run.hitStop`, `run.lastHit`, `#hitflash` in hudcues.js).
+- Still TODO from UX research: one-time hints the first time each threat appears (e.g. "SPACE" over the first barrel, "MOVE" on the first sniper ring, saved in localStorage); target crosshair ticks on red rings so they read without colour (red-green colourblindness); playtest in the browser.

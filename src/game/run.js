@@ -178,6 +178,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     }
     for (const hit of [...actors.update(dt, run.t, player), ...drops.update(dt, run.t, player)]) {
       if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
+      run.hitStop = .07; run.shakeT = Math.max(run.shakeT, .25); run.lastHit = { x: hit.dir.x, z: hit.dir.z, n: (run.lastHit?.n || 0) + 1 }; // juice: freeze-frame + shake + directional flash
       sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
     }

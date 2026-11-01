@@ -123,6 +123,7 @@ function loop(now) {
   requestAnimationFrame(loop);
   let dt = Math.min(.1, (now - last) / 1000); last = now; world.adapt(dt);
   if (!run) { if (preview) orbit(dt); return; }
+  if (run.hitStop > 0) { run.hitStop -= dt; dt = 0; } // hit-stop: a few frames of freeze sells the impact
   if (slowmo > 0) { slowmo -= dt; dt *= .35; }
   t += dt;
   let info = null;

@@ -13,6 +13,7 @@ export function createHudCues(root) {
   const box = document.createElement('div'); box.id = 'cues'; root.appendChild(box);
   const edges = [0, 1, 2, 3, 4].map(() => { const e = document.createElement('div'); e.className = 'edge'; e.innerHTML = '<i></i><span></span>'; box.appendChild(e); return e; });
   const windEl = document.createElement('div'); windEl.id = 'wind'; windEl.innerHTML = icon('gust') + '<b>&#10140;</b>'; box.appendChild(windEl);
+  const flash = document.createElement('div'); flash.id = 'hitflash'; box.appendChild(flash); let hitN = 0;
   const map = document.createElement('canvas'); map.id = 'minimap'; box.appendChild(map);
   const W = 132, H = 236, S = 2; map.width = W * S; map.height = H * S; const g = map.getContext('2d'); g.scale(S, S);
   const mx = x => W / 2 + x * 2.6, mz = z => H - 14 - (6 - z) * 2.3; // forward (-z) is up
@@ -63,6 +64,13 @@ export function createHudCues(root) {
       const vac = run.hazards.vacuum;
       if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'cannon', 'LOOSE CANNON');
       for (; i < edges.length; i++) edges[i].classList.remove('on');
+      // hit direction: red glow on the screen edge the hit came FROM
+      if (run.lastHit && run.lastHit.n !== hitN) {
+        hitN = run.lastHit.n; const o = onScreen(camera, player.pos.x, player.y + 1, player.pos.z).clone(), f = onScreen(camera, player.pos.x - run.lastHit.x * 3, player.y + 1, player.pos.z - run.lastHit.z * 3);
+        let ax = f.x - o.x, ay = f.y - o.y; if (f.z > 1) { ax = -ax; ay = -ay; } const l = Math.hypot(ax, ay) || 1;
+        flash.style.background = `radial-gradient(ellipse at ${50 + ax / l * 55}% ${50 - ay / l * 55}%, #ff2040cc, #ff204000 55%)`;
+        flash.classList.remove('on'); void flash.offsetWidth; flash.classList.add('on');
+      }
       // wind: arrow points the way the gust pushes, in screen space
       const ws = wind?.state;
       box.classList.toggle('windy', !!ws); box.classList.toggle('windwarn', ws === 'warn');

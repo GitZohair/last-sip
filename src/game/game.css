@@ -190,3 +190,7 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 
 #salt { position: absolute; left: 0; right: 0; bottom: .35rem; text-align: center; font: 900 .62rem/1 system-ui; letter-spacing: .08em; color: #fff; text-shadow: 0 1px 3px #000a; }
 #salt:not(:empty) { background: #5d8f7ccc; padding: .2rem 0; }
+
+#hitflash { position: absolute; inset: 0; opacity: 0; }
+#hitflash.on { animation: hitflash .6s ease-out; }
+@keyframes hitflash { 0% { opacity: 1; } 100% { opacity: 0; } }
