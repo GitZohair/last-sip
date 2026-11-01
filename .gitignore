@@ -4,3 +4,5 @@ dist/
 !.env.example
 screenshots/
 .asset-sources/
+
+.vercel
