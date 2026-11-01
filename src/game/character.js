@@ -33,7 +33,7 @@ export async function createCharacter(scene) {
   function update(dt, player, slosh, state) {
     root.position.set(player.pos.x, player.y, player.pos.z); root.rotation.y = -player.yaw;
     lean.rotation.z = THREE.MathUtils.lerp(lean.rotation.z, -slosh.tx * .5, .2); lean.rotation.x = THREE.MathUtils.lerp(lean.rotation.x, slosh.tz * .35, .2);
-    if (state === 'done-win') play('Sitting'); else if (state === 'done-fail') play('Death');
+    if (state === 'done-win') play('Dance'); else if (state === 'done-fail') play('Death');
     else if ((oneShot -= dt) > 0) { /* hold reaction */ }
     else if (!player.grounded) play('Jump', .08);
     else { const v = Math.hypot(player.vel.x, player.vel.z); play(v > 3.6 ? 'Running' : v > .4 ? 'Walking' : 'Idle'); current.timeScale = v > .4 ? Math.max(.6, v / (v > 3.6 ? 5 : 2.4)) : 1; }

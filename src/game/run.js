@@ -12,6 +12,8 @@ import { draw, byId } from './deck.js';
 import { rng } from './rng.js';
 import { createHazards } from './hazards.js';
 import { createStyle } from './style.js';
+import { sfx } from './sfx.js';
+import { createPrompts } from './prompts.js';
 
 export const LIMIT = 90;
 const LEGACY = { storm: 'gust', crate: 'fridge', ice: 'mop', quake: 'bass', calm: 'steady', bomb: 'bomb', lights: 'lights' };
@@ -33,9 +35,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const splash = createSplash(scene, (x, z) => Math.random() < .25 && chaos.puddle(x, z, .25));
   const hazards = await createHazards(scene, level, rng(seed + ':hazards'), level.spawn, props);
   const style = createStyle();
+  const prompts = createPrompts(scene, hazards);
   player.reset(level.spawn);
   const run = { hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
-  chaos.onBlast = f => { gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
+  chaos.onBlast = f => { sfx.boom(); gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
   const api = {
@@ -66,7 +69,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     return card;
   };
 
-  const trick = id => { const g = style.add(id); if (g) hooks.trick?.(style.last); };
+  const trick = id => { const g = style.add(id); if (g) { hooks.trick?.(style.last); sfx.pop(style.combo); } };
+  let stepDist = 0, sloshCd = 0, spillCd = 0, creakCd = 0, zzzCd = 2;
   const lipPos = new THREE.Vector3();
   run.step = (dt) => {
     mods.step(dt); dt *= mods.timeScale; run.t += dt;
@@ -88,8 +92,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     const fx = chaos.step(dt); push.x += fx.push.x; push.z += fx.push.z;
     // timed hazards + the vacuum: hits shove the player and slosh the glass; blamed on the house
     for (const hit of hazards.update(run.t, player, dt, chaos, voice)) {
-      if (hit.opened) { trick('shout'); hooks.toast?.('SMART LOCK OPENED', 'mic'); continue; }
-      if (hit.woke) { hooks.toast?.('YOU WOKE THE ROOMMATE', 'pillows'); hooks.clip?.('roommate'); continue; }
+      if (hit.opened) { sfx.unlock2(); trick('shout'); continue; }
+      if (hit.woke) { sfx.wake(); hooks.toast?.('YOU WOKE THE ROOMMATE', 'pillows'); hooks.clip?.('roommate'); continue; }
+      if (hit.kind === 'door') sfx.slam(); else sfx.thud(.8);
       player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
       ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; avatar.emote('No', .5); style.combo = 1;
@@ -103,14 +108,16 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // props: bananas make you slip-spin, everything else bonks the glass
     for (const { prop, speed } of props.step(dt, player, mods.on('moon') ? 5 : 18)) {
       if (prop.k.slip && player.grounded) { player.yaw += (Math.random() > .5 ? 1 : -1) * 1.2; glass.kick((Math.random() - .5) * 3, 1.5); hazard = 'BANANA'; ledger.blame(['THE BANANA'], 'BANANA', .8, run.t); }
-      else if (speed > 2) glass.kick((Math.random() - .5) * speed * .3, -speed * .2);
+      else if (speed > 2) sfx.thud(.35), glass.kick((Math.random() - .5) * speed * .3, -speed * .2);
     }
-    if (bounce && player.grounded && player.y > .25) { player.vy = bounce; player.grounded = false; glass.kick((Math.random() - .5) * 2, -2.5); trick('bounce'); }
+    if (bounce && player.grounded && player.y > .25) { player.vy = bounce; player.grounded = false; sfx.boing(); glass.kick((Math.random() - .5) * 2, -2.5); trick('bounce'); }
+    if (player.landed) sfx.thud(Math.min(1, player.landed / 8));
     if (player.landed) glass.kick(0, -player.landed * (mods.soft ? .05 : .25));
     if (player.justJumped) { player.justJumped = false; if (props.list.some(p => Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) < 1.2)) trick('hop'); }
     if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'THE FLOOR IS LAVA — GET ON FURNITURE'; }
     const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh, noSpill: mods.noSpill });
     if (lost > 0) {
+      if ((spillCd -= dt) <= 0) { spillCd = .12; sfx.spill(lost); }
       run.roomLoss[room.key] += lost;
       const cause = ledger.spill(lost, run.t, hazard ? 'THE HOUSE' : 'YOUR OWN HANDS');
       splash.emit(glass.lip(lipPos), player.vel, Math.min(6, 1 + Math.floor(lost * 300)));
@@ -119,6 +126,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     }
     splash.step(dt);
     const spd = Math.hypot(player.vel.x, player.vel.z);
+    if (player.grounded && (stepDist += spd * dt) > (player.steady ? .55 : .8)) { stepDist = 0; sfx.step(player.steady); }
+    sloshCd -= dt; if (glass.state.danger > .55 && sloshCd <= 0) { sloshCd = .45; sfx.slosh(glass.state.danger); }
+    creakCd -= dt; if (creakCd <= 0 && hazards.doorWarning(run.t, player)) { creakCd = 1.2; sfx.creak(); }
+    if (hazards.mate?.inRoom && hazards.mate.awake <= 0 && (zzzCd -= dt) <= 0) { zzzCd = 1.8; sfx.zzz(); }
+    sfx.frame(dt, { vacuum: hazards.vacuum.distance, stunned: hazards.vacuum.stunned, low: glass.state.water < .15 });
     run.sprintClean = spd > 3.6 && glass.state.danger < .7 ? run.sprintClean + dt : 0;
     if (run.sprintClean > 3) { run.sprintClean = 0; trick('cleanSprint'); }
     for (const h of hazards.list) {
@@ -139,27 +151,28 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // CATCH IT: when the glass is about to go, a short window to press E for a slow-mo save.
     if (run.catchWin > 0) {
       run.catchWin -= dt;
-      if (player.keys.has('KeyE')) { glass.state.vx = glass.state.vz = 0; glass.state.tx *= .3; glass.state.tz *= .3; run.saves++; trick('catch'); run.catchWin = -1.2; hooks.saved?.(run.saves); avatar.emote('Yes', .6); }
+      if (player.keys.has('KeyE')) { sfx.ding(); glass.state.vx = glass.state.vz = 0; glass.state.tx *= .3; glass.state.tz *= .3; run.saves++; trick('catch'); run.catchWin = -1.2; hooks.saved?.(run.saves); avatar.emote('Yes', .6); }
       else if (run.catchWin <= 0) { run.catchWin = -1.2; hooks.catchPrompt?.(false); }
     } else if (run.catchWin < 0) run.catchWin = Math.min(0, run.catchWin + dt);
     else if (glass.state.danger > .9 && glass.state.water > .02) { run.catchWin = .5; hooks.catchPrompt?.(true); }
     // SCREAM TO DASH (mic): forward burst, but the glass hates it.
     // SHOUT: scares the vacuum if it's close (it spins out for 2.5 s), otherwise a forward dash. Both slosh.
     if (voice.shout && !hazards.lock.near) {
-      if (hazards.vacuum.distance < 4.5 && !hazards.vacuum.stunned) { hazards.vacuum.stun(2.5); trick('scare'); hooks.scream?.('scare'); }
+      if (hazards.vacuum.distance < 4.5 && !hazards.vacuum.stunned) { sfx.scare(); hazards.vacuum.stun(2.5); trick('scare'); hooks.scream?.('scare'); }
       else { player.vel.x += Math.sin(player.yaw) * 6; player.vel.z -= Math.cos(player.yaw) * 6; glass.kick((Math.random() - .5) * 2, 2); hooks.scream?.('dash'); }
     }
     const mate = hazards.mate;
-    if (!hazard && hazards.lock.near) hazard = voice.mic ? 'SHOUT TO OPEN THE SMART LOCK' : 'HOLD V TO SHOUT AT THE SMART LOCK';
-    if (!hazard && mate?.inRoom) hazard = mate.awake > 0 ? 'THE ROOMMATE IS AWAKE' : 'SHH. THE ROOMMATE IS ASLEEP';
-    if (!hazard && info) hazard = info;
+    // Set pieces are signposted in the world (prompts.js); the HUD only gets a one-word hint.
+    if (!hazard && hazards.lock.near) hazard = voice.mic ? 'SHOUT' : 'HOLD V';
+    if (!hazard && mate?.inRoom && mate.awake <= 0) hazard = 'SHH';
+    void info;
     const f = level.finish;
     if (Math.hypot(player.pos.x - f.x, player.pos.z - f.z) < f.r) run.end(true);
     else if (glass.state.water <= .001 || run.t >= LIMIT) run.end(false);
     if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
     return { room, hazard, calm: fx.calm, vacuum: vac, style, voice: { level: voice.level, lock: hazards.lock.near ? hazards.lock.charge : -1, alert: mate?.inRoom ? (mate.awake > 0 ? 1 : mate.alert) : -1 } };
   };
-  run.render = (dt, t) => { avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
-  run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
+  run.render = (dt, t) => { prompts.update(t, voice); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
+  run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail(); if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
   return run;
 }

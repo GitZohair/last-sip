@@ -15,7 +15,7 @@
   <section id="intro">
     <span class="kicker">DAILY HOUSE <span id="day-no">#1</span> · <span id="streak"></span></span>
     <h1>LAST <em>SIP</em></h1>
-    <p class="tag">You got up for water. <b>Chat is home alone with you.</b><br>Get one full glass back to your stream desk. Chat pulls the chaos lever. Every spilled drop is blamed on a viewer.</p>
+    <p class="tag">Carry one glass of water to your stream desk.<br><b>Chat is home alone with you.</b></p>
     <div class="connect">
       <button id="signin" class="twitch">Sign in with Twitch</button>
       <span class="or">or</span>
@@ -23,17 +23,14 @@
       <button id="connect">CONNECT CHAT</button>
       <span id="chat-status">○ not connected</span>
     </div>
-    <div class="cmds">
-      <div><b>CHAT</b> <code>!chaos</code> pull the lever (random card) · <code>!bomb</code> <code>!fridge</code> <code>!gust</code> <code>!ice</code> <code>!lights</code> <code>!quake</code></div>
-      <div><b>HELP</b> <code>!steady</code> ×3 viewers · <b>ART</b> <code>!frame Kappa</code> · <b>BITS / SUBS / RAIDS</b> pull rarer cards</div>
-    </div>
+    <div class="cmds"><span class="ic" data-ic="chat"></span> chat types <code>!chaos</code> <code>!steady</code> <code>!frame</code> · bits pull rarer cards</div>
     <div class="actions"><button id="start" class="big" disabled>THE POUR</button><button id="practice" disabled>PRACTICE</button><button id="mic-on">TEST MICROPHONE</button></div>
-    <p class="keys">Click to look · WASD move · SHIFT / right-click careful steps · SPACE hop · E catch a spill · SHOUT (or hold V) to break the smart lock and scare the vacuum · whisper past the sleeping roommate · R retry · find the golden duck</p>
+    <div class="keys"><span><kbd>W A S D</kbd>move</span><span><kbd>SHIFT</kbd>careful</span><span><kbd>SPACE</kbd>hop</span><span><kbd>E</kbd>catch</span><span><kbd>V</kbd><span class="ic" data-ic="mic"></span>shout</span></div>
   </section>
 
   <section id="hud" hidden>
     <div class="glass-meter"><div id="water-fill"></div><strong><span><span id="water">100</span>%</span></strong></div>
-    <div class="danger-wrap"><i id="danger"></i><span>SLOSH</span></div>
+    <div class="danger-wrap"><i id="danger"></i></div>
     <div class="top"><small id="mode"></small><span id="room">THE KITCHEN</span><span id="hazard"></span><span id="mods"></span></div>
     <div class="timer" id="timer">90.0</div>
     <div id="progress"><i id="progress-fill"></i></div>
@@ -42,20 +39,22 @@
     <div id="blame"></div>
     <div id="catch">CATCH IT! [E]</div>
     <div id="trick"></div>
+    <div id="count"></div>
     <div class="style-box"><small>STYLE</small><b id="style-pts">0</b><em id="style-combo"></em></div>
-    <div id="voice"><small>VOICE</small><div class="bar"><i id="voice-fill"></i><em id="voice-goal"></em><b></b></div></div>
-    <div id="vac"><span>THE VACUUM</span><i id="vac-fill"></i></div>
+    <div id="voice"><small class="ic" data-ic="mic"></small><div class="bar"><i id="voice-fill"></i><em id="voice-goal"></em><b></b></div></div>
+    <div id="vac"><span class="ic" data-ic="vacuum"></span><i id="vac-fill"></i></div>
   </section>
 
   <section id="results" hidden>
     <span class="kicker" id="r-kicker">THE POUR</span>
     <h2 id="r-title">Hydrated.</h2>
     <div id="r-stats"></div>
+    <div id="grades"></div>
     <div class="cols">
       <div><h3>SPILL CREDITS</h3><ol id="credits"></ol></div>
       <div><ol id="board"></ol></div>
     </div>
-    <pre id="receipt"></pre>
+    <pre id="receipt" hidden></pre>
     <div class="actions"><button id="share" class="big">COPY RECEIPT</button><button id="again">PRACTICE AGAIN (R)</button><button id="home">HOME</button></div>
   </section>
   <script type="module" src="/src/game/main.js"></script>

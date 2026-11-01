@@ -15,6 +15,10 @@ export function createWorld(canvas) {
 
   let scene, hemi, sun, lampA, lampB, flashlight;
   function reset() {
+    if (scene) { // free the previous run's GPU buffers (cached models re-upload on next use)
+      scene.traverse(o => { o.geometry?.dispose(); for (const m of [o.material].flat()) if (m) { m.map?.dispose(); m.dispose(); } });
+      renderer.renderLists.dispose();
+    }
     scene = new THREE.Scene(); const bg = new THREE.Color('#2a2238'); scene.background = bg; scene.fog = new THREE.Fog(bg, 12, 34);
     hemi = new THREE.HemisphereLight('#ffe9d2', '#c9a58f', 1.8); scene.add(hemi);
     sun = new THREE.DirectionalLight('#ffd6a8', 2); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);

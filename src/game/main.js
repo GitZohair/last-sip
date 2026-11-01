@@ -8,6 +8,7 @@ import { ChatDirector, connectChat, emoteUrl } from '../twitch.js';
 import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
 import { createVoice } from './voice.js';
+import { sfx } from './sfx.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -50,22 +51,22 @@ const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `tes
 // ---------- runs
 async function start(asPour) {
   const d = today(seed); official = asPour && !d.poured;
-  voice.enable(); // the mic is part of the game; V is the fallback if it's refused
+  sfx.unlock(); voice.enable(); // the mic is part of the game; V is the fallback if it's refused
   ui.loading(true);
   run = await createRun(world, player, { seed, voice, profile: profile || (chat ? { name: chat.channel } : null), hooks: {
     spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
-    catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); ui.feed(`Caught it. ${n} save${n > 1 ? 's' : ''}`, 'help', 'catch'); },
-    scream: k => ui.feed(k === 'scare' ? 'Scared the vacuum' : 'Shout dash', 'muted', k === 'scare' ? 'vacuum' : 'mic'),
+    catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
     lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
-  ui.loading(false); ui.show('hud'); ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
+  ui.loading(false); ui.show('hud'); run.state = 'ready'; ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
   lockPointer();
+  const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
 async function finish(r) {
-  document.exitPointerLock?.();
+  document.exitPointerLock?.(); if (r.won) ui.confetti();
   const water = r.glass.state.water, time = r.t, score = r.won ? Math.round(water * 1000 + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0;
   const villain = r.ledger.villain();
   if (villain) localStorage.setItem('lastsip:villain', JSON.stringify({ user: villain.name, image: lastEmote.get(villain.name) || null, title: 'MOST WANTED' }));
@@ -74,7 +75,7 @@ async function finish(r) {
   const text = receipt({ saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
   if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
   const board = await boards(seed).catch(() => null);
-  setTimeout(() => ui.results({ won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
+  setTimeout(() => ui.results({ rooms, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
 
 // ---------- boot

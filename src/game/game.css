@@ -85,3 +85,27 @@ body.lastsip #hud::after { content: 'LAST SIP'; position: absolute; top: 40%; le
 #voice-goal { position: absolute; left: 20px; width: 6px; top: 0; bottom: 0; border-radius: 6px; background: #5dff9b; transform-origin: bottom; transform: scaleY(0); }
 #voice[data-mode="quiet"] #voice-goal { background: #ff3b5c; } #voice[data-mode="quiet"] .bar b { bottom: 30%; background: #ff3b5c; }
 .top #hazard { margin-top: .9rem; text-shadow: 0 2px 8px #000c; font-size: 1.05rem; letter-spacing: .04em; }
+
+/* ---- less text: room name is a banner on entry, icons replace labels ---- */
+#room { opacity: 0; transform: scale(.9); transition: opacity .6s, transform .6s; }
+#room.enter { animation: roomIn 2.4s ease-out forwards; }
+@keyframes roomIn { 0% { opacity: 0; transform: translateY(14vh) scale(1.6); } 12% { opacity: 1; transform: translateY(14vh) scale(1.6); } 75% { opacity: 1; transform: translateY(14vh) scale(1.6); } 100% { opacity: .0; transform: translateY(0) scale(1); } }
+.ic svg { width: 22px; height: 22px; fill: currentColor; opacity: .85; } #vac .ic { display: flex; justify-content: center; bottom: 14px; }
+#feed li.old { opacity: 0; transform: translateX(-12px); transition: opacity .8s, transform .8s; }
+
+.keys { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; justify-content: center; margin-top: 1.2rem; font-size: .8rem; font-weight: 700; letter-spacing: .08em; opacity: .85; }
+.keys > span { display: inline-flex; align-items: center; gap: .45rem; text-transform: uppercase; }
+kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; background: #ffffff1a; border: 1px solid #ffffff40; border-bottom-width: 3px; }
+.keys .ic svg, .cmds .ic svg { width: 16px; height: 16px; vertical-align: -3px; }
+
+#count { position: absolute; inset: 0; display: grid; place-items: center; font: 900 9rem/1 system-ui; color: #fff; text-shadow: 0 6px 30px #000a; opacity: 0; pointer-events: none; }
+#count.on { animation: countIn .65s ease-out; } @keyframes countIn { 0% { opacity: 0; transform: scale(1.8); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.85); } }
+.confetti { position: fixed; top: -12px; width: 9px; height: 14px; border-radius: 2px; z-index: 50; animation: fall linear forwards; pointer-events: none; }
+@keyframes fall { to { top: 105vh; transform: translateX(8vw) rotate(720deg); } }
+.cmds { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .45rem; } .cmds code { display: inline-block; }
+
+#grades { display: flex; gap: .6rem; justify-content: center; margin: .4rem 0 1rem; }
+#grades div { width: 4.6rem; padding: .5rem 0 .4rem; border-radius: 12px; background: #ffffff12; display: grid; justify-items: center; animation: gradeIn .4s backwards; }
+#grades b { font: 900 2rem/1 system-ui; } #grades span { font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .7; margin-top: .25rem; }
+.g-A b { color: #5dff9b; } .g-B b { color: #5dd6ff; } .g-C b { color: #ffd36b; } .g-F b { color: #ff3b5c; }
+@keyframes gradeIn { from { opacity: 0; transform: translateY(10px) scale(.8); } }

@@ -32,12 +32,15 @@ Pitch line: *"Crowd Control lets chat mess with your game. LAST SIP is a daily g
 | Daily | One official Pour per day, streaks, plain-text receipt with per-room letter grades | `daily.js` |
 | Backend | Supabase `lastsip` (ref `aqcxgjtbwuyhtcqusoax`): pours/spills tables, boards views, edge fn with Twitch-token verification (unverified Pours allowed and marked `*`). Live and smoke-tested | `supabase/` |
 | UI | No emojis anywhere: game-icons.net SVGs (CC BY 3.0) generated into `icons.js` by `scripts/build-icons.mjs` | `ui.js`, `icons.js` |
+| Audio | Procedural WebAudio sound, no files: footsteps (soft when careful), slosh, spill, door slam + creak warning, vacuum hum by distance, boing, thuds, trick pops rising with combo, slot ticks + rarity jingles, lock-open chime, roommate snore/wake, bomb, catch ding, last-sip heartbeat, win fanfare, fail | `sfx.js` |
+| UX | Less text: world-space icon badges (mic over the smart lock, Z / ! over the roommate), room name only as an entry banner, one-word HUD hints, icons instead of labels, feed max 3 lines that fade, keycap controls on the intro, 3-2-1-POUR countdown, confetti + robot dance on a win, per-room grade chips on results | `prompts.js`, `ui.js` |
+| Audit fixes | Scene GPU buffers freed between runs (`world.reset`); smart-lock ring no longer rebuilt 120x/s; missing `kitchenCabinetDrawer` model; spawn moved off the back wall | — |
 | Infra | Vercel prod deploy, GitHub private repo, `.env.local` template, tests (10 passing) | — |
 
 ## In progress / next (in priority order)
 1. **Playtest + balance with a real keyboard and a real mic** (the shout threshold `SHOUT` in `voice.js` is a guess; tune it so a normal yell crosses it and talking does not). Also check the bedroom quiet line (noise > .3) and whether the 90 s timer is right for the bigger house. Target: a careful run keeps ~70% water in ~45 s; reckless ~35%; the vacuum should catch a crawler around 25–30 s. Tune `hazards.js` (door period/closed, vacuum speed ramp), `glass.js` (rimAllow, spill coefficient), `run.js` (house interval).
 2. **More voice set pieces** (ideas): clap-on lights (dark room lights up while you're loud), a dog that only sits when you shout SIT, chat votes `!loud` / `!quiet` to flip the roommate's sensitivity.
-3. **Sound** (biggest remaining gap): Kenney CC0 audio (Impact Sounds, Interface Sounds). `sfx.js` with footsteps, slosh, splash, door slam + creak warning, vacuum whirr (volume by distance), fuse + boom, slot tick + rarity jingles, catch ding, last-sip heartbeat, credits fanfare.
+3. **Sound pass 2**: procedural sound exists (`sfx.js`); add a quiet music bed and a mute toggle (M) + volume in localStorage.
 4. **Viewer meta-game on the results/board** (the anti-Crowd-Control pillar): a "Chat vs Chat" board (total damage per channel today + top helper), and the viewer's cross-channel rank shown in Spill Credits ("#3 most wanted on Twitch today").
 5. **Intro screen polish**: a proper title-card layout, the day's house preview (top-down render), and a Twitch-purple sign-in button with an icon instead of text-only buttons.
 6. **Post FX** (perf-gated bloom + FXAA), ragdoll-ish tumble on big hits, finish sit + dance, confetti on ONE LAST SIP.
@@ -52,5 +55,6 @@ Pitch line: *"Crowd Control lets chat mess with your game. LAST SIP is a daily g
 - `profile.emotes` (signed-in) aren't yet used in gallery frames.
 
 ## Session log
+- **2026-11-01 (Claude, audit pass):** sound, de-texted HUD with world prompts, countdown, win celebration, grade chips, leak + perf fixes.
 - **2026-11-01 (Claude, later):** voice as a core mechanic (smart lock, vacuum scare, sleeping roommate), bigger rooms, bathroom + bedroom, launchers/patrols, 35 more Kenney models, timer 90 s. Dev helpers: `lastSip.tp(x,z)`, `lastSip.player()`, `lastSip.goto(room)`. Seeds with the new rooms: `?seed=2026-11-02` (bedroom, laundry, bathroom).
 - **2026-11-01 (Claude):** concept overhaul, third-person rebuild, Twitch layers, Supabase + Vercel live, emoji removal + icon system, hazards (doors/lamps/vacuum), style combo, this file.

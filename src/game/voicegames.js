@@ -18,7 +18,7 @@ export async function voiceDoor(scene, colliders, d) {
     state.near = !state.open && Math.abs(player.pos.z - d.z) < 3.5 && Math.abs(player.pos.x - d.x) < 3;
     if (state.open) { panel.position.y = Math.min(H * 1.5, panel.position.y + dt * 4); return null; }
     if (state.near && voice?.loud) state.charge = Math.min(1, state.charge + dt / 1.2); else state.charge = Math.max(0, state.charge - dt * .35);
-    ring.geometry.dispose(); ring.geometry = new THREE.TorusGeometry(.42, .05, 12, 48, Math.max(.001, state.charge * Math.PI * 2));
+    const q = Math.round(state.charge * 40); if (q !== state.q) { state.q = q; ring.geometry.dispose(); ring.geometry = new THREE.TorusGeometry(.42, .05, 12, 48, Math.max(.001, q / 40 * Math.PI * 2)); }
     ringMat.emissiveIntensity = .4 + state.charge * 3 + (voice?.loud && state.near ? Math.sin(t * 30) * .5 : 0);
     if (state.charge >= 1) { state.open = true; col.disabled = true; ringMat.color.set('#5dff9b'); ringMat.emissive.set('#5dff9b'); return { opened: true }; }
     return null;
@@ -31,7 +31,7 @@ export async function voiceDoor(scene, colliders, d) {
 export function roommate(room, props) {
   if (!room?.sleeper) return null;
   const { x, z } = room.sleeper; let m = null; room.sleeper.model.then(o => m = o);
-  const s = { kind: 'roommate', label: 'THE ROOMMATE', alert: 0, awake: 0, inRoom: false, next: 0 };
+  const s = { kind: 'roommate', label: 'THE ROOMMATE', x, z, alert: 0, awake: 0, inRoom: false, next: 0 };
   s.update = (t, player, dt, voice) => {
     s.inRoom = player.pos.z <= room.z0 && player.pos.z > room.z1;
     if (s.awake > 0) {
