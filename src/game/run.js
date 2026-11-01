@@ -15,7 +15,7 @@ import { createHazards } from './hazards.js';
 import { createStyle } from './style.js';
 import { sfx } from './sfx.js';
 import { createPrompts } from './prompts.js';
-import { createActors, ballMat } from './actors.js';
+import { createActors, ballMat, lifebuoy } from './actors.js';
 import { model, preload } from './assets.js';
 import { todaysRule, createWind } from './rules.js';
 import { createGuide } from './guide.js';
@@ -46,6 +46,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const rule = todaysRule(seed), wind = rule === 'windy' ? createWind(scene, seed) : null;
   if (rule === 'hungry') hazards.vacuum.hungry = true;
   const guide = createGuide(scene, { recipe, actors, level });
+  const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
   glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
   const run = { rule, wind, guide, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
@@ -98,6 +99,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   // Falling in: splash, lose 30% of the drink, respawn at the last safe spot. Very clippable.
   run.safe = { x: level.spawn.x, z: level.spawn.z }; run.falls = 0;
   const fall = (room) => {
+    if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
+      splash.emit({ x: player.pos.x, y: 0, z: player.pos.z }, { x: 0, z: 0 }, 24); sfx.splash(); hooks.rescued?.(run.buoy);
+      run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
+    }
     run.falls++; const before = glass.state.water; glass.state.water = before * .7; // lose 30% of what's in the glass run.roomLoss[room.key] += before - glass.state.water;
     ledger.spill(before - glass.state.water, run.t, 'THE WATER'); hooks.spill?.('THE WATER', before - glass.state.water);
     splash.emit({ x: player.pos.x, y: 0, z: player.pos.z }, { x: 0, z: 0 }, 24); sfx.splash(); avatar.emote('No', .8);
@@ -136,6 +141,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; hooks.hit?.(hit.label, 'BUMPED'); avatar.emote('No', .5); style.combo = 1;
     }
     for (const hit of actors.update(dt, run.t, player)) {
+      if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
       sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
     }
@@ -188,7 +194,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     run.houseNext -= dt;
     if (run.houseNext <= 0) {
       const ri = level.rooms.indexOf(room); run.houseNext = Math.max(2.2, 6 - ri * .9) + houseRng() * 2;
-      if (run.t - run.lastChat > 3 && houseRng() < .35) { actors.spawn(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE', player); }
+      if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
+      else if (run.t - run.lastChat > 3 && houseRng() < .35) { actors.spawn(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE', player); }
       else if (run.t - run.lastChat > 3) { const card = draw(houseRng); if (card.r !== 'l' && !card.help) hooks.house?.(run.play(card.id, ['THE HOUSE'])); }
     }
     // CATCH IT: when the glass is about to go, a short window to press E for a slow-mo save.

@@ -52,8 +52,9 @@ export const ui = {
   show(id) { for (const x of ['intro', 'hud', 'results']) $(x).hidden = x !== id; },
   mode(text) { set('mode', text); },
   chatStatus(s, c) { set('chat-status', s === 'connected' ? `● LIVE · #${c}` : s === 'reconnecting' ? `◌ reconnecting #${c}` : '○ not connected'); $('chat-status').dataset.state = s; },
-  feed(text, kind = 'chaos', ico = '') {
-    const li = document.createElement('li'); li.className = kind; li.innerHTML = `${icon(ico)}<span>${esc(text)}</span>`; $('feed').prepend(li);
+  feed(text, kind = 'chaos', ico = '', key = '') { // key: replace the previous line with the same key (vote progress)
+    if (key) $('feed').querySelector(`[data-key="${key}"]`)?.remove();
+    const li = document.createElement('li'); if (key) li.dataset.key = key; li.className = kind; li.innerHTML = `${icon(ico)}<span>${esc(text)}</span>`; $('feed').prepend(li);
     while ($('feed').children.length > 3) $('feed').lastChild.remove();
     setTimeout(() => li.classList.add('old'), 3500); setTimeout(() => li.remove(), 4300);
   },

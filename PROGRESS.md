@@ -17,9 +17,13 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 ## Done (verified in browser by scripted runs)
 | Area | What | Where |
 |---|---|---|
-| Map | Fixed fishbone island: sand islets (Kenney pirate kit), plank boardwalk spine + branches with 2 hop gaps, posts, palms, rocks, watchtowers, shipwreck, boats, stream hut with desk. Off the boards = sea: splash, −12%, respawn at last safe spot | `island.js`, `outside.js` |
+| Map | Fixed fishbone island: sand islets (Kenney pirate kit), plank boardwalk spine + branches with 2 hop gaps, posts, palms, rocks, watchtowers, shipwreck, boats, stream hut with desk. Off the boards = sea: splash, lose 30% of the drink, respawn at last safe spot | `island.js`, `outside.js` |
 | Daily order | 3 of 6 fruits (coconut, lemon, pineapple, strawberry, honey, watermelon), seeded per day, same for everyone. Hold E on a fruit islet (green ring) to pour a third; drink tints. Hut only accepts a complete drink | `recipe.js` |
 | Viewer characters | `!sniper` / 100+ bits / sub → water cannon on the nearest tower ahead, laser telegraph 1.4 s, 3 shots; `!barrel` / follow → named barrel rolls down the boards. Name tags. Hits credited to the viewer. The house spawns them when chat is quiet | `actors.js`, `twitch.js`, `main.js` |
+| Lifeguard | `!steady` x3 (or the house, after 2 falls) → named lifeguard throws a lifebuoy from the nearest tower; worn on the waist; next fall is free ("SAVED BY name") | `actors.js`, `run.js` |
+| Daily house rule | Seeded per day: WINDY (telegraphed side gusts + streaks + screen arrow), HUNGRY BOT (wakes at 3 s, 25% faster), HEAVY GLASS (30% more slosh). Chip next to today's order | `rules.js` |
+| Visual cues | Beams over needed fruits (hut beam once complete), route arrow on the boards with fishbone routing (a bot following only the arrow wins with 0 falls), gap tape + HOP signs, sniper target ring that tightens, barrel danger lanes, hold-E progress ring, screen-edge arrows for off-screen snipers/barrels/bot, floating hit/pickup/save text, minimap | `guide.js`, `hudcues.js` |
+| Perf | Measured on Intel UHD 620 (frame was ~17-22 ms, now ~6 ms GPU): static island merged per material per chunk (`bake.js`), one shared Lambert material per Kenney kit, exactly 2 lights, sea waves in the vertex shader, no post FX by default (`?fx=1` loads bloom), CSS vignette, shader pre-warm during loading, render interpolation between 120 Hz sim steps | `world.js`, `bake.js`, `assets.js`, `main.js` |
 | Chaser | THE BEACH BOT follows your trail and accelerates; shout (mic or V) stuns it | `hazards.js`, `voice.js` |
 | Core | Third-person robot carrying the glass at chest height, slosh + spill + droplets, catch-it slow-mo (E), careful steps, hop, style combo, chat card deck (30 cards), goofy props | `run.js`, `glass.js`, `style.js`, `deck.js`, `props.js` |
 | Social | Spill Credits, Most Wanted poster, `!frame` emotes on 6 poster boards along the boardwalk (nsfwjs screening) | `ledger.js`, `gallery.js`, `moderation.js` |
@@ -31,8 +35,6 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 ## Next (priority order)
 1. **Playtest with keyboard + mic** on the island; tune sniper shot speed (22 m/s) and aim time (1.4 s), barrel speed (7 m/s), house spawn rate (35%), 90 s timer.
 2. **Seagull** character (`!gull`): a named gull dives along a telegraphed line (needs a CC0 bird model).
-3. **Lifeguard helper** (`!steady` success): named lifeguard on a tower throws a lifebuoy that saves the next fall.
-4. **Daily house rule** (Windy / Low tide / Hungry Bot) shown as a chip next to today's order.
 5. Music bed (the Kenney Music Jingles download failed because the signed link expired; re-fetch from kenney.nl in a browser).
 6. When the Twitch app exists: `VITE_TWITCH_CLIENT_ID` in `.env.local` + Vercel, redirect `https://lastsip-seven.vercel.app/`, test sign-in/EventSub/clips.
 7. Record the 3-minute video, fill Devpost links + Codex session ID.
@@ -42,4 +44,5 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 - Legacy prototype files remain (`legacy.html`, `lab/`, `src/main.js`, `src/simulation.js`): move to `/archive` before submitting.
 
 ## Session log
+- **2026-11-01 (Claude, later):** daily house rule; perf pass for laptop iGPUs; visual cue system + minimap; lifeguard viewer character; audit (island card names, fall cost, title).
 - **2026-11-01 (Claude):** indoor house → island redesign after user feedback; Kenney pirate kit + CC0 sounds; viewer characters; daily order; editorial front page with tabs; post FX.

@@ -33,7 +33,7 @@ function onChat(msg) {
   const r = director.handle(msg); if (!r) return;
   if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users);
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} is queued`, 'muted', 'stopwatch');
-  else if (r.kind === 'vote') ui.feed(`${r.users[0]} wants to steady you (${r.have}/${r.needed})`, 'help', 'steady');
+  else if (r.kind === 'vote') ui.feed(`LIFEGUARD VOTE ${r.have}/${r.needed}`, 'help', 'steady', 'vote');
   else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]]) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
   else if (r.kind === 'frame') run?.gallery.hang(r).then(res => ui.feed(res.ok ? `${r.user} hung a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
 }
@@ -45,9 +45,10 @@ function onEventSub(e) {
 }
 function play(event, users, opts) {
   if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0])) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
+  if (event === 'calm' && users[0]) run?.summon('lifeguard', users[0]);
   const card = run?.play(event, users, opts); if (!card) return;
-  ui.feed(`${users.join(', ')}: ${card.label}`, card.help ? 'help' : card.r === 'l' ? 'legend' : 'chaos', card.id);
-  ui.slot(card, users.join(', '));
+  $('feed').querySelector('[data-key="vote"]')?.remove();
+  ui.slot(card, users.join(', ')); // the slot card is the announcement; no duplicate feed line
   if (card.r === 'l') clipIt('legendary');
 }
 async function clipIt(why) { const url = await tw.clip(session); if (url) ui.feed(`Auto-clipped: ${why}`, 'help', 'twitch'); }
@@ -64,6 +65,7 @@ async function start(asPour) {
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
     lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), collect: (id, n, total) => { showOrder(); cues?.pop(`+ ${INGREDIENTS[id].label}  ${n}/${total}`, INGREDIENTS[id].color, true); if (n === total) setTimeout(() => cues?.pop('TO THE HUT', '#c9a2ff', true), 900); },
+    buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
     hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : `${kind === 'SNIPER' ? 'SNIPED' : 'ROLLED'} BY ${who}`, '#ff5c7a'),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
