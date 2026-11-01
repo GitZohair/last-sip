@@ -11,8 +11,10 @@ export const INGREDIENTS = {
   strawberry: { label: 'STRAWBERRY', color: '#ff4f6d' }, honey: { label: 'HONEY', color: '#e8a23a' }, watermelon: { label: 'WATERMELON', color: '#ff7a8a' },
 };
 
+export const todaysOrder = seed => rng(seed + ':order').shuffle(Object.keys(INGREDIENTS)).slice(0, 3);
+
 export async function createRecipe(scene, seed) {
-  const order = rng(seed + ':order').shuffle(Object.keys(INGREDIENTS)).slice(0, 3);
+  const order = todaysOrder(seed);
   const ringGeo = new THREE.TorusGeometry(1.5, .07, 10, 48);
   const stations = await Promise.all(Object.keys(INGREDIENTS).map(async id => {
     const [px, pz] = PADS[id], x = px + (px < 0 ? 2 : -2), z = pz;

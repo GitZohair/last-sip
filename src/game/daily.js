@@ -5,6 +5,7 @@ const load = () => JSON.parse(localStorage.getItem(K) || '{"days":{},"streak":0,
 const save = d => localStorage.setItem(K, JSON.stringify(d));
 const API = import.meta.env?.VITE_LEADERBOARD_URL || '';
 
+export const history = () => load();
 export function today(seed) { const d = load(); return { poured: !!d.days[seed], result: d.days[seed] || null, streak: d.streak, glassStreak: d.glassStreak }; }
 
 export function recordPour(seed, result) {

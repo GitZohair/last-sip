@@ -26,7 +26,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const level = await buildIsland(scene);
   const props = createProps(scene, level.colliders);
   const deco = await dress(scene, level, props, rng(seed + ':clutter'));
-  if (!level.open) personalize(scene, level, profile);
+  personalize(scene, profile);
   const recipe = await createRecipe(scene, seed);
   const avatar = await createCharacter(scene);
   const glass = createGlass(avatar.holder);
@@ -201,7 +201,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
     return { room, hazard, calm: fx.calm, vacuum: vac, style, voice: { level: voice.level, lock: hazards.lock.near ? hazards.lock.charge : -1, alert: mate?.inRoom ? (mate.awake > 0 ? 1 : mate.alert) : -1 } };
   };
-  run.render = (dt, t) => { prompts.update(t, voice, run); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
+  run.render = (dt, t) => { prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
   run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail(); if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
   return run;
 }

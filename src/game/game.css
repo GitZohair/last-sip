@@ -120,3 +120,37 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #order span { display: flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 999px; background: #1b1530cc; font: 800 .72rem/1 system-ui; letter-spacing: .1em; border: 2px solid var(--c); }
 #order i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--c); }
 #order span.got { background: var(--c); color: #1b1530; } #order span.got i { background: #1b1530; }
+
+/* ===== front page v4: editorial, live island behind (beach-prototype energy, Kenney island in 3D) ===== */
+#intro { display: block; place-content: initial; text-align: left; padding: 1.4rem 3rem 2rem; color: #18332e; overflow-y: auto;
+  background: linear-gradient(90deg, #fff6e6f5 0%, #fff6e6e8 34%, #fff6e600 62%); }
+#intro .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4vh; }
+#intro .logo { font: 900 1.5rem/1 system-ui; letter-spacing: -.03em; } #intro .logo em { font-style: normal; color: #ff6a4d; margin-left: .15em; }
+#intro nav { display: flex; gap: .3rem; } #intro nav button { background: transparent; color: #18332e; font-size: .78rem; letter-spacing: .14em; }
+#intro nav button.on { background: #18332e; color: #fff6e6; }
+#intro .panel { max-width: 34rem; display: grid; gap: 1.1rem; justify-items: start; }
+#intro .kicker { font: 800 .8rem/1 system-ui; letter-spacing: .18em; color: #ff6a4d; }
+#intro h1 { font: 900 clamp(2.8rem, 6.4vw, 5.6rem)/.9 system-ui; letter-spacing: -.045em; color: #18332e; }
+#intro h1 em { color: #ff6a4d; }
+#intro .tag { font-size: 1.08rem; color: #2c4a44; max-width: 30rem; }
+#intro h2 { font: 900 2.4rem/1 system-ui; letter-spacing: -.03em; margin: 0; } #intro h3 { font: 800 .75rem/1 system-ui; letter-spacing: .16em; margin: .6rem 0 0; opacity: .7; }
+#intro .today small { font: 800 .7rem/1 system-ui; letter-spacing: .16em; opacity: .65; }
+#today-order { display: flex; gap: .45rem; margin-top: .45rem; flex-wrap: wrap; }
+#today-order span { padding: .45rem .8rem; border-radius: 999px; font: 800 .78rem/1 system-ui; letter-spacing: .08em; background: var(--c); color: #18332e; box-shadow: inset 0 -3px 0 #0002; }
+#today-order span.rule { background: #18332e; color: #fff6e6; }
+#intro button { background: #18332e14; color: #18332e; } #intro button:hover { background: #18332e26; }
+#intro button.big { background: #18332e; color: #fff6e6; box-shadow: 0 6px 0 #ff6a4d; border-radius: 14px; }
+#intro button.twitch { background: #9146ff; color: #fff; }
+#intro .connect { flex-wrap: wrap; } #intro .connect input { background: #fff; color: #18332e; border-color: #18332e33; width: 11rem; }
+#intro #chat-status { font: 700 .75rem/1 system-ui; opacity: .7; } #intro button.ghost { background: transparent; text-decoration: underline; }
+#intro ol { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; width: 100%; }
+#intro ol li { display: flex; justify-content: space-between; padding: .55rem .8rem; background: #18332e0d; border-radius: 10px; font-weight: 700; }
+#intro .how li { justify-content: flex-start; gap: .8rem; align-items: center; } .how b { font: 900 1.4rem/1 system-ui; color: #ff6a4d; }
+#intro kbd { background: #fff; border-color: #18332e40; color: #18332e; } #intro .keys { justify-content: flex-start; opacity: 1; color: #18332e; }
+#intro .cmds { justify-content: flex-start; opacity: .85; color: #18332e; } #intro code { background: #18332e; color: #fff6e6; padding: .15rem .45rem; border-radius: 6px; }
+#stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; width: 100%; }
+#stats-grid div { background: #18332e0d; border-radius: 12px; padding: .8rem; text-align: center; } #stats-grid b { display: block; font: 900 2rem/1 system-ui; } #stats-grid span { font: 800 .62rem/1 system-ui; letter-spacing: .12em; opacity: .7; }
+#stats-hist { display: grid; gap: .3rem; width: 100%; } #stats-hist div { display: grid; grid-template-columns: 4rem 1fr; align-items: center; gap: .5rem; font: 800 .75rem/1 system-ui; }
+#stats-hist i { display: block; height: 1.3rem; border-radius: 5px; background: #ff6a4d; color: #fff; font-style: normal; padding: .2rem .4rem; min-width: 1.4rem; }
+@media (max-width: 760px) { #intro { padding: 1rem; background: #fff6e6f2; } #stats-grid { grid-template-columns: repeat(2, 1fr); } }
+#intro > * { margin-left: 0; margin-right: auto; } #intro .nav { width: 100%; max-width: none; }

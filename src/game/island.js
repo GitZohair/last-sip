@@ -14,6 +14,8 @@ const RUNS = [[0, -4, 0, -19], [0, -21, 0, -27.5], [-1, -16, -9, -16], [1, -16, 
 export const TOWERS = [[8, -26], [-8, -40], [8, -58], [-7, -73]];
 const ZONES = [['beach', 'THE BEACH', 6, -24], ['plaza', 'THE PLAZA', -24, -40], ['reef', 'THE REEF', -40, -72], ['hut', 'THE STREAM HUT', -72, -90]];
 
+const postGeo = new THREE.CylinderGeometry(.09, .11, 2.4, 10), postMat = new THREE.MeshStandardMaterial({ color: '#7a5233', roughness: .9 });
+
 export async function buildIsland(scene) {
   const colliders = [], jobs = [];
   const put = (kit, name, x, y, z, rot = 0, s = 1) => { const p = model(kit, name).then(m => { m.scale.multiplyScalar(s); m.position.set(x, y, z); m.rotation.y = rot; scene.add(m); return m; }); jobs.push(p); return p; };
@@ -26,7 +28,8 @@ export async function buildIsland(scene) {
     const alongZ = x0 === x1, len = Math.abs(alongZ ? z1 - z0 : x1 - x0), n = Math.max(1, Math.round(len / 2.5));
     for (let i = 0; i < n; i++) {
       const k = (i + .5) / n, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
-      put('pirate', 'structure-platform-dock-small', x, -1.31, z, alongZ ? 0 : Math.PI / 2);
+      put('pirate', 'platform', x, -.23, z, alongZ ? 0 : Math.PI / 2).then(m => { m.scale.x *= .76; });
+      if (i % 2 === 0) for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * .9 : x, -1.1, alongZ ? z : z + side * .9); p.castShadow = true; scene.add(p); } // posts into the sea
     }
     const hw = .95;
     colliders.push(alongZ ? { minX: x0 - hw, maxX: x0 + hw, minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1), top: 0 } : { minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: z0 - hw, maxZ: z0 + hw, top: 0 });
@@ -45,7 +48,7 @@ export async function buildIsland(scene) {
   const live = new THREE.PointLight('#a970ff', 8, 9); live.position.set(0, 2.4, -83); scene.add(live);
   colliders.push({ minX: -1.2, maxX: 1.2, minZ: -85.2, maxZ: -84.1, top: .78 });
   const length = 90;
-  buildSea(scene, [], length);
+  buildSea(scene, length);
   await Promise.all(jobs);
   const rooms = ZONES.map(([key, name, z0, z1]) => ({ key, name, z0, z1, w: 40, len: z0 - z1, hazards: [], slots: [] }));
   return {

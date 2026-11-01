@@ -3,13 +3,14 @@ import { createPlayer } from './player.js';
 import { createChaseCam } from './character.js';
 import { createRun, LIMIT } from './run.js';
 import { dayKey } from './rng.js';
-import { today, recordPour, receipt, dayNumber, submit, boards } from './daily.js';
+import { today, recordPour, receipt, dayNumber, submit, boards, history } from './daily.js';
 import { ChatDirector, connectChat, emoteUrl } from '../twitch.js';
 import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
 import { createVoice } from './voice.js';
 import { sfx } from './sfx.js';
-import { INGREDIENTS } from './recipe.js';
+import { INGREDIENTS, todaysOrder } from './recipe.js';
+import { buildIsland } from './island.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -69,6 +70,14 @@ async function start(asPour) {
   const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
 function showOrder() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got); }
+// Front page backdrop: the real island, slowly orbiting behind the editorial panel.
+let preview = null;
+async function backdrop() { const scene = world.reset(); await buildIsland(scene); if (!run) preview = { t: 0 }; }
+function orbit(dt) {
+  preview.t += dt; const a = preview.t * .045, cam = world.camera;
+  cam.position.set(14 + Math.sin(a) * 34, 15 + Math.sin(a * .7) * 2, -42 + Math.cos(a) * 34); cam.lookAt(6, 0, -42);
+  world.light({ pos: { x: 0, z: -40 } }, dt, {}); world.scene.userData.sea?.userData.update(preview.t); world.render();
+}
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
   const water = r.glass.state.water, time = r.t, score = r.won ? Math.round(water * 1000 + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0;
@@ -86,6 +95,9 @@ async function finish(r) {
 ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
 (async () => {
   ui.intro({ seed, number: dayNumber(seed), daily: today(seed), canSignIn: !!tw.CLIENT_ID });
+  ui.todayOrder(todaysOrder(seed), INGREDIENTS);
+  ui.tabs(tab => { if (tab === 'board') boards(seed).then(ui.introBoard).catch(() => ui.introBoard(null)); if (tab === 'stats') ui.stats(history()); });
+  backdrop();
   session = await tw.restore().catch(() => null);
   if (session) {
     ui.signedIn(session.login); connect(session.login);
@@ -102,7 +114,7 @@ const STEP = 1 / 120;
 function loop(now) {
   requestAnimationFrame(loop);
   let dt = Math.min(.1, (now - last) / 1000); last = now; world.adapt(dt);
-  if (!run) return;
+  if (!run) { if (preview) orbit(dt); return; }
   if (slowmo > 0) { slowmo -= dt; dt *= .35; }
   t += dt;
   let info = null;
@@ -116,7 +128,7 @@ function loop(now) {
   chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
   if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice });
-  world.renderer.render(world.scene, world.camera);
+  world.render();
 }
 requestAnimationFrame(loop);
 if (params.has('dev')) window.lastSip = { run: () => run,

@@ -20,11 +20,30 @@ export const ui = {
     $('world').onclick = lock;
     addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) practice(); });
   },
+  tabs(onOpen) {
+    document.querySelectorAll('#intro nav button').forEach(b => b.onclick = () => {
+      document.querySelectorAll('#intro nav button').forEach(x => x.classList.toggle('on', x === b));
+      document.querySelectorAll('#intro .panel').forEach(p => p.hidden = p.id !== 'tab-' + b.dataset.tab);
+      onOpen(b.dataset.tab);
+    });
+  },
+  todayOrder(ids, ING) { $('today-order').innerHTML = ids.map(id => `<span style="--c:${ING[id].color}">${ING[id].label}</span>`).join(''); },
+  introBoard(board) {
+    const rows = board?.pour || [], wanted = board?.wanted || [];
+    $('intro-board').innerHTML = rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet today. Be first.</span></li>';
+    $('intro-wanted').innerHTML = wanted.length ? wanted.map((r, i) => `<li><span>${i + 1}. ${esc(r.viewer)}</span><b>${Math.round(r.spilled * 100)}%</b></li>`).join('') : '<li><span>Nobody yet. Suspicious.</span></li>';
+  },
+  stats(h) {
+    const days = Object.values(h.days || {}), won = days.filter(d => d.finished), avg = won.length ? won.reduce((a, d) => a + d.water, 0) / won.length : 0;
+    $('stats-grid').innerHTML = [[days.length, 'PLAYED'], [days.length ? Math.round(won.length / days.length * 100) + '%' : '0%', 'DELIVERED'], [h.streak || 0, 'STREAK'], [Math.round(avg * 100) + '%', 'AVG DRINK']].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+    const buckets = [['90+', .9], ['70+', .7], ['50+', .5], ['25+', .25], ['<25', 0]], counts = buckets.map(([, lo], i) => won.filter(d => d.water >= lo && (i === 0 || d.water < buckets[i - 1][1])).length), max = Math.max(1, ...counts);
+    $('stats-hist').innerHTML = buckets.map(([l], i) => `<div><span>${l}%</span><i style="width:${Math.max(6, counts[i] / max * 100)}%">${counts[i]}</i></div>`).join('') + `<div><span>DNF</span><i style="width:${Math.max(6, (days.length - won.length) / max * 100)}%;background:#18332e">${days.length - won.length}</i></div>`;
+  },
   intro({ number, daily, canSignIn }) {
     set('day-no', `#${number}`);
     $('start').textContent = daily.poured ? 'POURED TODAY' : 'THE POUR';
     $('start').disabled = true; $('start').dataset.done = daily.poured ? '1' : '';
-    set('streak', daily.streak > 0 ? `${daily.streak}-day streak` : 'Start a streak today');
+    set('streak', daily.streak > 0 ? `${daily.streak}-DAY STREAK` : new Date().toDateString().slice(4).toUpperCase());
     $('signin').hidden = !canSignIn;
   },
   ready() { $('loading').hidden = true; $('start').disabled = !!$('start').dataset.done; $('practice').disabled = false; },

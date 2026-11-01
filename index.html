@@ -13,19 +13,24 @@
   <div id="loading">Filling the glass…</div>
 
   <section id="intro">
-    <span class="kicker">DAILY HOUSE <span id="day-no">#1</span> · <span id="streak"></span></span>
-    <h1>LAST <em>SIP</em></h1>
-    <p class="tag">Carry one glass of water to your stream desk.<br><b>Chat is home alone with you.</b></p>
-    <div class="connect">
-      <button id="signin" class="twitch">Sign in with Twitch</button>
-      <span class="or">or</span>
-      <input id="channel" placeholder="just type a channel" autocomplete="off" />
-      <button id="connect">CONNECT CHAT</button>
-      <span id="chat-status">○ not connected</span>
+    <header class="nav"><b class="logo">LAST<em>SIP</em></b><nav><button data-tab="play" class="on">PLAY</button><button data-tab="board">LEADERBOARD</button><button data-tab="stats">STATS</button><button data-tab="how">HOW TO PLAY</button></nav></header>
+    <div class="panel" id="tab-play">
+      <span class="kicker">DAILY ISLAND <span id="day-no">#1</span> · <span id="streak"></span></span>
+      <h1>Three fruits.<br>One glass.<br><em>Chat has a sniper.</em></h1>
+      <p class="tag">Collect today's order across the island and carry the drink to your stream hut. Your viewers show up as snipers and barrel rollers, with their names on them.</p>
+      <div class="today"><small>TODAY'S ORDER</small><div id="today-order"></div></div>
+      <div class="actions"><button id="start" class="big" disabled>THE POUR</button><button id="practice" disabled>PRACTICE</button></div>
+      <div class="connect"><button id="signin" class="twitch">Sign in with Twitch</button><input id="channel" placeholder="or type a channel" autocomplete="off" /><button id="connect">CONNECT CHAT</button><span id="chat-status">not connected</span><button id="mic-on" class="ghost">TEST MIC</button></div>
     </div>
-    <div class="cmds"><span class="ic" data-ic="chat"></span> chat types <code>!chaos</code> <code>!steady</code> <code>!frame</code> · bits pull rarer cards</div>
-    <div class="actions"><button id="start" class="big" disabled>THE POUR</button><button id="practice" disabled>PRACTICE</button><button id="mic-on">TEST MICROPHONE</button></div>
-    <div class="keys"><span><kbd>W A S D</kbd>move</span><span><kbd>SHIFT</kbd>careful</span><span><kbd>SPACE</kbd>hop</span><span><kbd>E</kbd>catch</span><span><kbd>V</kbd><span class="ic" data-ic="mic"></span>shout</span></div>
+    <div class="panel" id="tab-board" hidden><h2>Today's pours</h2><ol id="intro-board"></ol><h2>Most wanted</h2><ol id="intro-wanted"></ol></div>
+    <div class="panel" id="tab-stats" hidden><h2>Your stats</h2><div id="stats-grid"></div><h3>WATER DELIVERED</h3><div id="stats-hist"></div></div>
+    <div class="panel" id="tab-how" hidden><h2>How to play</h2><ol class="how">
+      <li><b>1</b><span>Start with an empty glass. Today's order lists 3 of the 6 island fruits.</span></li>
+      <li><b>2</b><span>Walk onto a fruit islet and hold <kbd>E</kbd> to pour it in. The fuller the glass, the harder it sloshes.</span></li>
+      <li><b>3</b><span>Off the boards is the sea. Fall in and you lose part of the drink.</span></li>
+      <li><b>4</b><span>Deliver to your stream hut. Score = drink delivered + time + style.</span></li></ol>
+      <div class="keys"><span><kbd>W A S D</kbd>move</span><span><kbd>SHIFT</kbd>careful</span><span><kbd>SPACE</kbd>hop</span><span><kbd>E</kbd>pour / catch</span><span><kbd>V</kbd>shout</span></div>
+      <h3>CHAT</h3><div class="cmds"><code>!sniper</code> water cannon with your name <code>!barrel</code> roll one at them <code>!chaos</code> random card <code>!steady</code> help (3 viewers) <code>!frame</code> hang an emote · 100+ bits = sniper</div></div>
   </section>
 
   <section id="hud" hidden>
