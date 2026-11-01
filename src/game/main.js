@@ -32,23 +32,23 @@ function connect(name) { chat?.close(); chat = connectChat(name, { onMessage: on
 function onChat(msg) {
   if (msg.emotes[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
   const r = director.handle(msg); if (!r) return;
-  if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users);
+  if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users, { src: 'chat' });
   else if (r.kind === 'order') { run?.shift?.enter(r.user, r.tickets); if (director.active() < 5) ui.feed(`${r.user} ordered a drink`, 'help', 'glass'); }
   else if (r.kind === 'ballot') ui.ballot(r);
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} is queued`, 'muted', 'stopwatch');
   else if (r.kind === 'vote') ui.feed(`LIFEGUARD VOTE ${r.have}/${r.needed}`, 'help', 'steady', 'vote');
-  else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]]) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
+  else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]], { src: 'paid' }) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
   else if (r.kind === 'frame') run?.dropFrame(r).then(res => ui.feed(res.ok ? `${r.user} dropped a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
 }
 function onEventSub(e) {
-  if (e.type === 'sub' || (e.type === 'cheer' && e.amount >= 100)) return play('sniper', [e.user]);
+  if (e.type === 'sub' || (e.type === 'cheer' && e.amount >= 100)) return play('sniper', [e.user], { src: 'paid' });
   const map = { cheer: ['deck', Math.min(1, e.amount / 500)], follow: ['barrel', 0], sub: ['deck', .5], raid: ['nuke', 0], hype: ['deck', 1] };
   if (e.type === 'redeem') return play(/fridge/i.test(e.title) ? 'fridge' : /lid/i.test(e.title) ? 'lid' : 'deck', [e.user]);
   const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
 }
 function play(event, users, opts) {
-  if (event === 'drop') { if (run?.summon('drop', users[0])) ui.feed(`${users[0]}: SKY DROP`, 'legend', 'fridge'); return; }
-  if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0])) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
+  if (event === 'drop') { if (run?.summon('drop', users[0], opts?.src)) ui.feed(`${users[0]}: SKY DROP`, 'legend', 'fridge'); return; }
+  if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0], opts?.src)) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
   if (event === 'calm' && users[0]) run?.summon('lifeguard', users[0]);
   const card = run?.play(event, users, opts); if (!card) return;
   $('feed').querySelector('[data-key="vote"]')?.remove();
@@ -143,8 +143,8 @@ function loop(now) {
     while (acc >= STEP && n++ < 12) { prev.x = player.pos.x; prev.y = player.y; prev.z = player.pos.z; info = run.step(STEP); acc -= STEP; }
     if (n > 12) acc = 0; // after a long stall, don't try to catch up
     const q = director.tick();
-    if (q?.kind === 'ballotEnd') { ui.ballot(null, q.event ? { label: BALLOT_LABEL[q.event], user: q.users[0], votes: q.votes } : null); if (q.event) play(q.event, q.users.slice(0, 1)); }
-    else if (q) play(q.event, q.users);
+    if (q?.kind === 'ballotEnd') { ui.ballot(null, q.event ? { label: BALLOT_LABEL[q.event], user: q.users[0], votes: q.votes } : null); if (q.event) play(q.event, q.users.slice(0, 1), { src: 'vote' }); }
+    else if (q) play(q.event, q.users, { src: 'chat' });
     // free viewers vote every ~12 s while chat is connected (supporters and small chats still fire directly)
     if (chat && !director.ballot && (ballotT -= dt) <= 0) { ballotT = 12; const opts = pickBallot(); director.openBallot(opts, 8); ui.ballot({ options: opts, counts: opts.map(() => 0), left: 8, seconds: 8 }); }
     if (director.ballot) ui.ballotTick(director.ballotState());

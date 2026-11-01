@@ -43,6 +43,13 @@ A 20-viewer chat and a 20,000-viewer chat must both work, and nobody can flood t
 3. **Fair daily Pour under chaos**: seeded customer slots mean tips compare across channels, while chat changes only the spectacle and the names.
 4. **Blame and gratitude ledgers**: Spill Credits, Most Wanted, plus a "served" list. Viewers are remembered tomorrow.
 
+## The conductor (src/game/conductor.js)
+A tiny chaos director that every threat asks before it happens. House, vote, chat and paid threats all queue there.
+- **Budget**: threats on the island are costed (sniper 3, barrel 2, sky drop 2, breeze 2, card 1). The cap grows over the shift: 3 at first, then 5, then 7. Paid threats may go 2 over.
+- **Spacing**: at least 1.1 s between threats, up to about 3 s when tension is high; per-kind cooldowns.
+- **Breathers**: 2.2 s of grace after every hit, and nothing new while you swim or climb out.
+- **Priority**: paid > vote > chat > house. The house never queues more than one thing, and stale requests drop.
+
 ## Screen (one thing to look at)
 - Top: shift timer, tips $, tray count.
 - Next customer: one beam plus the route arrow. The bar beam shows when the tray is empty.

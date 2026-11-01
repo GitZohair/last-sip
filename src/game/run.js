@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { buildIsland } from './island.js';
 import { createTray } from './tray.js';
 import { createShift } from './shift.js';
+import { createConductor, COST } from './conductor.js';
 import { createGlass, createSplash } from './glass.js';
 import { createChaos } from './chaos.js';
 import { createGallery } from './gallery.js';
@@ -69,9 +70,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     return null;
   };
   const spawnActor = (kind, user) => actors.spawn(kind, user, player, kind === 'barrel' ? { spot: barrelSpot() } : {});
+  const conductor = createConductor(); // every threat asks the conductor first (budget, spacing, breathers)
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
-  const run = { drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 10, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { conductor, drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 10, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
   // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
   await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ...FURNITURE.map(([n]) => ['furniture', n])]);
@@ -106,10 +108,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
 
   // Play a card from chat. eventName may be a card id, a legacy event name, or 'deck' (random draw).
   // viewer characters spawn by name; the card system handles everything else
-  run.summon = (kind, user) => {
+  run.summon = (kind, user, src = 'chat') => {
     if (run.state !== 'play') return false;
-    if (kind === 'drop') { const p = dropSpot(); drops.furniture(user, p.x, p.z); } else spawnActor(kind, user);
-    run.lastChat = run.t; return true;
+    const fire = kind === 'drop' ? () => { const p = dropSpot(); drops.furniture(user, p.x, p.z); } : () => spawnActor(kind, user);
+    if (kind === 'lifeguard') fire(); else conductor.request(kind, user, src, fire);
+    if (src !== 'house') run.lastChat = run.t; return true;
   };
   run.dropFrame = async ({ user, image, trusted }) => { if (run.state !== 'play') return { ok: false, reason: 'not playing' }; const p = dropSpot(); const d = await drops.frame(user, p.x, p.z, image, trusted); run.lastChat = run.t; return d ? { ok: true } : { ok: false, reason: 'image rejected' }; };
   run.play = (eventName, users, { bias = 0 } = {}) => {
@@ -181,7 +184,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (const hit of hazards.update(run.t, player, dt, chaos, voice)) {
       if (hit.opened) { sfx.unlock2(); trick('shout'); continue; }
       if (hit.woke) { sfx.wake(); continue; }
-      if (hit.kind === 'door') sfx.slam(); else sfx.thud(.8);
+      conductor.hit(hit.power); if (hit.kind === 'door') sfx.slam(); else sfx.thud(.8);
       player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
       ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; hooks.hit?.(hit.label, 'BUMPED'); avatar.emote('No', .5); style.combo = 1;
@@ -189,10 +192,13 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (const hit of [...actors.update(dt, run.t, player), ...drops.update(dt, run.t, player)]) {
       if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
       run.hitStop = .07; run.shakeT = Math.max(run.shakeT, .25); run.lastHit = { x: hit.dir.x, z: hit.dir.z, n: (run.lastHit?.n || 0) + 1 }; // juice: freeze-frame + shake + directional flash
-      sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
+      conductor.hit(hit.power); sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
     }
     const vac = hazards.vacuum.distance;
+    // what's on the island right now, by threat cost; the conductor releases queued threats within budget
+    const activeCost = actors.list.reduce((a, x) => a + (COST[x.kind] || 0), 0) + drops.list.filter(d => d.state === 'fall').length * COST.drop + (wind.state ? COST.storm : 0);
+    conductor.update(dt, { t: run.t, activeCost, swimming: run.swimming || !!run.climb });
     if (vac < 1.6 && !run.vacClose) run.vacClose = true;
     if (run.vacClose && vac > 4.5) { run.vacClose = false; trick('outrun'); }
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
@@ -259,9 +265,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.houseNext <= 0) {
       const ri = level.rooms.indexOf(room); run.houseNext = 7 + houseRng() * 3 - Math.min(2, run.t / 45); // calm opening, one house event every 7-10 s; void ri
       if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
-      else if (run.t - run.lastChat > 3 && houseRng() < .2) { const p = dropSpot(); drops.furniture('THE HOUSE', p.x, p.z); }
-      else if (run.t - run.lastChat > 3 && houseRng() < .35) { spawnActor(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE'); }
-      else if (run.t - run.lastChat > 3) { const card = draw(houseRng); if (card.r !== 'l' && !card.help) hooks.house?.(run.play(card.id, ['THE HOUSE'])); }
+      else if (run.t - run.lastChat > 3 && houseRng() < .2) run.summon('drop', 'THE HOUSE', 'house');
+      else if (run.t - run.lastChat > 3 && houseRng() < .35) run.summon(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE', 'house');
+      else if (run.t - run.lastChat > 3) { const card = draw(houseRng); if (card.r !== 'l' && !card.help) conductor.request('card', 'THE HOUSE', 'house', () => hooks.house?.(run.play(card.id, ['THE HOUSE']))); }
     }
     // CATCH IT: when the glass is about to go, a short window to press E for a slow-mo save.
     if (run.catchWin > 0) {
