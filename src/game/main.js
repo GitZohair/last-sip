@@ -11,6 +11,7 @@ import { createVoice } from './voice.js';
 import { sfx } from './sfx.js';
 import { INGREDIENTS, todaysOrder } from './recipe.js';
 import { buildIsland } from './island.js';
+import { RULES, todaysRule } from './rules.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -69,7 +70,7 @@ async function start(asPour) {
   lockPointer();
   const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
-function showOrder() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got); }
+function showOrder() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got, RULES[run.rule]); }
 // Front page backdrop: the real island, slowly orbiting behind the editorial panel.
 let preview = null;
 async function backdrop() { const scene = world.reset(); await buildIsland(scene); if (!run) preview = { t: 0 }; }
@@ -95,7 +96,7 @@ async function finish(r) {
 ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
 (async () => {
   ui.intro({ seed, number: dayNumber(seed), daily: today(seed), canSignIn: !!tw.CLIENT_ID });
-  ui.todayOrder(todaysOrder(seed), INGREDIENTS);
+  ui.todayOrder(todaysOrder(seed), INGREDIENTS, RULES[todaysRule(seed)]);
   ui.tabs(tab => { if (tab === 'board') boards(seed).then(ui.introBoard).catch(() => ui.introBoard(null)); if (tab === 'stats') ui.stats(history()); });
   backdrop();
   session = await tw.restore().catch(() => null);

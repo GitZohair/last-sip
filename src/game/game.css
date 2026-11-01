@@ -120,6 +120,7 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #order span { display: flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 999px; background: #1b1530cc; font: 800 .72rem/1 system-ui; letter-spacing: .1em; border: 2px solid var(--c); }
 #order i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--c); }
 #order span.got { background: var(--c); color: #1b1530; } #order span.got i { background: #1b1530; }
+#order span.rule { border-color: #fff6e6; color: #fff6e6; background: #ff5fa2cc; }
 
 /* ===== front page v4: editorial, live island behind (beach-prototype energy, Kenney island in 3D) ===== */
 #intro { display: block; place-content: initial; text-align: left; padding: 1.4rem 3rem 2rem; color: #18332e; overflow-y: auto;

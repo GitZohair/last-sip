@@ -27,7 +27,7 @@ export const ui = {
       onOpen(b.dataset.tab);
     });
   },
-  todayOrder(ids, ING) { $('today-order').innerHTML = ids.map(id => `<span style="--c:${ING[id].color}">${ING[id].label}</span>`).join(''); },
+  todayOrder(ids, ING, rule) { $('today-order').innerHTML = ids.map(id => `<span style="--c:${ING[id].color}">${ING[id].label}</span>`).join('') + (rule ? `<span class="rule" title="${rule.tip}">${rule.label}</span>` : ''); },
   introBoard(board) {
     const rows = board?.pour || [], wanted = board?.wanted || [];
     $('intro-board').innerHTML = rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet today. Be first.</span></li>';
@@ -87,8 +87,8 @@ export const ui = {
     const fx = document.body, colors = ['#a970ff', '#5dd6ff', '#ffd36b', '#ff5fa2', '#5dff9b'];
     for (let i = 0; i < 90; i++) { const d = document.createElement('i'); d.className = 'confetti'; d.style.cssText = `left:${Math.random() * 100}vw;background:${colors[i % 5]};animation-delay:${Math.random() * .6}s;animation-duration:${1.8 + Math.random() * 1.6}s;transform:rotate(${Math.random() * 360}deg)`; fx.appendChild(d); setTimeout(() => d.remove(), 4200); }
   },
-  order(ids, labels, colors, got = []) {
-    $('order').innerHTML = ids.map(id => `<span class="${got.includes(id) ? 'got' : ''}" style="--c:${colors[id]}"><i></i>${labels[id]}</span>`).join('');
+  order(ids, labels, colors, got = [], rule) {
+    $('order').innerHTML = ids.map(id => `<span class="${got.includes(id) ? 'got' : ''}" style="--c:${colors[id]}"><i></i>${labels[id]}</span>`).join('') + (rule ? `<span class="rule">${rule.label}</span>` : '');
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },

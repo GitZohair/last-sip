@@ -16,6 +16,7 @@ import { createStyle } from './style.js';
 import { sfx } from './sfx.js';
 import { createPrompts } from './prompts.js';
 import { createActors } from './actors.js';
+import { todaysRule, createWind } from './rules.js';
 
 export const LIMIT = 90;
 const LEGACY = { storm: 'gust', crate: 'fridge', ice: 'mop', quake: 'bass', calm: 'steady', bomb: 'bomb', lights: 'lights' };
@@ -40,9 +41,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const style = createStyle();
   const prompts = createPrompts(scene, hazards);
   const actors = createActors(scene, level, sfx);
+  const rule = todaysRule(seed), wind = rule === 'windy' ? createWind(scene, seed) : null;
+  if (rule === 'hungry') hazards.vacuum.hungry = true;
   player.reset(level.spawn);
   glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
-  const run = { actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { rule, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   chaos.onBlast = f => { sfx.boom(); gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
@@ -107,6 +110,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     voice.update(dt, player.keys, player.steady ? 0 : spd0);
     if (voice.loud) shake += .5; // yelling shakes your own hands
     const fx = chaos.step(dt); push.x += fx.push.x; push.z += fx.push.z;
+    if (wind) { if (wind.update(run.t, dt, player)) hazard = hazard || 'WIND'; push.x += wind.push.x; }
     // timed hazards + the vacuum: hits shove the player and slosh the glass; blamed on the house
     for (const hit of hazards.update(run.t, player, dt, chaos, voice)) {
       if (hit.opened) { sfx.unlock2(); trick('shout'); continue; }
@@ -138,7 +142,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (player.landed) glass.kick(0, -player.landed * (mods.soft ? .05 : .25));
     if (player.justJumped) { player.justJumped = false; if (props.list.some(p => Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) < 1.2)) trick('hop'); }
     if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'THE FLOOR IS LAVA — GET ON FURNITURE'; }
-    const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh, noSpill: mods.noSpill });
+    const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh * (rule === 'heavy' ? 1.3 : 1), noSpill: mods.noSpill });
     if (lost > 0) {
       if ((spillCd -= dt) <= 0) { spillCd = .12; sfx.spill(lost); }
       run.roomLoss[room.key] += lost;

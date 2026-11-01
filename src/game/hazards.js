@@ -22,9 +22,9 @@ function vacuum(scene, spawn) {
       const last = trail.at(-1);
       if (!last || Math.hypot(last.x - player.pos.x, last.z - player.pos.z) > .35) trail.push({ x: player.pos.x, z: player.pos.z });
       brush.rotation.y += dt * 30; cool -= dt;
-      if (t < wake) { this.distance = 99; return null; }
+      if (t < (this.hungry ? 3 : wake)) { this.distance = 99; return null; }
       if (stun > 0) { stun -= dt; g.rotation.y += dt * 14; if (stun <= 0) { ring.material.color.set('#ff3b5c'); ring.material.emissive.set('#ff1e46'); } this.distance = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z); return null; }
-      speed = Math.min(4.6, 2.2 + (t - wake) * .07);
+      speed = Math.min(4.6, 2.2 + Math.max(0, t - wake) * .07) * (this.hungry ? 1.25 : 1);
       let move = speed * dt;
       while (move > 0 && trail.length) {
         const p = trail[0], dx = p.x - g.position.x, dz = p.z - g.position.z, d = Math.hypot(dx, dz);
