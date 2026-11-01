@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { buildIsland } from './island.js';
 import { createTray } from './tray.js';
-import { createShift } from './shift.js';
+import { createShift, BAR } from './shift.js';
+import { BOAT } from './island.js';
 import { createConductor, COST } from './conductor.js';
 import { createGlass, createSplash } from './glass.js';
 import { createChaos } from './chaos.js';
@@ -137,11 +138,41 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
       hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
-    run.falls++; shift.streak = 0; run.swimming = true; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
+    run.falls++; shift.streak = 0; run.swimming = true; run.breath = 1; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
     run.salt = Math.min(1, run.salt + .35); glass.salt(.35); // every drink on the tray is now part seawater avatar.emote('No', .8);
     ledger.blame(['THE SEA'], 'SALT', 2, run.t); style.combo = 1; hooks.fell?.(run.falls);
     if (run.falls === 1) hooks.clip?.('fell in');
   };
+  // DROWNING: you only have ~8 s of breath in the water. Run out and the sea takes the whole tray;
+  // you wash up at the bar (and the boat drifts back to its dock).
+  run.breath = 1;
+  const drown = () => {
+    splash.emit({ x: player.pos.x, y: SWIM_Y + .4, z: player.pos.z }, { x: 0, z: 0 }, 40); sfx.fail(); gallery.shake(.8);
+    const lost = glass.count; glass.clear(); shift.streak = 0; run.swimming = false; player.swimming = false; run.breath = 1;
+    player.reset({ x: BAR.x + 2.4, z: BAR.z + 1, yaw: -Math.PI / 2 }); player.grounded = true; run.safe = { x: player.pos.x, z: player.pos.z };
+    sendBoat('dock'); ledger.blame(['THE SEA'], 'DROWNED', 3, run.t); hooks.drowned?.(lost);
+  };
+  // THE ROWBOAT: walk to the end of the plaza dock (or the islet shore) and it rows you across. The tray rocks on the waves.
+  const boat = level.boat; run.ride = null; let boatArmed = true;
+  function sendBoat(at) { boat.at = at; const s = BOAT[at]; boat.mesh.position.set(s.x, -1.55, s.z); boat.mesh.rotation.y = s.yaw; }
+  function boatStep(dt) {
+    if (run.ride) {
+      const r = run.ride; r.t += dt / 3.4; const k = Math.min(1, r.t), e = k * k * (3 - 2 * k), A = BOAT[r.from], B = BOAT[r.to];
+      const x = A.x + (B.x - A.x) * e, z = A.z + (B.z - A.z) * e + Math.sin(k * Math.PI) * 2.5, bob = Math.sin(run.t * 2.6) * .06;
+      boat.mesh.position.set(x, -1.55 + bob, z); boat.mesh.rotation.y = Math.atan2(B.x - A.x, (B.z - A.z) + Math.cos(k * Math.PI) * 5) + Math.sin(run.t * 2) * .05;
+      player.pos.x = x; player.pos.z = z; player.y = -1.2 + bob; player.vel.x = player.vel.z = 0; player.vy = 0; player.grounded = true;
+      if (Math.random() < dt * 2.5) glass.kick((Math.random() - .5) * 1.4, -.3); // waves rock the tray
+      if (k >= 1) { run.ride = null; sendBoat(r.to); player.reset({ x: B.land.x, z: B.land.z, yaw: player.yaw }); player.grounded = true; boatArmed = false; sfx.thud(.5); }
+      return true;
+    }
+    if (run.swimming || run.climb || !player.grounded || player.y < -.05) return false;
+    for (const at of ['dock', 'isle']) {
+      const d = Math.hypot(player.pos.x - BOAT[at].land.x, player.pos.z - BOAT[at].land.z);
+      if (d > 1.8 && at === boat.at) boatArmed = true; // step away from the landing spot before boarding again
+      if (d < 1.1 && boatArmed) { if (boat.at !== at) sendBoat(at); run.ride = { from: at, to: at === 'dock' ? 'isle' : 'dock', t: 0 }; sfx.splash(); return true; }
+    }
+    return false;
+  }
   // climbing out: any beach (sand islet) or a ramp exit point
   function exitFor(p) {
     for (const e of level.exits) if (Math.hypot(e.x - p.x, e.z - p.z) < 1.3) return { x: e.to.x, z: e.to.z };
@@ -192,7 +223,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (const hit of [...actors.update(dt, run.t, player), ...drops.update(dt, run.t, player)]) {
       if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
       run.hitStop = .07; run.shakeT = Math.max(run.shakeT, .25); run.lastHit = { x: hit.dir.x, z: hit.dir.z, n: (run.lastHit?.n || 0) + 1 }; // juice: freeze-frame + shake + directional flash
-      conductor.hit(hit.power); sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
+      conductor.hit(hit.power); sfx.hit(); player.vel.x += hit.dir.x * hit.power;
+      if (hit.drop) { avatar.knock(hit.direct ? 'flat' : 'fall', hit.direct ? 1.3 : 1.1); if (hit.direct) { player.vel.x *= .2; player.vel.z *= .2; sfx.boing(); } } // pancaked / knocked flat
+      else if (hit.kind === 'BARREL') avatar.knock('fall', 1); player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
     }
     const vac = hazards.vacuum.distance;
@@ -203,18 +236,20 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.vacClose && vac > 4.5) { run.vacClose = false; trick('outrun'); }
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
     if (run.slip) { const s = run.slip; s.t -= dt; player.yaw += s.dir * 1.8 * Math.max(0, s.t / .55) * dt; slip = true; if (s.t <= 0) run.slip = null; } // eased spin, low traction
-    if (run.climb) { // short climb-out tween onto the beach / ramp top
+    if (boatStep(dt)) { /* rowing: the boat carries you */ }
+    else if (run.climb) { // short climb-out tween onto the beach / ramp top
       const c = run.climb; c.t += dt / .45; const k = Math.min(1, c.t);
       player.pos.x = c.from.x + (c.to.x - c.from.x) * k; player.pos.z = c.from.z + (c.to.z - c.from.z) * k; player.y = SWIM_Y + (0 - SWIM_Y) * Math.sin(k * Math.PI / 2) + Math.sin(k * Math.PI) * .3;
       player.vel.x = player.vel.z = 0; player.vy = 0;
       if (k >= 1) { run.climb = null; player.y = 0; player.grounded = true; sfx.thud(.5); hooks.climbed?.(); }
     } else {
-      player.step(dt, { colliders: level.colliders, push: run.swimming ? { x: push.x * .3, z: push.z * .3 } : push, slip, gravity: mods.gravity, speedMul: mods.speed * (run.swimming ? .45 : 1), mirror: mods.mirror, base: run.swimming ? SWIM_Y : pit || level.open ? -12 : 0, noJump: run.swimming });
+      player.step(dt, { colliders: level.colliders, push: run.swimming ? { x: push.x * .3, z: push.z * .3 } : push, slip, gravity: mods.gravity, speedMul: avatar.down ? 0 : mods.speed * (run.swimming ? .45 : 1), mirror: mods.mirror, base: run.swimming ? SWIM_Y : pit || level.open ? -12 : 0, noJump: run.swimming || avatar.down });
       if (player.grounded && !pit && !run.swimming && player.y > -.05) { run.safe.x = player.pos.x; run.safe.z = player.pos.z; }
       if (!run.swimming && player.y < SWIM_Y) fall(room);
       if (run.swimming) {
         if (Math.random() < dt * 2) { run.salt = Math.min(1, run.salt + .015); glass.salt(.015); }
-        const out = exitFor(player.pos);
+        if (!run.buoy && (run.breath -= dt / 8) <= 0) drown();
+        const out = run.swimming && exitFor(player.pos);
         if (out) { run.swimming = false; player.swimming = false; run.climb = { from: { x: player.pos.x, z: player.pos.z }, to: out, t: 0 }; }
       }
     }
@@ -286,9 +321,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     shift.update(run.t, dt, player, {
       loaded: n => { run.salt = 0; sfx.collect(0); hooks.loaded?.(n); },
       served: (c, tip, water) => { if (c.mood === 'happy') { sfx.collect(Math.min(4, shift.served)); trick('collect'); } else sfx.wake(); hooks.served?.(c, tip, water); },
+      order: c => hooks.order?.(c), hurry: c => hooks.hurry?.(c),
       walkout: c => { const v = ledger.villain(); if (v) ledger.blame([v.name], 'WALKOUT', 2, run.t); hooks.walkout?.(c, v?.name); },
     });
-    if (run.swimming) hazard = 'SWIM TO A BEACH OR RAMP';
+    if (run.swimming) hazard = run.breath < .4 ? 'OUT OF BREATH' : 'SWIM TO A BEACH OR RAMP';
     if (!hazard && !glass.count && shift.customers.some(c => c.mood === 'wait') && !shift.atBar) hazard = 'TO THE BAR';
     const mate = hazards.mate;
     if (!hazard && hazards.lock.near) hazard = voice.mic ? 'SHOUT' : 'HOLD V';

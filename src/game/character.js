@@ -62,10 +62,24 @@ export async function createCharacter(scene) {
     next.reset().fadeIn(fade).play(); current.fadeOut(fade); current = next;
   }
   function emote(name, seconds = 1) { play(name, .1); oneShot = seconds; }
+  // KNOCKDOWNS: 'flat' = pancaked by something landing on you, 'fall' = tipped over backwards. Then you pop back up.
+  let knockKind = null, knockT = 0, knockLen = 1;
+  function knock(kind, seconds = 1) { knockKind = kind; knockT = knockLen = seconds; }
 
   function update(dt, player, slosh, state) {
     root.position.set(player.pos.x, player.y, player.pos.z); root.rotation.y = -player.yaw;
     lean.rotation.z = THREE.MathUtils.lerp(lean.rotation.z, -slosh.tx * .5, .2); lean.rotation.x = THREE.MathUtils.lerp(lean.rotation.x, slosh.tz * .35, .2);
+    lean.scale.set(1, 1, 1);
+    if (knockT > 0) {
+      knockT -= dt; const k = 1 - knockT / knockLen; // 0 → 1 over the knockdown
+      if (knockKind === 'flat') { // squash fast, hold, spring back with an overshoot
+        const sq = k < .1 ? k / .1 : k < .7 ? 1 : Math.max(0, 1 - (k - .7) / .3), boing = k > .7 ? Math.sin((k - .7) / .3 * Math.PI) * .25 : 0;
+        lean.scale.set(1 + sq * .45, 1 - sq * .7 + boing, 1 + sq * .45);
+      } else { // tip over backwards, lie there a beat, get back up
+        const tip = k < .2 ? k / .2 : k < .65 ? 1 : Math.max(0, 1 - (k - .65) / .35);
+        lean.rotation.x = -tip * 1.35; lean.position.y = tip * .25;
+      }
+    } else lean.position.y = 0;
     if (state === 'done-win') play('emote-yes'); else if (state === 'done-fail') play('die');
     else if ((oneShot -= dt) > 0) { /* hold reaction */ }
     else if (player.swimming) { play('fall', .2); current.timeScale = .6; }
@@ -74,7 +88,7 @@ export async function createCharacter(scene) {
     mixer.update(dt);
     if (arm) { root.updateMatrixWorld(true); hand.copy(HAND).applyMatrix4(arm.matrixWorld); lean.worldToLocal(hand); holder.position.copy(hand).add({ x: .16, y: .2, z: -.1 }); }
   }
-  return { root, holder, HAND, update, emote, play, dispose: () => scene.remove(root) };
+  return { root, holder, HAND, update, emote, play, knock, get down() { return knockT > 0; }, dispose: () => scene.remove(root) };
 }
 
 // Over-the-shoulder chase camera. Pulls in when a wall is between camera and player (cheap ray vs AABB colliders).

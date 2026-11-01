@@ -35,15 +35,17 @@ Every hit is credited to a viewer: **Spill Credits**, the **Most Wanted** poster
 - Quiplash: absurd, non-generic prompts and inherently funny words; the fun is in the answers, not in being "right" ([Jackbox](https://www.jackboxgames.com/the-science-of-creating-a-quiplash-prompt/), [Jackbox](https://www.jackboxgames.com/how-to-write-a-good-quiplash-prompt)).
 - Game comedy: surprise is the punchline, the author should control the delivery timing, and jokes die after 1-2 repeats ([Game Developer on Zoe Quinn's GDC talk](https://gamedeveloper.com/design/exploring-what-it-takes-to-make-a-funny-game), [Springer](https://rd.springer.com/content/pdf/10.1007/978-3-319-24589-8_6.pdf), [Aalto](https://research.aalto.fi/en/publications/featuring-comedy-through-ludonarrative-elements-of-video-games/)).
 
-**The mechanic**
-1. You reach a customer with their drink. They **hold out a hand and ask a totally unrelated question** with 3 answers (keys 1/2/3), and a 5 s timer. The tray keeps sloshing while you think (dual task = comedy), and the conductor sends no *new* threats during the question.
-2. **There is no correct answer, only the right answer for THIS customer.** Every customer has a visible personality (WHOLESOME / CHAOTIC / NERD / DRAMATIC, shown as a coloured word under their name). Each answer is tagged with a vibe. Read the room: a matching answer earns a big tip and a happy punchline; a mismatch gets a roast line and no tip; a timeout gets "I'll take the silence as a yes" and a smaller tip.
-3. **Money is the score.** Each drink pays a $5 price + a fill tip (up to $5) + a vibe bonus ($3) x the clean-serve streak. A till counter ka-chings, and bills pop from the customer.
-4. **Chat gets a say.** While a question is up, the sabotage ballot pauses and chat votes 1/2/3 ("CHAT SAYS 2"). Follow chat and be right: "CHAT CARRIED". Follow chat and be wrong: "CHAT LIED", and the liars land in Spill Credits. Very Twitch.
-5. **Never repeat a joke**: 40+ questions and 4 personalities x 3 lines, with no repeats within a run. The Pour uses seeded questions per slot (fair across streamers).
-6. **Shareable**: the results screen shows the run's best and worst exchange as a quote card, and the receipt carries one line.
-
-**Writing rules**: clean for Twitch, original, short (questions <= 70 chars, answers <= 22 chars), funny words, no real people.
+**The mechanic (decided with the user: answerable, coherent, sometimes diabolical-looking)**
+1. You reach a customer with their drink. They ask **one question with a real right answer** before they take it: 3 options (keys 1/2/3), 6 s, and the tray keeps sloshing while you think. The conductor sends no new threats while a question is up.
+2. **Questions come from the run itself**, so they are coherent, answerable and never repeat:
+   - LOOK: "How many glasses are on your tray?" "What am I drinking?" "Which drink is NOT on today's menu?"
+   - REMEMBER: "Who was the last customer you served?" "Who knocked you last?" (a viewer's name)
+   - BAR MATHS: "2 drinks at $5 plus a $3 tip?" (easy to medium)
+   - LOOKS DIABOLICAL, ISN'T: "(48,219 x 0) + 7 = ?" "What is 1,000,000 / 1,000,000?" (scary on purpose, trivially easy)
+   Difficulty ramps across the shift, but scary-looking easy ones are sprinkled throughout.
+3. **Money is the score.** Each drink pays a $5 price + a fill tip (up to $5) + a correct-answer bonus ($5), and the clean streak multiplies it. A wrong answer means the customer roasts you and pays only the price. A timeout gets "I'll take the silence as a yes".
+4. **Chat gets a say.** While a question is up, the sabotage vote pauses and chat votes 1/2/3 ("CHAT SAYS 2"). Follow chat and be right: CHAT CARRIED. Chat wrong: CHAT LIED (the liars land in the credits).
+5. **Shareable**: the results show the best and worst exchange, and the receipt carries the question count ("4/6 answered").
 
 ## Chat at any size: votes for everyone, a direct lane for supporters
 A 20-viewer chat and a 20,000-viewer chat must both work, and nobody can flood the island.

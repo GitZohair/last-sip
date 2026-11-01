@@ -6,12 +6,12 @@ import { GAPS } from './guide.js';
 
 // Screen-space cues: edge arrows for threats you can't see, floating hit/pickup text, a minimap, wind arrow.
 const v = new THREE.Vector3();
-const RUNS = [[0, 4, 0, -19], [0, -21, 0, -84], [-14, -16, 14, -16], [-14, -48, 14, -48], [-14, -64, 14, -64]];
+const RUNS = [[0, 4, 0, -19], [0, -21, 0, -84], [-14, -16, 14, -16], [-14, -48, 14, -48], [-14, -64, 14, -64], [0, -32, 10, -32]];
 
 export function createHudCues(root) {
   root.querySelector('#cues')?.remove();
   const box = document.createElement('div'); box.id = 'cues'; root.appendChild(box);
-  const edges = [0, 1, 2, 3, 4].map(() => { const e = document.createElement('div'); e.className = 'edge'; e.innerHTML = '<i></i><span></span>'; box.appendChild(e); return e; });
+  const edges = [0, 1, 2, 3, 4, 5, 6, 7].map(() => { const e = document.createElement('div'); e.className = 'edge'; e.innerHTML = '<i></i><span></span>'; box.appendChild(e); return e; });
   const windEl = document.createElement('div'); windEl.id = 'wind'; windEl.innerHTML = icon('gust') + '<b>&#10140;</b>'; box.appendChild(windEl);
   const flash = document.createElement('div'); flash.id = 'hitflash'; box.appendChild(flash); let hitN = 0;
   const onKey = e => { if (e.code === 'KeyM' || e.code === 'Tab') { e.preventDefault(); box.classList.toggle('map'); } }; addEventListener('keydown', onKey); // minimap on demand
@@ -59,9 +59,10 @@ export function createHudCues(root) {
         if (a.kind === 'sniper') edge(edges[i++], camera, { x: a.tower.x, y: a.tower.y + 1, z: a.tower.z }, '#ff2040', 'cannon', a.user);
         else if (a.kind === 'barrel' && !a.sunk) edge(edges[i++], camera, { x: a.x, y: .5, z: a.z }, '#ffb020', 'barrel', '');
       }
-      for (const c of run.shift.customers) { // customers whose drink you're carrying, when they're off screen
-        if (i >= edges.length - 1 || c.mood !== 'wait' || !run.glass.glasses.some(q => q.id === c.id)) continue;
-        edge(edges[i++], camera, { x: c.x, y: 1.5, z: c.z }, c.color, 'glass', c.user);
+      for (const c of run.shift.customers) { // every waiting customer off screen: their colour, red when they're about to leave
+        if (i >= edges.length - 1 || c.mood !== 'wait') continue;
+        const urgent = c.patience / c.max < .3, carried = run.glass.glasses.some(q => q.id === c.id);
+        edge(edges[i++], camera, { x: c.x, y: 1.5, z: c.z }, urgent ? '#ff3b5c' : c.color, 'glass', carried || urgent || c.far ? c.user : '');
       }
       const vac = run.hazards.vacuum;
       if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'cannon', 'LOOSE CANNON');

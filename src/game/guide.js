@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { textTexture } from './assets.js';
+import { ISLE, BOAT } from './island.js';
 
 // VISUAL CUES: everything that tells you what is going on without reading text.
 //   beams       tall coloured light over each fruit you still need (and over the hut once the drink is done)
@@ -22,7 +23,8 @@ export function createGuide(scene, { shift, actors, level }) {
   const exitSigns = level.exits.map(e => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: exitTex, depthTest: false })); s.scale.set(1.1, .42, 1); s.position.set(e.x, .2, e.z); s.renderOrder = 9; s.visible = false; scene.add(s); return s; });
   const beamGeo = new THREE.CylinderGeometry(.55, .55, 24, 18, 1, true).translate(0, 12, 0), beamTex = gradientTex();
   const beam = (x, z, color) => { const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color, map: beamTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.position.set(x, 0, z); scene.add(m); return m; };
-  const focus = beam(0, 0, '#ffffff'); focus.visible = false; // ONE beam: over the next customer, or the bar
+  const focus = beam(0, 0, '#ffffff'); focus.visible = false; // the bright beam: over the next goal
+  const others = [0, 1, 2, 3, 4].map(() => { const m = beam(0, 0, '#ffffff'); m.scale.set(.55, 1, .55); m.visible = false; return m; }); // thinner beams over every other waiting customer
 
   // route arrow: flat chevron on the boards
   const sh = new THREE.Shape(); sh.moveTo(0, .55); sh.lineTo(.42, .05); sh.lineTo(.2, .05); sh.lineTo(.2, -.4); sh.lineTo(-.2, -.4); sh.lineTo(-.2, .05); sh.lineTo(-.42, .05); sh.closePath();
@@ -46,19 +48,23 @@ export function createGuide(scene, { shift, actors, level }) {
   const pc = document.createElement('canvas'); pc.width = pc.height = 128; const pg = pc.getContext('2d'); const ptex = new THREE.CanvasTexture(pc); ptex.colorSpace = THREE.SRGBColorSpace;
   const pour = new THREE.Sprite(new THREE.SpriteMaterial({ map: ptex, depthTest: false })); pour.scale.setScalar(.9); pour.renderOrder = 12; scene.add(pour);
   let lastP = -1, lastC = '';
-  const drawPour = (p, color) => {
+  const drawPour = (p, color, glyph = 'E') => {
     if (Math.abs(p - lastP) < .02 && color === lastC) return; lastP = p; lastC = color;
     pg.clearRect(0, 0, 128, 128); pg.fillStyle = '#1b1530dd'; pg.beginPath(); pg.arc(64, 64, 54, 0, 7); pg.fill();
     pg.lineWidth = 12; pg.strokeStyle = '#ffffff33'; pg.beginPath(); pg.arc(64, 64, 52, 0, 7); pg.stroke();
     pg.strokeStyle = color; pg.lineCap = 'round'; pg.beginPath(); pg.arc(64, 64, 52, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2); pg.stroke();
-    pg.fillStyle = '#fff'; pg.font = '900 56px system-ui'; pg.textAlign = 'center'; pg.textBaseline = 'middle'; pg.fillText('E', 64, 68); ptex.needsUpdate = true;
+    pg.fillStyle = '#fff'; pg.font = '900 56px system-ui'; pg.textAlign = 'center'; pg.textBaseline = 'middle'; pg.fillText(glyph, 64, 68); ptex.needsUpdate = true;
   };
 
   // next goal with fishbone routing: get to the spine, walk it to the target's row, then go across
   function goal(p) {
-    const T = shift.targets().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
-    if (!T) return null;
-    const rowOf = z => [-16, -48, -64].find(r => Math.abs(z - r) < 3.2);
+    const onIsle = Math.hypot(p.x - ISLE.x, p.z - ISLE.z) < 7;
+    const T0 = shift.targets().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+    if (!T0) return null;
+    const farT = Math.hypot(T0.x - ISLE.x, T0.z - ISLE.z) < 5;
+    if (onIsle) return farT ? { ...T0, final: T0 } : { ...BOAT.isle.land, color: T0.color, final: { ...BOAT.isle.land }, boat: true }; // islet: serve, then back to the boat
+    const T = farT ? { ...BOAT.dock.land, color: T0.color, boat: true } : T0; // far customer: route to the boat dock first
+    const rowOf = z => [-16, -32, -48, -64].find(r => Math.abs(z - r) < 3.2);
     const onBranch = Math.abs(p.x) > 2.6 && rowOf(p.z) !== undefined;
     if (onBranch) return rowOf(p.z) === rowOf(T.z) && Math.sign(p.x) === Math.sign(T.x || p.x) ? { ...T, final: T } : { x: 0, z: rowOf(p.z) ?? p.z, color: T.color, final: T };
     if (Math.abs(p.x) > .6 && Math.abs(p.z - T.z) > .5) return { x: 0, z: p.z + Math.sign(T.z - p.z) * 1.5, color: T.color, final: T }; // recentre on the spine
@@ -74,6 +80,13 @@ export function createGuide(scene, { shift, actors, level }) {
       const fade = (x, z) => Math.min(1, Math.max(.12, (Math.hypot(x - player.pos.x, z - player.pos.z) - 2.5) / 9)); // thin out up close
       const gg = goal(player.pos), next = gg?.final;
       focus.visible = !!next; if (next) { focus.position.set(next.x, 0, next.z); focus.material.color.set(next.color); focus.material.opacity = (.75 + Math.sin(t * 3) * .2) * fade(next.x, next.z); }
+      let bi = 0; // every waiting customer gets a beam, so a rush reads at a glance; it blinks when they're about to leave
+      for (const c of shift.customers) {
+        if (c.mood !== 'wait' || bi >= others.length || (next && Math.hypot(next.x - c.x, next.z - c.z) < .5)) continue;
+        const b = others[bi++], urgent = c.patience / c.max < .3; b.visible = true; b.position.set(c.x, 0, c.z); b.material.color.set(urgent ? '#ff3b5c' : c.color);
+        b.material.opacity = (urgent ? .45 + Math.sin(t * 12) * .35 : .45) * fade(c.x, c.z);
+      }
+      for (; bi < others.length; bi++) others[bi].visible = false;
       const p = player.pos, ex = swim && run.nearestExit(p), g = ex ? { ...ex, color: '#5dffa0', final: { ...ex, x: ex.x + 99 } } : gg || { x: p.x, z: p.z - 1, color: '#fff', final: p }, dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
       arrow.visible = playing && (swim || fd > 2.6);
       if (arrow.visible) {
@@ -89,7 +102,8 @@ export function createGuide(scene, { shift, actors, level }) {
       for (const a of actors.list) if (a.kind === 'barrel' && i < lanes.length) { const l = lanes[i++]; l.visible = !!a.rolling || a.wait > 0; l.position.set(a.x, .01, a.z); l.rotation.y = Math.atan2(a.dir.x, a.dir.z); }
       for (; i < lanes.length; i++) lanes[i].visible = false;
       laneMat.opacity = .22 + Math.sin(t * 12) * .1;
-      pour.visible = false;
+      pour.visible = swim && run.breath < .999; // breath ring over your head while swimming
+      if (pour.visible) { const b = Math.max(0, run.breath); drawPour(b, b > .5 ? '#5dc8ff' : b > .25 ? '#ffb020' : '#ff3b5c', 'O2'); pour.position.set(p.x, player.y + 2.6, p.z); pour.scale.setScalar(b < .25 ? .95 + Math.sin(t * 16) * .08 : .85); }
     },
   };
 }

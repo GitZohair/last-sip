@@ -58,7 +58,7 @@ export function createDrops(scene, level, { sfx, onImpact }) {
         if (k >= 1) { // impact
           scene.remove(d.shadow, d.ring);
           const dx = player.pos.x - d.x, dz = player.pos.z - d.z, dist = Math.hypot(dx, dz);
-          if (dist < d.radius + 1.2 && player.y > -.5) hits.push({ user: d.user, kind: d.label, dir: { x: dx / (dist || 1), z: dz / (dist || 1) }, power: 7 * (1 - dist / (d.radius + 1.6)) + 3 });
+          if (dist < d.radius + 1.2 && player.y > -.5) hits.push({ user: d.user, kind: d.label, drop: true, direct: dist < d.radius * .9, dir: { x: dx / (dist || 1), z: dz / (dist || 1) }, power: 7 * (1 - dist / (d.radius + 1.6)) + 3 });
           onImpact?.(d, dist);
           if (!d.onBoards) { d.state = 'sink'; sfx.splash(); }
           else {
