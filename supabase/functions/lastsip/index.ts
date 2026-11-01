@@ -20,14 +20,22 @@ Deno.serve(async (req) => {
     return json({ pour: pour.data ?? [], wanted: wanted.data ?? [], stats: stats.data });
   }
   if (req.method === 'POST' && url.pathname.endsWith('/submit')) {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    const v = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${token}` } });
-    if (!v.ok) return json({ error: 'invalid twitch token' }, 401);
-    const who = await v.json();
     const e = await req.json();
+    // Verified when a Twitch user token is supplied; otherwise accept the self-reported channel as unverified.
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    let who = { login: '', user_id: '' }, verified = false;
+    if (token) {
+      const v = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${token}` } });
+      if (!v.ok) return json({ error: 'invalid twitch token' }, 401);
+      who = await v.json(); verified = true;
+    } else {
+      const login = String(e.channel || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 25);
+      if (!login || login === 'anonymous') return json({ error: 'connect a channel to post a pour' }, 400);
+      who = { login, user_id: 'anon:' + login };
+    }
     const today = new Date().toISOString().slice(0, 10);
     if (e.seed !== today) return json({ error: 'only today\'s pour counts' }, 400);
-    const row = { seed: e.seed, channel: who.login, channel_id: who.user_id, water: +e.water, time_s: +e.time, score: Math.round(+e.score), finished: !!e.finished, saves: e.saves | 0 };
+    const row = { seed: e.seed, channel: who.login, channel_id: who.user_id, verified, water: +e.water, time_s: +e.time, score: Math.round(+e.score), finished: !!e.finished, saves: e.saves | 0 };
     const { error } = await db.from('pours').insert(row);
     if (error) return json({ error: error.code === '23505' ? 'already poured today' : error.message }, 409);
     const spills = (e.credits ?? []).slice(0, 10).map((c: { name: string; amount: number }) => ({ seed: e.seed, channel_id: who.user_id, viewer: String(c.name).slice(0, 40), spilled: Math.min(1, Math.max(0, +c.amount)) }));

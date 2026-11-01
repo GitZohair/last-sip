@@ -67,7 +67,7 @@ export const ui = {
     $('receipt').textContent = receipt;
     $('share').onclick = () => { navigator.clipboard?.writeText(receipt); $('share').textContent = 'COPIED ✓'; };
     const rows = board?.pour || [];
-    $('board').innerHTML = `<h4>TODAY'S POUR ${board?.local ? '(this browser)' : '· ACROSS TWITCH'}</h4>` + (rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet. Be first.</span></li>') +
+    $('board').innerHTML = `<h4>TODAY'S POUR ${board?.local ? '(this browser)' : '· ACROSS TWITCH'}</h4>` + (rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}${r.verified === false ? ' <small title="not signed in">*</small>' : ''}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet. Be first.</span></li>') +
       (board?.wanted?.length ? `<h4>MOST WANTED ACROSS TWITCH</h4>` + board.wanted.map((r, i) => `<li><span>${i + 1}. ${esc(r.viewer)}</span><b>${Math.round(r.spilled * 100)}%</b></li>`).join('') : '');
   },
 };

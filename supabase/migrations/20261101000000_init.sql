@@ -1,12 +1,14 @@
 -- LAST SIP leaderboards. Writes go ONLY through the edge function (service role), which verifies the
 -- caller's Twitch token with id.twitch.tv/oauth2/validate, so a channel name can't be spoofed.
+-- Without sign-in, Pours are accepted as verified=false (channel name self-reported), shown with a marker.
 -- Reads are public (anon key) through views.
 
 create table if not exists pours (
   id bigint generated always as identity primary key,
   seed date not null,
   channel text not null,             -- twitch login, from the validated token
-  channel_id text not null,
+  channel_id text not null,         -- twitch user id, or 'anon:<login>' when unverified
+  verified boolean not null default false,
   water real not null check (water between 0 and 1),
   time_s real not null check (time_s between 0 and 120),
   score int not null check (score between 0 and 2000),
@@ -31,7 +33,7 @@ create policy "public read spills" on spills for select using (true);
 
 -- Today's Pour (streamers) and Most Wanted (viewers summed across every channel)
 create or replace view board_pour as
-  select seed, channel, score, water, time_s, finished from pours order by score desc;
+  select seed, channel, verified, score, water, time_s, finished from pours order by score desc;
 create or replace view board_wanted as
   select seed, viewer, sum(spilled) as spilled, count(distinct channel_id) as channels
   from spills where viewer not in ('YOUR OWN HANDS', 'THE HOUSE', 'THE BANANA')

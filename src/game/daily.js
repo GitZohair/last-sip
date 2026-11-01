@@ -28,8 +28,9 @@ export const dayNumber = seed => Math.floor((Date.parse(seed) - Date.parse('2026
 
 // ---- leaderboards
 export async function submit(session, entry) {
-  if (!API || !session) return localSubmit(entry);
-  const r = await fetch(`${API}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` }, body: JSON.stringify(entry) });
+  if (!API) return localSubmit(entry);
+  const headers = { 'Content-Type': 'application/json', ...(session ? { Authorization: `Bearer ${session.token}` } : {}) };
+  const r = await fetch(`${API}/submit`, { method: 'POST', headers, body: JSON.stringify(entry) });
   return r.ok ? r.json() : localSubmit(entry);
 }
 export async function boards(seed) {

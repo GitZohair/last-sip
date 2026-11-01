@@ -10,7 +10,7 @@ Everything else is code. These steps need your accounts.
 
 ## 2. Supabase (leaderboards)
 1. Create a project at https://supabase.com (free tier).
-2. SQL editor → paste and run `supabase/schema.sql`.
+2. `npx supabase db push` applies `supabase/migrations/` (or paste the SQL into the SQL editor).
 3. Deploy the function: `npx supabase login` → `npx supabase link --project-ref <ref>` → `npx supabase functions deploy lastsip --no-verify-jwt`.
 4. Put `VITE_LEADERBOARD_URL=https://<ref>.functions.supabase.co/lastsip` in `.env.local` and in the Vercel env vars.
 

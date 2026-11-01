@@ -69,7 +69,7 @@ async function finish(r) {
   const rooms = r.level.rooms.map(x => ({ key: x.key, lost: r.roomLoss[x.key] }));
   const d = official ? recordPour(seed, { finished: r.won, water, time, score }) : today(seed);
   const text = receipt({ saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
-  if (official) submit(session, { seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
+  if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
   const board = await boards(seed).catch(() => null);
   setTimeout(() => ui.results({ won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
