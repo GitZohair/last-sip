@@ -1,4 +1,13 @@
-# Setup — what the human (you) must do (≈15 min, one time)
+# Setup — status and remaining steps
+
+## Current status (2026-11-01)
+- ✅ **GitHub:** private repo `GitZohair/last-sip` (branch `main`).
+- ✅ **Vercel:** https://lastsip-seven.vercel.app (project `lastsip`), deployed with `npx vercel deploy --prod`. Env: `VITE_LEADERBOARD_URL` (production).
+- ✅ **Supabase:** project `lastsip` (ref `aqcxgjtbwuyhtcqusoax`, us-east-1), migration applied, function `lastsip` deployed. Leaderboard URL: `https://aqcxgjtbwuyhtcqusoax.supabase.co/functions/v1/lastsip`. Smoke-tested (submit, one-Pour-per-day, boards, stats); test rows deleted. The DB password is in `.env.local` (git-ignored).
+- ⏸️ **Twitch app:** blocked (the account needs phone + 2FA). Until then, Pours are posted **unverified** (marked `*`). Chat + Bits work anonymously.
+- Redeploy after changes: `npx vercel deploy --prod --yes`. Function: `npx supabase functions deploy lastsip --no-verify-jwt --use-api`. New migration: add a file in `supabase/migrations/`, then `npx supabase db push` (needs `SUPABASE_DB_PASSWORD` from `.env.local`).
+
+# Original setup guide
 
 Everything else is code. These steps need your accounts.
 
