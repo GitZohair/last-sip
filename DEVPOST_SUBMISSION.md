@@ -1,37 +1,47 @@
 # LAST SIP
 
-> **You got up to grab water. Chat is home alone with you.**
+> **A daily stream ritual. You got up for water, and your chat is home alone with you.**
 
 ## Inspiration
-Every streamer has said "brb, getting water". We turned that walk into the game. You carry one full glass from the kitchen back to your stream desk through a house that changes every day. Your chat is home alone with you, and chat controls the house.
+Every streamer says "brb, getting water." We turned that walk into a daily show. Wordle proved that one shared puzzle a day becomes a ritual. REPO and Peak proved that goofy physics plus an audience produces endless clips. LAST SIP combines both and makes chat the antagonist (and occasionally the hero).
 
 ## What it does
-- **Chat controls the house, not you.** Viewers type `!bomb`, `!fridge`, `!gust`, `!ice`, `!lights` or `!quake` in normal Twitch chat. A bomb lands ahead of you, a fridge falls from the ceiling, a draft pushes you sideways, the floor gets mopped, the lights go out, or the bass drops. The streamer's skill still decides the outcome.
-- **Chat can also save you.** `!steady` steadies the glass for 6 seconds, but only when 3 different viewers ask within a few seconds. A single troll can't do it alone, and teamwork can.
-- **Every drop is blamed on someone.** The game attributes each spill to the event that caused it. At the end, **Spill Credits** roll like movie credits, ranking who in chat cost you the most water. If you spilled it yourself, the credits say so.
-- **Chat leaves its mark.** `!frame Kappa` hangs that emote in a picture frame in the hallway gallery, with the viewer's name on a brass plate. Yesterday's top spiller is hung as **MOST WANTED** in tomorrow's house.
-- **The glass is the scoreboard.** Anyone who tunes in mid-run understands the stakes in one second.
-- **A daily house.** Same seed for everyone each UTC day: the room order, door positions and hazards (the rug pull, the robo-bear, the ceiling fan, the spin cycle) change daily. Different chat, different disaster.
-- **Your own spills fight back.** Spilled water becomes puddles that make the floor slippery.
+The streamer has 60 seconds to carry one full glass of water from the kitchen back to their stream desk, in third person. The house is different every day and the same for every streamer. Chat controls the house.
+
+- **The chaos lever.** Viewers type `!chaos` to pull a slot machine shown on stream. It draws from a 30-card deck: common (banana barrage, duck stampede, ball pit, mopped floor), rare (moon gravity, raining fridges, tilted house, disco inferno) and **legendary (the floor is lava, mirror world, tactical banana)**. About a quarter of the cards *help* (a lid, a top-up, bullet time), so chat never knows exactly what it's doing to you. Direct commands (`!bomb`, `!fridge`, `!lights`…) work too.
+- **Every Twitch action matters.** Cheers, subs, follows, raids, hype trains and the game's own channel-point rewards each pull a card. Bigger support pulls rarer cards, and a raid drops a tactical banana.
+- **Chat can save you.** `!steady` steadies the glass, but only when 3 different viewers ask, so teamwork beats trolling.
+- **Every drop is blamed.** The game attributes each spill to the event that caused it. At the end, **Spill Credits** roll like a movie, and the day's worst viewer becomes **MOST WANTED**: hung on the wall in tomorrow's house and ranked on a global board across every channel.
+- **It's your house.** After sign-in, the house is decorated with your avatar, your clip thumbnails as family photos, your game's box art and your emotes. Chat hangs its own emotes in the gallery with `!frame Kappa`, passed through an ML safety filter.
+- **Fast, skillful, clip-ready.**
+  - SHIFT for careful steps.
+  - **CATCH IT [E]** for a slow-mo save when the glass is about to go.
+  - **Scream into your mic to dash**: streamers yelling on purpose.
+  - When the water drops below 15%, **LAST SIP mode** brings slow-mo, a heartbeat and a red vignette.
+  - Legendary cards and near-misses are **auto-clipped** through the Twitch API.
+- **The daily ritual.** One official **Pour** per day counts, with unlimited practice. Streaks are tracked, and you share a spoiler-free **emoji receipt**: `💧🫗💥💧🎮🦆 🙌×2 · Most wanted: @viewer`. Leaderboards show today's Pour across Twitch and the Most Wanted viewers.
+- **A living house.** The rug pulls backward, a teddy bear rides a robot vacuum, the ceiling fan blows, the spin cycle shakes, your own spills turn into slippery puddles, and a golden duck hides somewhere. When chat is quiet, the house pulls the lever itself on a seeded schedule that's the same for everyone that day.
 
 ## What's different
-Most chat-integrated games let viewers control the player or spawn enemies. LAST SIP gives chat a different role: it controls the house around the streamer. It also *measures* each viewer's impact by physical consequence, so the audience gets a score and a story, not just a button. Viewers who trolled you end up on the credits and on the wall.
+Most chat-integrated games hand viewers the controller or let them spawn enemies. LAST SIP gives chat the house, and it **measures each viewer's impact by physical consequence**, so the audience gets a score, a credit roll, a wanted poster and a reason to come back tomorrow. It's a daily game built for an audience: the same house for every streamer, a different chat, a different disaster.
 
 ## How we built it
-- **Three.js** first-person game; stylized interiors from **Kenney** CC0 furniture models; custom AABB character controller; spring-damper slosh model for the water.
-- **Real Twitch chat with zero setup.** An anonymous read-only Twitch IRC WebSocket: the streamer types their channel name, with no OAuth, bot account or tokens. Cheers arrive as `bits` tags and fire chaos instantly.
-- **ChatDirector:** per-viewer cooldowns, a global chaos cooldown with a short queue so the streamer always gets a beat to recover, distinct-viewer help votes, and attribution of every event.
-- **Safe picture frames:** emotes come from Twitch's CDN (already moderated). Image links must pass an HTTPS host allowlist and then an **in-browser ML classifier (nsfwjs / TensorFlow.js)**. Anything that fails either check, or anything uncertain, is rejected and never shown.
-- **Built with OpenAI Codex:** [describe the Codex thread: scaffolding, the Twitch integration, iterating the level, tests]. Session ID: [add].
+- **Three.js** third-person game with Kenney CC0 interiors and an animated CC0 robot. A fixed 120 Hz simulation, adaptive resolution, instanced particles and engine-free "goofy" sphere physics keep it smooth in a browser source.
+- **Twitch, zero setup:** type a channel and chat plus Bits work through anonymous read-only IRC. **Sign in with Twitch** (implicit OAuth) adds an EventSub WebSocket (cheers, subs, gifts, follows, raids, hype trains, redemptions), auto-created channel-point rewards, the **Create Clip** API and Helix profile data for personalizing the house.
+- **A fair chaos director:** per-viewer cooldowns, a global cooldown with a short queue, distinct-viewer help votes and rarity weighting biased by Bits.
+- **Spill attribution ledger:** causes stay "hot" for a few seconds after each event, and every lost drop is credited.
+- **Safe user images:** Twitch emotes are trusted; image links must pass an HTTPS allowlist and then an in-browser **nsfwjs / TensorFlow.js** classifier. Anything that fails is rejected and never shown.
+- **Leaderboards:** a Supabase Postgres + Edge Function that **verifies the Twitch token server-side** before accepting a Pour, so a channel can't be spoofed. One Pour per channel per day, plus a Most Wanted board that aggregates viewers across all channels.
+- **Built with OpenAI Codex:** [describe: scaffolding, Twitch/EventSub integration, level + hazard iteration, tests, balance bot]. Session ID: [add].
 
 ## Challenges
-Making chaos fair (cooldowns and queues instead of a spam firehose), making blame feel right (a cause stays "hot" for a few seconds after an event), and letting strangers' images on stream safely (layered moderation that fails closed).
+Making chaos *fair* (cooldowns, queues, help votes), making blame *feel right*, keeping a physics-comedy game smooth in a browser source, and letting strangers' images on stream safely.
 
 ## What's next
-A cross-channel daily board ("today across Twitch"), channel-point redemptions via EventSub, and community-built houses.
+Community-built houses, streamer-vs-streamer "same seed" races, and a Twitch Extension panel that shows viewers their own Most Wanted rank.
 
 ## Built with
-JavaScript · Three.js · Vite · Twitch IRC (chat + Bits) · TensorFlow.js · nsfwjs · Kenney assets · OpenAI Codex
+JavaScript · Three.js · Vite · Twitch IRC · Twitch EventSub · Twitch Helix (Clips, Channel Points) · Supabase · TensorFlow.js · nsfwjs · Kenney assets · OpenAI Codex
 
 ## Links
-- Live demo: [add] · Repo: [add] · Video: [add]
+Live demo: [add] · Repo: [add] · Video: [add]

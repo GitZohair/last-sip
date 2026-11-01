@@ -1,69 +1,90 @@
-# CODEX HANDOFF — read this first, build, don't redesign
+# CODEX HANDOFF v2 — build exactly this, in this order
 
-The concept is **locked**. Your job is to implement and polish the list below in order. Do not add new mechanics, rename things, or change the pitch. If something is ambiguous, choose the simplest option that matches this file.
+**Read first:** `GAME_DESIGN.md` (locked design + psychology), `SETUP.md` (accounts the human sets up).
+**Deadline:** Nov 2, 2026, 2:00pm PST. Do all of this in ONE Codex thread; its session ID goes in the submission.
+**Rules for you:**
+- Don't redesign, rename, or add mechanics beyond this list.
+- Keep modules small and readable. No minified one-liners.
+- After every task run `npm test && npm run build`, then QA in the browser with `?dev=1`. That exposes `window.lastSip.{run, play(cardId|'deck', [users]), goto(roomKey), state()}`.
+- Never add visible "test/simulate" UI. Real Twitch only. The house's own seeded random events fill the quiet moments.
+- Commit after each task with a clear message.
 
-Deadline: **Nov 2, 2026 at 2:00pm PST**. Do most of the remaining build in ONE Codex thread. Its session ID is a required part of the submission.
+## Architecture (as it stands now)
+```
+index.html              intro (sign-in / channel, Pour, Practice, mic) · HUD · results
+src/twitch.js           anonymous IRC chat, parser, ChatDirector (cooldowns, queue, help votes, bits)
+src/twitch-auth.js      implicit OAuth, Helix, EventSub WS, auto-clip, channel-point rewards, profile
+src/moderation.js       frame image safety: emote trust → host allowlist → nsfwjs (lazy) → fail closed
+src/game/main.js        boot, Twitch routing, fixed 120 Hz loop, finish → receipt/leaderboard
+src/game/run.js         one run: level, avatar, glass, chaos, props, mods, house director, catch, scream
+src/game/world.js       renderer + lights (adaptive DPR, follow lamps, PCF shadows), lights-out/disco/fog
+src/game/level.js|rooms.js|shell.js   seeded house: kitchen → shuffled middle rooms → stream desk
+src/game/clutter.js     seeded wall decor + loose props + golden duck; personalize() = streamer photos
+src/game/character.js   RobotExpressive avatar (animations) + over-shoulder chase camera
+src/game/glass.js       slosh spring + spill + droplet particles (instanced)
+src/game/deck.js        30 chaos/help cards with rarity; mods.js = timed modifiers
+src/game/props.js       goofy sphere physics props (bananas slip, balls bonk, ducks stampede)
+src/game/chaos.js       bomb/fridge/gust/mop/lights/quake/calm + puddles
+src/game/ledger.js      spill blame → Spill Credits / villain
+src/game/daily.js       Pour (1/day), streaks, emoji receipt, leaderboard client
+supabase/               schema.sql + edge function `lastsip` (token-verified submit, public boards)
+```
 
-## The pitch (locked)
+## P0 — must ship (Stage 1 + the demo)
+1. **Balance pass.** Targets: a careful run keeps ~80% water in ~45s; a reckless sprint keeps ~40%; chaos every ~5s should feel *tense but survivable*. Tune `glass.js` (rimAllow, spill coefficient, gains), the house director interval in `run.js`, and the bomb/fridge forces in `chaos.js`. Write `experiments/balance.mjs` with a scripted bot (pure functions only) and record the numbers in `PLAYTEST.md`.
+2. **Solvability.** For 10 seeds (`?seed=2026-11-0X`), assert that the spawn→door→…→desk path is never blocked: doors inside both rooms' widths, the laundry box wall always has a gap, the sofa slalom always leaves ≥1.2 m, and random wall decor never sits in a door's 1.8 m opening. Add a node test that builds the layout with a stub `ctx.place` and checks the colliders.
+3. **Results and feedback.** Pass `saves` to `submit()`. Show `board.stats` ("62% finished today · median 41% water") on the results screen. Show a toast with the server error (e.g. "already poured today").
+4. **The streamer's own stuff.**
+   - Verify `personalize()` with a real signed-in account: avatar, box art and clip thumbnails on the walls, plus a "WELCOME HOME" sign.
+   - Anonymous mode: fetch the channel's avatar via a public service (`https://decapi.me/twitch/avatar/<login>`) and hang it.
+   - Put the streamer's channel emotes (`profile.emotes`) on fridge magnets and in 3 gallery frames.
+5. **Sound (biggest missing juice).**
+   - Download Kenney CC0 packs: *Impact Sounds*, *Interface Sounds*, *Digital Audio*.
+   - Build `src/game/sfx.js` with WebAudio buffers covering: footsteps (speed-scaled), slosh (by danger), splash per droplet batch, fuse beep + boom, fridge thud, banana squeak, a slot-reel tick + a jingle per rarity, catch "ding", a last-sip heartbeat loop, a lights-off clunk, and the credits fanfare.
+   - Add a master volume on the intro.
+6. **Deploy** following `SETUP.md`: Vercel, plus the Twitch app redirect, plus Supabase. Put the URL in the README and DEVPOST.
 
-**LAST SIP: you got up to grab water, and chat is home alone with you.**
-The streamer carries one full glass from the kitchen back to their stream desk through a house that changes every day. Chat can't touch the controls. Chat controls *the house* with `!bomb`, `!fridge`, `!gust`, `!ice`, `!lights` and `!quake`. Chat can also *help*: `!steady` works when 3 different viewers send it. Chat can *decorate*: `!frame <emote>` hangs the emote in a picture frame in the hallway gallery.
-Every drop lost is **blamed on whoever caused it**. The run ends with **SPILL CREDITS** that roll like movie credits. Yesterday's top spiller is hung as **MOST WANTED** in tomorrow's gallery.
+## P1 — makes it win
+7. **More diabolical house hazards** (seeded per room; 2 per room max):
+   - Cabinet doors that swing open across the path on a timer.
+   - The microwave "DING" that knocks you.
+   - A trampoline couch (bounces you; the glass hates it).
+   - A conveyor treadmill.
+   - A Roomba that *chases puddles*, and you.
+   - A slamming door that closes for 1.5s every 4s.
+   - A pendulum ceiling lamp.
+   - Falling books from the bookcase when you pass.
 
-Why it's novel (use these exact angles in the video and the description):
-1. **Causal blame.** Viewers get scored by the physical damage they actually caused, not by votes or spending.
-2. **Chat as the house, not the controller.** This avoids the "Twitch Plays" cliché, and the streamer's skill still decides the outcome.
-3. **The glass is a shared tension meter.** A viewer who just joined understands the stakes in one second.
-4. **Chat leaves marks on the world.** Their emotes become art on the walls, and the worst offender gets a wanted poster the next day.
+   Each hazard is a `zone()` or a moving collider like the robo-bear in `rooms.js`.
+8. **More rooms** (add to `ROOMS`, then shuffle 3 of 5 middle rooms daily): `bathroom` (a slippery tile floor, bathtub obstacle, toilet-flush gust) and `bedroom` (a bed trampoline shortcut, pillow-fort walls). Use `.asset-sources/furniture-kit/pack.zip` models (bathtub, toilet, bedDouble, bedBunk, pillow, bookcaseClosedWide…).
+9. **Post FX** (perf-gated): UnrealBloomPass 0.35 + FXAA. Only enable when the adaptive DPR stays ≥ 1.0 for 3 seconds.
+10. **Bigger moments.**
+    - Ragdoll-ish tumble: on a big blast, play `Death` for 0.6s, then stand back up.
+    - At the finish, the robot sits (`Sitting`) and then `Dance`s if water > 50%.
+    - Camera punch-in on legendary cards.
+    - Confetti for a ONE LAST SIP finish.
+11. **Tips (optional).** Add a StreamElements socket (`https://realtime.streamelements.com`, `authenticate` with a JWT the streamer pastes into a settings drawer). Map `tip` → `play('deck', [name], {bias: min(1, amount/20)})`. Label it optional.
+12. **Streamer settings drawer** (gear icon): chaos cooldown, help votes needed, house director on/off, a mic threshold slider, "create channel point rewards" button, sign out.
+13. **Share card.** "SAVE CARD" renders the receipt + credits + day # to a 1200×630 canvas PNG.
 
-## What exists now (Claude's pass)
+## P2 — if time remains
+14. An OBS-friendly `?overlay=1` mode with a transparent HUD and bigger text.
+15. Delete `legacy.html`, `lab/`, `src/main.js`, `src/simulation.js`, `src/style.css`, `src/history.css` and `tests/simulation.test.js`, plus the old research docs (move them to `/archive`).
+16. Mobile: show a "desktop only" note.
 
-| File | What |
+## Known issues to fix while you're in there
+- The camera boom can clip through the cross-wall lintel in narrow doors. Include the lintel as a collider (top 2.8) only for the camera ray.
+- After `goto()` (dev only), the camera lerps from far away. Snap the camera when the player teleports.
+- `chaos.js` fridge drops can land on top of the player. Push the player out or offset the drop at least 1.2 m.
+- `ui.intro` shows "THE POUR IS DONE" but still allows Practice. That's correct; keep it.
+
+## Demo video shot list (≤ 3:00; judges may watch only this)
+| Time | Shot |
 |---|---|
-| `index.html`, `src/game/game.css` | The new game UI: intro with channel connect, HUD, feed, banners, blame popup, results with Spill Credits |
-| `src/game/main.js` | Renderer, loop, chat wiring, finish/score. `window.lastSip.goto('hallway')` and `.simulate('!bomb')` for QA |
-| `src/game/level.js`, `rooms.js`, `shell.js` | Daily house: kitchen → shuffled (hallway gallery / living room / laundry) → stream desk. Kenney models, AABB colliders |
-| `src/game/player.js` | Pointer-lock FPS controller: WASD, Shift/RMB careful steps, Space hop, landing impacts |
-| `src/game/glass.js` | Spring-damper slosh model, spill when tilt exceeds a rim allowance that grows as the glass empties |
-| `src/game/chaos.js` | Chat events, puddles (spilled water makes the floor slippery!), bomb/fridge drops |
-| `src/game/ledger.js` | Spill attribution → credits and villain |
-| `src/game/gallery.js` + `src/moderation.js` | Picture frames; emotes trusted; URLs go through an allowlist, then the nsfwjs classifier, and are rejected if either step fails |
-| `src/twitch.js` | **Real** anonymous Twitch IRC (no OAuth), parser, ChatDirector (per-user cooldown, global chaos cooldown + queue, 3-viewer help votes, Bits → instant chaos). Verified live against a real channel |
-| `tests/twitch.test.js` | Parser, director, moderation, ledger tests. `npm test` passes |
-| `legacy.html`, `lab/`, `src/main.js`, `src/simulation.js` | Old prototypes. **Delete before submission** (P2), and don't build on them |
-
-## Task list (in order, check each off)
-
-### P0: must ship (Stage 1 pass/fail + the demo)
-1. **Lights-out bug.** `!lights` dims the hemisphere light and the sun, but the per-room PointLights stay on. Keep them in an array in `setup()` and lerp them to 0 while `chaos.active.lights > 0`.
-2. **Villain persistence.** `finish()` currently stores a hardcoded emote id 86. Track each user's last emote in `onChat` (`msg.emotes[0]` → `emoteUrl(id)`) and store it. With no emote, render a canvas "WANTED" poster that shows the name instead of an image.
-3. **Full playthrough QA** with a real keyboard on 3 different dates (change `seed` via `?seed=2026-11-03`; add that query param). Each daily house must be completable: door gaps reachable, the laundry box wall always has a gap, nothing spawns inside the player.
-4. **Deploy** a static build to Vercel, Netlify or GitHub Pages. Add the public URL to the README and DEVPOST. Make sure `/assets/kenney/**` ships.
-5. **Push the repo** (public GitHub) with the README run instructions and `ASSET_CREDITS.md` (Kenney CC0, nsfwjs MIT, TF.js Apache-2.0).
-
-### P1: makes it win (Design + Impact)
-6. **Sound** (biggest missing juice). Use the Kenney CC0 audio packs (*Impact Sounds*, *Interface Sounds*, *UI Audio*): footsteps, slosh/splash on spill, fuse beep + boom, fridge thud, buzzer on lights-out, a chime for help-vote success, and a credits jingle. Keep it to a small `src/game/sfx.js` that uses WebAudio buffers.
-7. **Spill VFX.** Droplet particles from the glass rim while `spillRate > 0`, scaled by the rate. Puddles already exist.
-8. **Bloom.** Add `UnrealBloomPass` (strength ~0.35) only for emissives/lights. Check the frame rate stays ≥ 55 fps at 1080p on an integrated GPU, and drop it if not.
-9. **Room dressing** with more Kenney furniture (already in `.asset-sources/furniture-kit/pack.zip`): bookcases + books, lamps, plants, pillows, a radio, a washer stack, wall paneling, window walls (`wallWindow`), rug variety. Copy the GLBs into `public/assets/kenney/furniture-kit/`. Aim for 12–20 props per room. Don't block the main path.
-10. **Difficulty curve.** The timer is 90s. Tune it so a clean careful run keeps ~85% water in ~55s and a sprint keeps ~50%. Add one **daily house rule** picked by the seed and shown on the intro: *Wet Monday* (puddles last twice as long), *Fan Club* (the living-room fan is always on), *Bear Market* (two robo-bears), *Lights Off Friday* (lights flicker), *Heavy Glass* (slower turning, more slosh).
-11. **Streamer QoL.** The chaos cooldown and help-vote count should be adjustable on the intro screen (stored in localStorage). Add a "chat commands" card the streamer can toggle on screen for viewers. Add a mod-only `!unframe` that clears the last frame.
-12. **Results card.** A "COPY RESULT" text plus a "SAVE CARD" PNG (render the credits to a canvas) for socials.
-
-### P2: if time remains
-13. A cross-channel daily board: a tiny Cloudflare Worker + KV with `POST {channel, seed, water, time, topSpiller}` and `GET /seed`, shown as "Today across Twitch". Label it clearly as optional.
-14. Channel-point redemptions via EventSub (needs OAuth). Only do this if P0–P1 are done.
-15. Delete `legacy.html`, `lab/`, `src/main.js`, `src/simulation.js`, `tests/simulation.test.js` and the old research markdowns, or move them to `/archive`.
-
-## Rules for you (Codex)
-- Keep modules small and readable. **No** one-line minified style like the old `lab/main.js`.
-- Run `npm test` and `npm run build` after every task. QA visually with `window.lastSip.goto(roomKey)` + `.simulate('!bomb')`.
-- Never claim features in DEVPOST that you didn't verify. Real chat works today. Payments/donations are not implemented, so don't mention them.
-
-## Demo video script (≤ 3:00; judges may watch only this)
-- **0:00–0:12 Hook:** a streamer mid-run, glass at 31%, a banner reads `CHAT BOMB — courtesy of <viewer>`, then a splash. VO: *"I went to get water. Chat was home alone."*
-- **0:12–0:40 Setup:** connect a real channel by typing its name (no login). Show a viewer in real Twitch chat typing `!fridge` and the fridge dropping in the game in the same shot.
-- **0:40–1:30 The run:** gallery frames with chat's emotes, a 3-viewer `!steady` save, `!lights` (flashlight), puddles from your own spills.
-- **1:30–2:00 Spill Credits** rolling, then MOST WANTED on the wall the next day.
-- **2:00–2:40 How it's built + Codex:** show the Codex thread, tests and the file structure, plus anonymous IRC, the ChatDirector and the nsfwjs moderation.
-- **2:40–3:00:** "Every channel gets the same house each day. Different chat, different disaster."
+| 0:00–0:08 | The robot runs through the hallway with glass at 23%. The slot shows **TACTICAL BANANA — LEGENDARY — @viewer**, the robot slips and the water splashes. VO: *"I got up for water. My chat was home alone."* |
+| 0:08–0:30 | One click on Sign in with Twitch. The house loads with *your* avatar and clips on the walls. Real chat types `!chaos`. |
+| 0:30–1:20 | Live run: house cards, a 3-viewer `!steady` save, **CATCH IT [E]**, scream-to-dash (with audible yelling), lights out, the golden duck. |
+| 1:20–1:45 | LAST SIP slow-mo, a finish at 4%, the robot sits, auto-clip toast. |
+| 1:45–2:10 | Spill Credits, the emoji receipt pasted into Discord, the leaderboard "across Twitch", MOST WANTED. |
+| 2:10–2:45 | Tech + Codex: the Codex thread, tests, EventSub, moderation pipeline, perf. |
+| 2:45–3:00 | "Same house for every streamer today. Different chat, different disaster." |
