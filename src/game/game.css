@@ -154,3 +154,14 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #stats-hist i { display: block; height: 1.3rem; border-radius: 5px; background: #ff6a4d; color: #fff; font-style: normal; padding: .2rem .4rem; min-width: 1.4rem; }
 @media (max-width: 760px) { #intro { padding: 1rem; background: #fff6e6f2; } #stats-grid { grid-template-columns: repeat(2, 1fr); } }
 #intro > * { margin-left: 0; margin-right: auto; } #intro .nav { width: 100%; max-width: none; }
+
+/* results: same editorial palette as the front page */
+#results { background: #fff6e6f2; color: #18332e; }
+#results .kicker { color: #ff6a4d; font: 800 .8rem/1 system-ui; letter-spacing: .18em; }
+#results h2 { font: 900 clamp(2.4rem, 5vw, 4rem)/.95 system-ui; letter-spacing: -.04em; color: #18332e; }
+#results #r-stats div { background: #18332e0d; border-radius: 12px; } #results #r-stats b { color: #18332e; }
+#results h3, #results h4 { color: #ff6a4d; } #results ol li { background: #18332e0d; color: #18332e; }
+#results button { background: #18332e14; color: #18332e; } #results button.big { background: #18332e; color: #fff6e6; box-shadow: 0 6px 0 #ff6a4d; border-radius: 14px; }
+#results #grades div { background: #18332e0d; } #results #grades span { color: #18332e; }
+#results .cols { width: min(46rem, 100%); grid-template-columns: 1fr 1fr; gap: 1.2rem; text-align: left; }
+#results .g-A b { color: #14a05a; } #results .g-B b { color: #1b86c8; } #results .g-C b { color: #c98a00; } #results .g-F b { color: #dc2f3f; }

@@ -16,3 +16,6 @@ Three.js and cannon-es are installed through npm; dependency licenses remain in 
 - Kenney Furniture Kit & Food Kit — CC0 (kenney.nl)
 - nsfwjs — MIT; TensorFlow.js — Apache-2.0
 - Twitch emotes are loaded at runtime from Twitch CDN and remain property of their owners.
+
+- **Kenney Pirate Kit** (CC0) — island patches, palms, rocks, platforms, watchtowers, shipwreck, boats, crates, barrels, cannon. https://kenney.nl/assets/pirate-kit
+- **Kenney Impact Sounds** and **Interface Sounds** (CC0) — footsteps, impacts, UI cues in `public/assets/sfx`. https://kenney.nl/assets/impact-sounds · https://kenney.nl/assets/interface-sounds

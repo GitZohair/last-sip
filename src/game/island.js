@@ -47,12 +47,18 @@ export async function buildIsland(scene) {
   put('pirate', 'flag-high-pennant', 3.2, 0, -82, 0, .9);
   const live = new THREE.PointLight('#a970ff', 8, 9); live.position.set(0, 2.4, -83); scene.add(live);
   colliders.push({ minX: -1.2, maxX: 1.2, minZ: -85.2, maxZ: -84.1, top: .78 });
+  // poster boards along the boardwalk: chat's !frame emotes and yesterday's MOST WANTED hang here
+  const slots = [[-1.7, -9], [1.7, -13], [-1.7, -41], [1.7, -45], [-1.7, -59], [1.7, -71]].map(([x, z]) => {
+    const p = new THREE.Mesh(postGeo, postMat); p.scale.y = .9; p.position.set(x, .2, z); p.castShadow = true; scene.add(p);
+    colliders.push({ minX: x - .12, maxX: x + .12, minZ: z - .12, maxZ: z + .12, top: 2 });
+    return { x, y: 1.85, z, rot: x < 0 ? Math.PI / 2 : -Math.PI / 2 };
+  });
   const length = 90;
   buildSea(scene, length);
   await Promise.all(jobs);
   const rooms = ZONES.map(([key, name, z0, z1]) => ({ key, name, z0, z1, w: 40, len: z0 - z1, hazards: [], slots: [] }));
   return {
-    rooms, doors: [], walks: [], colliders, hazards: [], slots: [], towers, ground: -12, open: true,
+    rooms, doors: [], walks: [], colliders, hazards: [], slots, towers, ground: -12, open: true,
     finish: { x: 0, z: -81.5, r: 1 }, spawn: { x: 0, z: 1.5, yaw: 0 }, length,
     roomAt: zz => rooms.find(x => zz <= x.z0 && zz > x.z1) || rooms.at(-1),
   };

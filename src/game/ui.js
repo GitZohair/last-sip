@@ -110,7 +110,7 @@ export const ui = {
     ui.show('results');
     set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
     set('r-title', !won ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : water < .05 ? 'ONE. LAST. SIP.' : water > .7 ? 'Hydrated. Respect.' : 'Technically a drink.');
-    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>WATER</span></div><div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
+    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>DRINK</span></div><div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
     $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
     const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
     $('grades').innerHTML = rooms.map((x, i) => `<div class="g-${grade(x.lost)}" style="animation-delay:${.2 + i * .15}s"><b>${grade(x.lost)}</b><span>${x.key}</span></div>`).join('');

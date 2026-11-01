@@ -11,7 +11,7 @@ const MAP = {
   wanted: 'wanted-reward', trophy: 'trophy', crown: 'crown', mic: 'microphone', stopwatch: 'stopwatch', splash: 'splash',
   catch: 'hand', house: 'house', chat: 'talk', vacuum: 'vacuum-cleaner', fire: 'fire', run: 'run', streak: 'flame', duck: 'duck',
   door: 'door', lamp: 'desk-lamp', books: 'bookshelf', cabinet: 'robot-grab', conveyor: 'belt', glass: 'glass-heart',
-  warning: 'hazard-sign', twitch: 'gamepad', bits: 'cut-diamond', sub: 'star-medal', raid: 'swords-emblem', follow: 'heart-plus',
+  warning: 'hazard-sign', twitch: 'gamepad', cannon: 'cannon', barrel: 'barrel', bits: 'cut-diamond', sub: 'star-medal', raid: 'swords-emblem', follow: 'heart-plus',
 };
 const out = {}, missing = [];
 for (const [k, name] of Object.entries(MAP)) { const ic = set.icons[name]; if (!ic) { missing.push(name); continue; } out[k] = ic.body; }

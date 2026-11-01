@@ -1,47 +1,38 @@
 # LAST SIP
 
-> **A daily stream ritual. You got up for water, and your chat is home alone with you.**
+**A daily island run where your chat shows up as named snipers.** Collect today's three fruits, carry the drink across the boardwalks to your stream hut, and don't get knocked into the sea. Every spilled drop is credited to the viewer who caused it.
 
 ## Inspiration
-Every streamer says "brb, getting water." We turned that walk into a daily show. Wordle proved that one shared puzzle a day becomes a ritual. REPO and Peak proved that goofy physics plus an audience produces endless clips. LAST SIP combines both and makes chat the antagonist (and occasionally the hero).
+Chat-interaction tools mostly turn viewers into a stream of anonymous effects. The 2024 Twitch Streamer Tools Hackathon winners pointed the other way: PixelWars won by sending viewers into battle as characters with their names on them, and a runner-up let viewers control Minecraft mobs. We wanted that, plus the daily ritual of Wordle: one puzzle a day, the same for everyone, so every streamer's attempt is comparable and every viewer's sabotage is remembered.
 
 ## What it does
-The streamer has 60 seconds to carry one full glass of water from the kitchen back to their stream desk, in third person. The house is different every day and the same for every streamer. Chat controls the house.
-
-- **The chaos lever.** Viewers type `!chaos` to pull a slot machine shown on stream. It draws from a 30-card deck: common (banana barrage, duck stampede, ball pit, mopped floor), rare (moon gravity, raining fridges, tilted house, disco inferno) and **legendary (the floor is lava, mirror world, tactical banana)**. About a quarter of the cards *help* (a lid, a top-up, bullet time), so chat never knows exactly what it's doing to you. Direct commands (`!bomb`, `!fridge`, `!lights`…) work too.
-- **Every Twitch action matters.** Cheers, subs, follows, raids, hype trains and the game's own channel-point rewards each pull a card. Bigger support pulls rarer cards, and a raid drops a tactical banana.
-- **Chat can save you.** `!steady` steadies the glass, but only when 3 different viewers ask, so teamwork beats trolling.
-- **Every drop is blamed.** The game attributes each spill to the event that caused it. At the end, **Spill Credits** roll like a movie, and the day's worst viewer becomes **MOST WANTED**: hung on the wall in tomorrow's house and ranked on a global board across every channel.
-- **It's your house.** After sign-in, the house is decorated with your avatar, your clip thumbnails as family photos, your game's box art and your emotes. Chat hangs its own emotes in the gallery with `!frame Kappa`, passed through an ML safety filter.
-- **Fast, skillful, clip-ready.**
-  - SHIFT for careful steps.
-  - **CATCH IT [E]** for a slow-mo save when the glass is about to go.
-  - **Scream into your mic to dash**: streamers yelling on purpose.
-  - When the water drops below 15%, **LAST SIP mode** brings slow-mo, a heartbeat and a red vignette.
-  - Legendary cards and near-misses are **auto-clipped** through the Twitch API.
-- **The daily ritual.** One official **Pour** per day counts, with unlimited practice. Streaks are tracked, and you share a spoiler-free **emoji receipt**: `💧🫗💥💧🎮🦆 🙌×2 · Most wanted: @viewer`. Leaderboards show today's Pour across Twitch and the Most Wanted viewers.
-- **A living house.** The rug pulls backward, a teddy bear rides a robot vacuum, the ceiling fan blows, the spin cycle shakes, your own spills turn into slippery puddles, and a golden duck hides somewhere. When chat is quiet, the house pulls the lever itself on a seeded schedule that's the same for everyone that day.
+- **One fixed island, one daily order.** Every day, everyone gets the same 3 of 6 fruits. You start with an empty glass, walk the boardwalks to each fruit islet, hold E to pour it in, and deliver the full drink to your stream hut. The fuller the glass, the harder it sloshes.
+- **You can fall off.** The boardwalks have no railings and two gaps to hop. Into the sea means a splash, a lost third of your drink, and a respawn.
+- **Chat becomes characters with names.** `!sniper` (or 100+ bits, or a sub) puts that viewer on a lifeguard tower with a water cannon. A red laser paints the streamer, then it fires. `!barrel` (or a follow) rolls a named barrel down the boardwalk. When chat is quiet, the house sends its own.
+- **Blame is the point.** Every hit and every spilled drop is credited to the viewer who caused it: Spill Credits at the end, a Most Wanted poster hung on the island tomorrow, and a cross-channel Most Wanted board.
+- **Your voice is a controller.** Shout (mic, or hold V) to stun the beach bot that hunts you along your own trail.
+- **Built to clip.** Snipes, splashes, catches and last sips trigger Twitch clips automatically when signed in.
+- **Zero setup.** Type a channel name and play: anonymous chat works without signing in. Signing in adds EventSub (bits, subs, follows, raids, channel points), auto-created rewards and auto-clips.
 
 ## What's different
-Most chat-integrated games hand viewers the controller or let them spawn enemies. LAST SIP gives chat the house, and it **measures each viewer's impact by physical consequence**, so the audience gets a score, a credit roll, a wanted poster and a reason to come back tomorrow. It's a daily game built for an audience: the same house for every streamer, a different chat, a different disaster.
+Crowd Control lets chat mess with a game you already play. LAST SIP is a game built around chat as player two: viewers are visible, named, scored, ranked across Twitch, and remembered tomorrow. The shared daily order makes every channel's run comparable, Wordle-style.
 
 ## How we built it
-- **Three.js** third-person game with Kenney CC0 interiors and an animated CC0 robot. A fixed 120 Hz simulation, adaptive resolution, instanced particles and engine-free "goofy" sphere physics keep it smooth in a browser source.
-- **Twitch, zero setup:** type a channel and chat plus Bits work through anonymous read-only IRC. **Sign in with Twitch** (implicit OAuth) adds an EventSub WebSocket (cheers, subs, gifts, follows, raids, hype trains, redemptions), auto-created channel-point rewards, the **Create Clip** API and Helix profile data for personalizing the house.
-- **A fair chaos director:** per-viewer cooldowns, a global cooldown with a short queue, distinct-viewer help votes and rarity weighting biased by Bits.
-- **Spill attribution ledger:** causes stay "hot" for a few seconds after each event, and every lost drop is credited.
-- **Safe user images:** Twitch emotes are trusted; image links must pass an HTTPS allowlist and then an in-browser **nsfwjs / TensorFlow.js** classifier. Anything that fails is rejected and never shown.
-- **Leaderboards:** a Supabase Postgres + Edge Function that **verifies the Twitch token server-side** before accepting a Pour, so a channel can't be spoofed. One Pour per channel per day, plus a Most Wanted board that aggregates viewers across all channels.
-- **Built with OpenAI Codex:** [describe: scaffolding, Twitch/EventSub integration, level + hazard iteration, tests, balance bot]. Session ID: [add].
+- **Three.js r180 + Vite**, a 120 Hz fixed-step simulation, a spring-damper slosh model for the drink, instanced droplets, custom circle-vs-box collision with sea "pits", and a third-person chase camera.
+- **Kenney CC0 assets** (Pirate, Furniture and Food kits; Impact and Interface sound packs), with bloom, a vignette and a warm grade that switch off automatically on slow GPUs.
+- **Twitch:** anonymous IRC over WebSocket, OAuth implicit grant, Helix (profile, clips, custom rewards), and EventSub WebSocket.
+- **Supabase** (Postgres with RLS, plus an Edge Function that validates Twitch tokens) for the daily Pour board and the Most Wanted board.
+- **Safety:** `!frame` images run through an in-browser nsfwjs classifier before they are shown, and fail closed.
+- **OpenAI Codex** for the build, with the design and review loop documented in the repo.
 
 ## Challenges
-Making chaos *fair* (cooldowns, queues, help votes), making blame *feel right*, keeping a physics-comedy game smooth in a browser source, and letting strangers' images on stream safely.
+Making chaos readable: every viewer action is telegraphed (laser, rolling barrel, name tag) so a hit feels fair and the streamer knows exactly whom to blame.
 
 ## What's next
-Community-built houses, streamer-vs-streamer "same seed" races, and a Twitch Extension panel that shows viewers their own Most Wanted rank.
+Seagull and lifeguard characters, a daily house rule (windy, low tide), streamer-vs-streamer races on the same seed, and a Twitch Extension panel that shows viewers their Most Wanted rank.
 
 ## Built with
-JavaScript · Three.js · Vite · Twitch IRC · Twitch EventSub · Twitch Helix (Clips, Channel Points) · Supabase · TensorFlow.js · nsfwjs · Kenney assets · OpenAI Codex
+JavaScript · Three.js · Vite · Twitch IRC · Twitch EventSub · Twitch Helix · Supabase · TensorFlow.js · nsfwjs · Web Audio · Kenney CC0 assets · OpenAI Codex
 
 ## Links
-Live demo: [add] · Repo: [add] · Video: [add]
+Live demo: https://lastsip-seven.vercel.app · Repo: [add] · Video: [add] · Codex session ID: [add]
