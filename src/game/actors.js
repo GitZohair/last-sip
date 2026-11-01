@@ -6,6 +6,7 @@ import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 // viewer figures (Kenney Mini Characters): the gunner on a sniper tower is a little person, not just a cannon
 const CREW = ['character-female-a', 'character-male-c', 'character-female-d', 'character-male-e', 'character-female-f', 'character-male-a'];
 const crewCache = new Map(), gltfLoader = new GLTFLoader();
+export const preloadCrew = () => Promise.all(CREW.map(n => { if (!crewCache.has(n)) crewCache.set(n, gltfLoader.loadAsync(`/assets/kenney/mini-characters/${n}.glb`)); return crewCache.get(n); }));
 export async function viewer(user) {
   const name = CREW[[...user].reduce((h, c) => h + c.charCodeAt(0), 0) % CREW.length]; // same viewer, same look
   if (!crewCache.has(name)) crewCache.set(name, gltfLoader.loadAsync(`/assets/kenney/mini-characters/${name}.glb`));

@@ -10,7 +10,7 @@ import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
 import { createVoice } from './voice.js';
 import { sfx } from './sfx.js';
-import { INGREDIENTS, todaysOrder } from './recipe.js';
+import { todaysOrder, INGREDIENTS } from './recipe.js';
 import { buildIsland } from './island.js';
 import { RULES, todaysRule } from './rules.js';
 import { createHudCues } from './hudcues.js';
@@ -66,18 +66,20 @@ async function start(asPour) {
     spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
-    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), collect: (id, n, total) => { showOrder(); cues?.pop(`+ ${INGREDIENTS[id].label}  ${n}/${total}`, INGREDIENTS[id].color, true); if (n === total) setTimeout(() => cues?.pop('TO THE HUT', '#c9a2ff', true), 900); },
+    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), loaded: n => cues?.pop(`${n} DRINK${n > 1 ? 'S' : ''} LOADED`, '#c9a2ff'),
+    served: (c, tip) => cues?.pop(c.mood === 'happy' ? `+$${tip}  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true),
+    walkout: (c, v) => { cues?.pop(`${c.user} WALKED OUT`, '#ff5c7a', true); if (v) ui.feed(`Walkout blamed on ${v}`, 'muted', 'warning'); },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
     hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : kind === 'SNIPER' ? `SNIPED BY ${who}` : kind === 'BARREL' ? `ROLLED BY ${who}` : `${kind} FROM ${who}`, '#ff5c7a'),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
   cues?.remove(); cues = createHudCues($('hud'));
-  ui.loading(false); ui.show('hud'); run.state = 'ready'; showOrder(); ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
+  ui.loading(false); ui.show('hud'); run.state = 'ready'; ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
   lockPointer();
   const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
-function showOrder() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got, RULES[run.rule]); }
+function showOrder_unused() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got, RULES[run.rule]); }
 // Front page backdrop: the real island, slowly orbiting behind the editorial panel.
 let preview = null;
 async function backdrop() { const scene = world.reset(); await buildIsland(scene); if (!run) preview = { t: 0 }; }
@@ -88,15 +90,17 @@ function orbit(dt) {
 }
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
-  const water = r.glass.state.water, time = r.t, salt = r.salt || 0, score = r.won ? Math.round(water * 1000 * (1 - salt * .6) + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0; // seawater ruins the drink
+  const sh = r.shift, time = r.t, salt = 0, water = sh.served ? sh.tips / (sh.served * 10) : 0;
+  const score = Math.round(sh.tips * 10 + r.style.points);
   const villain = r.ledger.villain();
   if (villain) localStorage.setItem('lastsip:villain', JSON.stringify({ user: villain.name, image: lastEmote.get(villain.name) || null, title: 'MOST WANTED' }));
-  const rooms = r.level.rooms.map(x => ({ key: x.key, lost: r.roomLoss[x.key] }));
-  const d = official ? recordPour(seed, { finished: r.won, water, time, score }) : today(seed);
-  const text = receipt({ order: r.recipe.order.map(id => INGREDIENTS[id].label), falls: r.falls, salt, saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
-  if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
+  const rooms = [];
+  const d = official ? recordPour(seed, { finished: sh.served > 0, water, time, score }) : today(seed);
+  const stars = sh.log.map(x => x.mood === 'happy' ? (x.tip >= 8 ? '★' : '☆') : '✖').join('');
+  const text = receipt({ tips: sh.tips, served: sh.served, walkouts: sh.walkouts, stars, falls: r.falls, saves: r.saves, number: dayNumber(seed), villain: villain?.name, duck: r.duck, streak: d.streak, official });
+  if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: sh.served > 0, credits: r.ledger.credits().slice(0, 10) });
   const board = await boards(seed).catch(() => null);
-  setTimeout(() => ui.results({ salt, rooms, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
+  setTimeout(() => ui.results({ salt, rooms, tips: sh.tips, served: sh.served, walkouts: sh.walkouts, servedBy: sh.servedBy, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
 
 // ---------- boot
@@ -144,7 +148,7 @@ function loop(now) {
   cues?.update(dt, run, player, world.camera, run.wind);
   document.body.classList.toggle('dark', run.chaos.active.lights > 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
-  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt });
+  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt, tips: run.shift.tips, tray: run.glass.count, served: run.shift.served });
   world.render();
   player.pos.x = real.x; player.y = real.y; player.pos.z = real.z;
 }

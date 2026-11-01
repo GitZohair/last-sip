@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildIsland } from './island.js';
-import { createRecipe, INGREDIENTS } from './recipe.js';
+import { createTray } from './tray.js';
+import { createShift } from './shift.js';
 import { createGlass, createSplash } from './glass.js';
 import { createChaos } from './chaos.js';
 import { createGallery } from './gallery.js';
@@ -31,9 +32,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const props = createProps(scene, level.colliders);
   const deco = await dress(scene, level, props, rng(seed + ':clutter'));
   personalize(scene, profile);
-  const recipe = await createRecipe(scene, seed);
   const avatar = await createCharacter(scene);
-  const glass = createGlass(avatar.holder);
+  const glass = createTray(avatar.holder); // the tray of drinks (same interface as one glass)
+  const shift = await createShift(scene, seed, glass);
   const mods = createMods();
   const houseRng = rng(seed + ':house');
   const chaos = createChaos({ scene, level, player, glass, props });
@@ -46,7 +47,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const actors = createActors(scene, level, sfx);
   const rule = todaysRule(seed), wind = createWind(scene, seed, rule === 'windy'); // always present: SEA BREEZE cards use it too
   if (rule === 'hungry') hazards.vacuum.hungry = true;
-  const guide = createGuide(scene, { recipe, actors, level });
+  const guide = createGuide(scene, { shift, actors, level });
   const drops = createDrops(scene, level, { sfx, onImpact: (d, dist) => { gallery.shake(1); if (dist < 6) run.shakeT = .35; } });
   // where to drop: on the route a few metres ahead of the streamer (so it lands in their way, telegraphed)
   // Spaced 2.4 m from other drops and alternating sides, so the boards never get fully blocked (always a squeeze-past gap).
@@ -69,8 +70,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const spawnActor = (kind, user) => actors.spawn(kind, user, player, kind === 'barrel' ? { spot: barrelSpot() } : {});
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
-  glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
-  const run = { drops, shakeT: 0, rule, wind, guide, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
   // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
   await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ...FURNITURE.map(([n]) => ['furniture', n])]);
@@ -92,7 +92,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     fire: type => type === 'storm' ? wind.gust(3.2) : type === 'crate' ? (() => { const p = dropSpot(); drops.furniture(api.user || 'CHAT', p.x, p.z, FURNITURE[0]); })() : chaos.fire(type),
     rain: n => { for (let i = 0; i < Math.min(n, 3); i++) setTimeout(() => { const p = dropSpot(i % 3); drops.furniture(api.user || 'CHAT', p.x, p.z); }, i * 450); },
     mod: (n, s) => mods.set(n, s),
-    refill: f => { glass.state.water = Math.min(1, glass.state.water + f); },
+    refill: f => glass.refill(f),
     clearPuddles: () => chaos.clearPuddles(),
     spawnAhead(kind, n, { spread = 2, drop = false, toward = 0, life } = {}) {
       const p = ahead(toward || 3);
@@ -129,14 +129,13 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   // or one of the plank ramps to climb back up. A viewer's lifebuoy skips all that. Very clippable.
   const SWIM_Y = -2.2, SEA = new THREE.Color('#5d8f7c');
   run.safe = { x: level.spawn.x, z: level.spawn.z }; run.falls = 0; run.salt = 0; run.swimming = false; run.climb = null;
-  const salty = () => glass.tint(run.filled ? recipe.color.clone().lerp(SEA, Math.min(.85, run.salt)) : SEA.clone().lerp(new THREE.Color('#bfe9ff'), 1 - run.salt));
   const fall = (room) => {
     splash.emit({ x: player.pos.x, y: SWIM_Y + .4, z: player.pos.z }, { x: 0, z: 0 }, 30); sfx.splash(); gallery.shake(.6);
     if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
       hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
     run.falls++; run.swimming = true; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
-    run.salt = Math.min(1, run.salt + .15); salty(); avatar.emote('No', .8);
+    run.salt = Math.min(1, run.salt + .35); glass.salt(.35); // every drink on the tray is now part seawater avatar.emote('No', .8);
     ledger.blame(['THE SEA'], 'SALT', 2, run.t); style.combo = 1; hooks.fell?.(run.falls);
     if (run.falls === 1) hooks.clip?.('fell in');
   };
@@ -207,7 +206,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (player.grounded && !pit && !run.swimming && player.y > -.05) { run.safe.x = player.pos.x; run.safe.z = player.pos.z; }
       if (!run.swimming && player.y < SWIM_Y) fall(room);
       if (run.swimming) {
-        run.salt = Math.min(1, run.salt + dt * .03); if (Math.random() < dt * 2) salty();
+        if (Math.random() < dt * 2) { run.salt = Math.min(1, run.salt + .015); glass.salt(.015); }
         const out = exitFor(player.pos);
         if (out) { run.swimming = false; player.swimming = false; run.climb = { from: { x: player.pos.x, z: player.pos.z }, to: out, t: 0 }; }
       }
@@ -238,7 +237,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     sloshCd -= dt; if (glass.state.danger > .55 && sloshCd <= 0) { sloshCd = .45; sfx.slosh(glass.state.danger); }
     creakCd -= dt; if (creakCd <= 0 && hazards.doorWarning(run.t, player)) { creakCd = 1.2; sfx.creak(); }
     if (hazards.mate?.inRoom && hazards.mate.awake <= 0 && (zzzCd -= dt) <= 0) { zzzCd = 1.8; sfx.zzz(); }
-    sfx.frame(dt, { vacuum: hazards.vacuum.distance, stunned: hazards.vacuum.stunned, low: run.filled && glass.state.water < .15 });
+    sfx.frame(dt, { vacuum: hazards.vacuum.distance, stunned: hazards.vacuum.stunned, low: glass.count > 0 && glass.state.water < .15 });
     run.sprintClean = spd > 3.6 && glass.state.danger < .7 ? run.sprintClean + dt : 0;
     if (run.sprintClean > 3) { run.sprintClean = 0; trick('cleanSprint'); }
     for (const h of hazards.list) {
@@ -249,7 +248,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     style.step(dt, lost);
     if (!run.duck && deco.goldenDuck.visible && Math.hypot(player.pos.x - deco.goldenDuck.position.x, player.pos.z - deco.goldenDuck.position.z) < .7) { run.duck = true; deco.goldenDuck.visible = false; api.refill(.05); trick('duck'); }
     deco.goldenDuck.rotation.y += dt * 2;
-    if (!run.lastSip && run.filled && glass.state.water < .15) { run.lastSip = true; hooks.lastSip?.(); }
+    if (!run.lastSip && glass.count > 0 && glass.state.water < .15) { run.lastSip = true; hooks.lastSip?.(); }
     // THE HOUSE: seeded daily script keeps pressure on when chat is quiet; faster in later rooms.
     run.houseNext -= dt;
     if (run.houseNext <= 0) {
@@ -272,24 +271,23 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (hazards.vacuum.distance < 4.5 && !hazards.vacuum.stunned) { sfx.scare(); hazards.vacuum.stun(2.5); trick('scare'); hooks.scream?.('scare'); }
       else { player.vel.x += Math.sin(player.yaw) * 6; player.vel.z -= Math.cos(player.yaw) * 6; glass.kick((Math.random() - .5) * 2, 2); hooks.scream?.('dash'); }
     }
-    // TODAY'S ORDER: pour in the 3 ingredients (hold E on their islets), then deliver to the hut.
-    recipe.update(run.t, dt, player, glass, (st, n) => { run.filled = true; salty(); sfx.collect(n); trick('collect'); run.filled = true; hooks.collect?.(st.id, n, recipe.order.length); });
+    // THE SHIFT: load glasses at the bar, serve the customers on the islets. Tips are the score.
+    shift.update(run.t, dt, player, {
+      loaded: n => { run.salt = 0; sfx.collect(0); hooks.loaded?.(n); },
+      served: (c, tip, water) => { if (c.mood === 'happy') { sfx.collect(Math.min(4, shift.served)); trick('collect'); } else sfx.wake(); hooks.served?.(c, tip, water); },
+      walkout: c => { const v = ledger.villain(); if (v) ledger.blame([v.name], 'WALKOUT', 2, run.t); hooks.walkout?.(c, v?.name); },
+    });
     if (run.swimming) hazard = 'SWIM TO A BEACH OR RAMP';
-    if (!hazard && recipe.near) hazard = 'HOLD E';
+    if (!hazard && !glass.count && shift.customers.some(c => c.mood === 'wait') && !shift.atBar) hazard = 'TO THE BAR';
     const mate = hazards.mate;
-    // Set pieces are signposted in the world (prompts.js); the HUD only gets a one-word hint.
     if (!hazard && hazards.lock.near) hazard = voice.mic ? 'SHOUT' : 'HOLD V';
     if (!hazard && mate?.inRoom && mate.awake <= 0) hazard = 'SHH';
     void info;
-    const f = level.finish;
-    const atHut = Math.hypot(player.pos.x - f.x, player.pos.z - f.z) < f.r * 2.5;
-    if (atHut && recipe.done) run.end(true);
-    else if (atHut && !hazard) hazard = 'MISSING ' + recipe.order.filter(id => !recipe.got.includes(id)).map(id => INGREDIENTS[id].label).join(' + ');
-    else if ((run.filled && glass.state.water <= .001) || run.t >= LIMIT) run.end(false);
+    if (run.t >= LIMIT) run.end(shift.served > 0); // shift over
     if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
     return { room, hazard, calm: fx.calm, vacuum: vac, style, voice: { level: voice.level, lock: hazards.lock.near ? hazards.lock.charge : -1, alert: mate?.inRoom ? (mate.awake > 0 ? 1 : mate.alert) : -1 } };
   };
   run.render = (dt, t) => { guide.update(t, player, run.state === 'play' || run.state === 'ready', run); prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
-  run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail(); if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
+  run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail();  hooks.end?.(run); };
   return run;
 }

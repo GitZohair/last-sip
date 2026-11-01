@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { icon } from './icons.js';
 import { PADS, TOWERS } from './island.js';
-import { INGREDIENTS } from './recipe.js';
+import { BAR } from './shift.js';
 import { GAPS } from './guide.js';
 
 // Screen-space cues: edge arrows for threats you can't see, floating hit/pickup text, a minimap, wind arrow.
@@ -38,12 +38,9 @@ export function createHudCues(root) {
     g.strokeStyle = '#e8c79a'; g.lineWidth = 4; g.lineCap = 'round';
     for (const [x0, z0, x1, z1] of RUNS) { g.beginPath(); g.moveTo(mx(x0), mz(z0)); g.lineTo(mx(x1), mz(z1)); g.stroke(); }
     g.strokeStyle = '#0e2a3a'; g.lineWidth = 5; for (const [x, z, ax] of GAPS) { g.beginPath(); g.moveTo(mx(x) - (ax === 'z' ? 3 : 0), mz(z) - (ax === 'x' ? 3 : 0)); g.lineTo(mx(x) + (ax === 'z' ? 3 : 0), mz(z) + (ax === 'x' ? 3 : 0)); g.stroke(); }
-    for (const [key, [x, z]] of Object.entries(PADS)) {
-      const st = run.recipe.stations.find(s => s.id === key), want = st?.want && !st.got;
-      g.fillStyle = key === 'hut' ? (run.recipe.done ? '#a970ff' : '#5a4a7a') : want ? INGREDIENTS[key].color : '#d9c39a55';
-      g.beginPath(); g.arc(mx(x), mz(z), want || key === 'hut' ? 7 : 5, 0, 7); g.fill();
-      if (st?.got && st.want) { g.strokeStyle = '#5dff9b'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(mx(x) - 4, mz(z)); g.lineTo(mx(x) - 1, mz(z) + 3); g.lineTo(mx(x) + 4, mz(z) - 3); g.stroke(); }
-    }
+    for (const [, [x, z]] of Object.entries(PADS)) { g.fillStyle = '#d9c39a55'; g.beginPath(); g.arc(mx(x), mz(z), 5, 0, 7); g.fill(); }
+    g.fillStyle = '#a970ff'; g.fillRect(mx(BAR.x) - 5, mz(BAR.z) - 5, 10, 10); // the bar
+    for (const c of run.shift.customers) if (c.mood === 'wait') { g.fillStyle = c.color; g.beginPath(); g.arc(mx(c.x), mz(c.z), 6, 0, 7); g.fill(); if (run.glass.glasses.some(q => q.id === c.id)) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); } }
     for (const [x, z] of TOWERS) { const busy = run.actors.list.some(a => a.tower && a.tower.x === x && a.tower.z === z); g.fillStyle = busy ? '#ff2040' : '#ffffff40'; g.fillRect(mx(x) - 3, mz(z) - 3, 6, 6); }
     for (const a of run.actors.list) if (a.kind === 'barrel') { g.fillStyle = '#ffb020'; g.beginPath(); g.arc(mx(a.x), mz(a.z), 3.5, 0, 7); g.fill(); }
     const bot = run.hazards.vacuum.mesh.position; if (run.hazards.vacuum.distance < 90) { g.fillStyle = '#ff3b5c'; g.beginPath(); g.arc(mx(bot.x), mz(bot.z), 3.5, 0, 7); g.fill(); }
@@ -61,6 +58,10 @@ export function createHudCues(root) {
         if (i >= edges.length - 1) break;
         if (a.kind === 'sniper') edge(edges[i++], camera, { x: a.tower.x, y: a.tower.y + 1, z: a.tower.z }, '#ff2040', 'cannon', a.user);
         else if (a.kind === 'barrel' && !a.sunk) edge(edges[i++], camera, { x: a.x, y: .5, z: a.z }, '#ffb020', 'barrel', '');
+      }
+      for (const c of run.shift.customers) { // customers whose drink you're carrying, when they're off screen
+        if (i >= edges.length - 1 || c.mood !== 'wait' || !run.glass.glasses.some(q => q.id === c.id)) continue;
+        edge(edges[i++], camera, { x: c.x, y: 1.5, z: c.z }, c.color, 'glass', c.user);
       }
       const vac = run.hazards.vacuum;
       if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'cannon', 'LOOSE CANNON');

@@ -93,7 +93,7 @@ export const ui = {
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
-  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0 }) {
+  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0, tips = 0, tray = 0, served = 0 }) {
     const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
     set('water', Math.round(water * 100)); const sl = Math.round(salt * 100); if ($('salt').dataset.v !== String(sl)) { $('salt').dataset.v = sl; $('salt').textContent = sl ? `SALT ${sl}%` : ''; } $('water-fill').style.transform = `scaleY(${water})`;
     $('danger').style.transform = `scaleX(${danger})`; $('danger').dataset.hot = danger > .85 ? '1' : '';
@@ -104,17 +104,19 @@ export const ui = {
     const near = Math.max(0, Math.min(1, 1 - (vacuum - 1) / 7)); $('vac').style.opacity = vacuum < 8 ? 1 : 0; $('vac-fill').style.transform = `scaleX(${near})`; $('vac').dataset.hot = vacuum < 2.5 ? '1' : '';
     if (voice) { const v = $('voice'); v.style.opacity = voice.lock >= 0 || voice.alert >= 0 ? 1 : 0; /* only when a set piece needs your voice */ $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
     if (style) { document.querySelector('.style-box').dataset.zero = style.points ? '' : '1'; set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
+    const ok = `${tips}|${tray}|${served}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span>TRAY ${tray}/5</span>`; }
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', water < .25 && water > .001);
   },
-  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0 }) {
+  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0, tips = 0, served = 0, walkouts = 0, servedBy = [] }) {
     ui.show('results');
     set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
-    set('r-title', !won ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : salt > .4 ? 'Mostly seawater.' : water < .05 ? 'ONE. LAST. SIP.' : water > .7 ? 'Hydrated. Respect.' : 'Technically a drink.');
-    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>DRINK</span></div>${salt > .01 ? `<div><b>${Math.round(salt * 100)}%</b><span>SALTY</span></div>` : ''}<div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
+    set('r-title', !served ? 'Nobody got a drink.' : walkouts > served ? 'The customers have left a review.' : tips >= served * 8 ? 'Five-star waiter.' : tips < served * 4 ? 'Mostly spilled, partly seawater.' : 'Technically hospitality.');
+    $('r-stats').innerHTML = `<div><b>$${tips}</b><span>TIPS</span></div><div><b>${served}</b><span>SERVED</span></div>${walkouts ? `<div><b>${walkouts}</b><span>WALKOUTS</span></div>` : ''}<div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
     $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
     const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
-    $('grades').innerHTML = rooms.map((x, i) => `<div class="g-${grade(x.lost)}" style="animation-delay:${.2 + i * .15}s"><b>${grade(x.lost)}</b><span>${x.key}</span></div>`).join('');
+    $('grades').innerHTML = servedBy.length ? `<p class="served">SERVED: ${servedBy.map(esc).join(', ')}</p>` : '';
+    void rooms.map((x, i) => `<div class="g-${grade(x.lost)}" style="animation-delay:${.2 + i * .15}s"><b>${grade(x.lost)}</b><span>${x.key}</span></div>`).join('');
     $('receipt').textContent = receipt;
     $('share').onclick = () => { navigator.clipboard?.writeText(receipt); $('share').textContent = 'COPIED'; };
     const rows = board?.pour || [];

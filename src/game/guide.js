@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { INGREDIENTS } from './recipe.js';
 import { textTexture } from './assets.js';
 
 // VISUAL CUES: everything that tells you what is going on without reading text.
@@ -17,14 +16,13 @@ function gradientTex() {
   g.fillStyle = grd; g.fillRect(0, 0, 4, 128); const t = new THREE.CanvasTexture(c); return t;
 }
 
-export function createGuide(scene, { recipe, actors, level }) {
+export function createGuide(scene, { shift, actors, level }) {
   // ramp markers: green "climb out here" signs, shown only while you're swimming
   const exitTex = textTexture('CLIMB', { w: 256, h: 96, bg: '#2fbf71', fg: '#fff', font: '900 60px system-ui' });
   const exitSigns = level.exits.map(e => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: exitTex, depthTest: false })); s.scale.set(1.1, .42, 1); s.position.set(e.x, .2, e.z); s.renderOrder = 9; s.visible = false; scene.add(s); return s; });
   const beamGeo = new THREE.CylinderGeometry(.55, .55, 24, 18, 1, true).translate(0, 12, 0), beamTex = gradientTex();
   const beam = (x, z, color) => { const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color, map: beamTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.position.set(x, 0, z); scene.add(m); return m; };
-  const beams = recipe.stations.filter(s => s.want).map(s => ({ s, m: beam(s.x, s.z, INGREDIENTS[s.id].color) }));
-  const hutBeam = beam(level.finish.x, level.finish.z - 1, '#a970ff'); hutBeam.visible = false;
+  const focus = beam(0, 0, '#ffffff'); focus.visible = false; // ONE beam: over the next customer, or the bar
 
   // route arrow: flat chevron on the boards
   const sh = new THREE.Shape(); sh.moveTo(0, .55); sh.lineTo(.42, .05); sh.lineTo(.2, .05); sh.lineTo(.2, -.4); sh.lineTo(-.2, -.4); sh.lineTo(-.2, .05); sh.lineTo(-.42, .05); sh.closePath();
@@ -58,8 +56,8 @@ export function createGuide(scene, { recipe, actors, level }) {
 
   // next goal with fishbone routing: get to the spine, walk it to the target's row, then go across
   function goal(p) {
-    const left = recipe.stations.filter(s => s.want && !s.got).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
-    const T = left ? { x: left.x, z: left.z, color: INGREDIENTS[left.id].color } : { x: level.finish.x, z: level.finish.z, color: '#c9a2ff' };
+    const T = shift.targets().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+    if (!T) return null;
     const rowOf = z => [-16, -48, -64].find(r => Math.abs(z - r) < 3.2);
     const onBranch = Math.abs(p.x) > 2.6 && rowOf(p.z) !== undefined;
     if (onBranch) return rowOf(p.z) === rowOf(T.z) && Math.sign(p.x) === Math.sign(T.x || p.x) ? { ...T, final: T } : { x: 0, z: rowOf(p.z) ?? p.z, color: T.color, final: T };
@@ -74,10 +72,9 @@ export function createGuide(scene, { recipe, actors, level }) {
       const swim = !!run?.swimming;
       for (const s of exitSigns) { s.visible = swim && Math.hypot(s.position.x - player.pos.x, s.position.z - player.pos.z) < 16; s.position.y = .2 + Math.sin(t * 5) * .1; }
       const fade = (x, z) => Math.min(1, Math.max(.12, (Math.hypot(x - player.pos.x, z - player.pos.z) - 2.5) / 9)); // thin out up close
-      const next = goal(player.pos).final; // one beam at a time: only the NEXT stop glows, the rest are faint stubs
-      for (const b of beams) { const on = b.s.x === next.x && b.s.z === next.z; b.m.visible = !b.s.got; b.m.scale.y = on ? 1 : .18; b.m.material.opacity = (on ? .75 + Math.sin(t * 3 + b.s.x) * .2 : .35) * fade(b.s.x, b.s.z); }
-      hutBeam.visible = recipe.done; hutBeam.material.opacity = .8 + Math.sin(t * 5) * .2;
-      const p = player.pos, ex = swim && run.nearestExit(p), g = ex ? { ...ex, color: '#5dffa0', final: { ...ex, x: ex.x + 99 } } : goal(p), dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
+      const gg = goal(player.pos), next = gg?.final;
+      focus.visible = !!next; if (next) { focus.position.set(next.x, 0, next.z); focus.material.color.set(next.color); focus.material.opacity = (.75 + Math.sin(t * 3) * .2) * fade(next.x, next.z); }
+      const p = player.pos, ex = swim && run.nearestExit(p), g = ex ? { ...ex, color: '#5dffa0', final: { ...ex, x: ex.x + 99 } } : gg || { x: p.x, z: p.z - 1, color: '#fff', final: p }, dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
       arrow.visible = playing && (swim || fd > 2.6);
       if (arrow.visible) {
         const k = 2.4 + Math.sin(t * 6) * .15; arrow.position.set(p.x + dx / d * k, player.y + (swim ? .6 : .14), p.z + dz / d * k);
@@ -92,8 +89,7 @@ export function createGuide(scene, { recipe, actors, level }) {
       for (const a of actors.list) if (a.kind === 'barrel' && i < lanes.length) { const l = lanes[i++]; l.visible = !!a.rolling || a.wait > 0; l.position.set(a.x, .01, a.z); l.rotation.y = Math.atan2(a.dir.x, a.dir.z); }
       for (; i < lanes.length; i++) lanes[i].visible = false;
       laneMat.opacity = .22 + Math.sin(t * 12) * .1;
-      const near = recipe.near; pour.visible = !!near;
-      if (near) { pour.position.set(near.x, 2.3 + Math.sin(t * 3) * .05, near.z); drawPour(Math.min(1, near.hold / .9), INGREDIENTS[near.id].color); }
+      pour.visible = false;
     },
   };
 }

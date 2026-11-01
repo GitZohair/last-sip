@@ -199,3 +199,5 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #progress, #mode, #order span.rule { display: none; }
 .style-box { transition: opacity .3s; } .style-box[data-zero="1"] { opacity: 0; }
 #minimap { opacity: 0; transition: opacity .25s; } #cues.map #minimap { opacity: .92; }
+#order span.tips b { font-size: 1.1rem; color: #5dff9b; }
+#grades .served { grid-column: 1 / -1; font: 700 .8rem/1.4 system-ui; opacity: .8; margin: 0; }
