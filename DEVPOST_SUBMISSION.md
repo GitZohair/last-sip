@@ -1,39 +1,36 @@
 # LAST SIP
 
-**A daily island run where your chat shows up as named snipers.** Collect today's three fruits, carry the drink across the boardwalks to your stream hut, and don't get knocked into the sea. Every spilled drop is credited to the viewer who caused it.
+**Your chat orders drinks. You're the waiter. Chat also has a sniper.** A 90-second beach shift for streamers: carry a wobbly tray of drinks across a boardwalk island to the viewers who ordered them, while the same chat votes on how to knock you into the sea.
 
 ## Inspiration
-Chat-interaction tools mostly turn viewers into a stream of anonymous effects. The 2024 Twitch Streamer Tools Hackathon winners pointed the other way: PixelWars won by sending viewers into battle as characters with their names on them, and a runner-up let viewers control Minecraft mobs. We wanted that, plus the daily ritual of Wordle: one puzzle a day, the same for everyone, so every streamer's attempt is comparable and every viewer's sabotage is remembered.
+Chat-interaction tools mostly turn viewers into a stream of anonymous effects, and the streamer has nothing to give back. We wanted chat on **both sides of the counter**: the people you serve and the people sabotaging you, with names on them, in one short segment that works in a 20-viewer chat and a 20,000-viewer chat. The daily ritual comes from Wordle (one shift a day, the same for everyone) and the physics comedy from REPO and Peak.
 
 ## What it does
-- **One fixed island, one daily order.** Every day, everyone gets the same 3 of 6 fruits. You start with an empty glass, walk the boardwalks to each fruit islet, hold E to pour it in, and deliver the full drink to your stream hut. The fuller the glass, the harder it sloshes.
-- **You can fall off.** The boardwalks have no railings and two gaps to hop. Into the sea means a splash, 30% of your drink gone, and a respawn.
-- **Chat becomes characters with names.** `!sniper` (or 100+ bits, or a sub) puts that viewer on a lifeguard tower with a water cannon. A red laser paints the streamer, then it fires. `!barrel` (or a follow) rolls a named barrel down the boardwalk. When chat is quiet, the house sends its own.
-- **Chat can help, too.** Three viewers typing `!steady` send a named lifeguard who throws you a lifebuoy: your next fall is free, and the save is credited to them.
-- **A daily house rule.** Windy (telegraphed gusts), Loose Cannon (it starts early and rolls faster), or Heavy Glass, the same for everyone that day.
-- **Readable chaos.** Light beams over the fruits you still need, a route arrow along the boards, a target ring that tightens as a sniper aims, danger lanes in front of barrels, screen-edge arrows for threats behind you, and a minimap.
-- **Blame is the point.** Every hit and every spilled drop is credited to the viewer who caused it: Spill Credits at the end, a Most Wanted poster hung on the island tomorrow, and a cross-channel Most Wanted board.
-- **Your voice is a controller.** Shout (mic, or hold V) to spin out the Loose Cannon, a runaway pirate cannon that rolls after you along your own trail.
-- **Built to clip.** Snipes, splashes, catches and last sips trigger Twitch clips automatically when signed in.
-- **Zero setup.** Type a channel name and play: anonymous chat works without signing in. Signing in adds EventSub (bits, subs, follows, raids, channel points), auto-created rewards and auto-clips.
-
-## What's different
-Crowd Control lets chat mess with a game you already play. LAST SIP is a game built around chat as player two: viewers are visible, named, scored, ranked across Twitch, and remembered tomorrow. The shared daily order makes every channel's run comparable, Wordle-style.
+- **One clear job.** Customers appear on the islets with a drink bubble and a patience ring. Walk into the **bar** to load a fresh glass for everyone waiting, then walk into each customer to hand it over. Fuller drink = bigger tip. Tips are the score.
+- **The tray is the risk.** Every extra glass makes the stack taller and wobblier (one shared slosh spring, and the top tier spills first). Do you serve one at a time or load five and pray?
+- **Viewers are the customers.** `!order` enters a raffle, and each seeded customer slot draws one name (subs get two tickets). An empty chat gets tourists.
+- **Viewers are also the saboteurs, at any chat size.** Free viewers **vote** (type 1, 2 or 3) on the next sabotage every ~12 s. The winner fires, and **one winning voter is drawn as its face**: their name is on the watchtower gunner, the barrel or the falling fridge. Bits, subs, raids and channel points skip the vote. Small chats fire commands directly.
+- **Readable, telegraphed chaos.** A named gunner on a watchtower paints you with a laser before firing. Barrels land on the planks ahead and roll straight down them. Sofas, toilets, fridges and viewers' emote frames fall from the sky with a growing shadow. Sea breezes start with white streaks first. On LOOSE CANNON days, a runaway cannon chases your trail.
+- **The sea matters.** Fall off the boards and you swim to a beach or plank ramp, and every drink on the tray goes salty (smaller tips). A lifeguard voted in by chat (`!steady`) throws you a buoy.
+- **Blame and gratitude.** Every hit and walkout is credited to a viewer: Spill Credits, a Most Wanted poster on tomorrow's island, and a cross-channel Most Wanted board. Every served viewer is listed too.
+- **A fair daily Pour.** Customer slots, timing, menu and house rule come from the daily seed, so tips compare across Twitch. Chat changes the spectacle and the names, and payments never buy score.
+- **Built to clip and share.** Hit-stop, shake and a directional flash on hits, auto-clips when signed in, and an emoji receipt (stars per customer).
 
 ## How we built it
-- **Runs smoothly on a laptop iGPU** (tested on Intel UHD 620): the static island is merged into a few batched meshes, two lights, GPU-animated sea, shaders pre-compiled during loading, and render interpolation over a fixed-step sim.
-- **Three.js r180 + Vite**, a 120 Hz fixed-step simulation, a spring-damper slosh model for the drink, instanced droplets, custom circle-vs-box collision with sea "pits", and a third-person chase camera.
-- **Kenney CC0 assets** (Pirate, Furniture and Food kits; Impact and Interface sound packs), with an optional bloom pass for fast machines.
-- **Twitch:** anonymous IRC over WebSocket, OAuth implicit grant, Helix (profile, clips, custom rewards), and EventSub WebSocket.
-- **Supabase** (Postgres with RLS, plus an Edge Function that validates Twitch tokens) for the daily Pour board and the Most Wanted board.
-- **Safety:** `!frame` images run through an in-browser nsfwjs classifier before they are shown, and fail closed.
-- **OpenAI Codex** for the build, with the design and review loop documented in the repo.
+- **Three.js r180 + Vite**: a 120 Hz fixed-step sim with render interpolation, a spring-damper slosh model shared by a multi-glass tray, circle-vs-box collision with sea "pits", a chase camera, and Kenney Mini Characters for the streamer, customers and gunners.
+- **Runs on a laptop iGPU** (tested on Intel UHD 620): static island merged into batched meshes, two lights, GPU-animated sea, shaders pre-compiled during loading.
+- **Twitch:** anonymous IRC over WebSocket (zero setup: type a channel), a chat director with ballots, a raffle, big-chat gating and per-viewer cooldowns, plus OAuth, Helix (profile, clips, custom rewards) and EventSub WebSocket when signed in.
+- **Supabase** (Postgres + RLS, an Edge Function validating Twitch tokens) for the daily Pour and Most Wanted boards.
+- **Safety:** `!frame` images pass an in-browser nsfwjs classifier and fail closed.
+- **Kenney CC0 assets** (Pirate, Furniture, Food, Mini Characters, Impact and Interface sounds).
+- **OpenAI Codex** for the build, with Claude used for review and fixes. The design loop is documented in the repo.
 
 ## Challenges
-Making chaos readable: every viewer action is telegraphed (laser, rolling barrel, name tag) so a hit feels fair and the streamer knows exactly whom to blame.
+- Making chaos readable on a compressed stream: every viewer action has a telegraph (laser ring, shadow, plank lane, red tower flag) and a name tag, so a hit feels fair and the streamer knows exactly whom to blame.
+- Scaling chat participation without flooding the island: ballots for everyone, a face drawn from the winners, and a direct lane for supporters.
 
 ## What's next
-A seagull character, more house rules (low tide), streamer-vs-streamer races on the same seed, and a Twitch Extension panel that shows viewers their Most Wanted rank.
+Streamer-vs-streamer shifts on the same seed, a Twitch Extension panel showing viewers their Most Wanted rank and "drinks received", and more house rules (low tide, rush hour).
 
 ## Built with
 JavaScript · Three.js · Vite · Twitch IRC · Twitch EventSub · Twitch Helix · Supabase · TensorFlow.js · nsfwjs · Web Audio · Kenney CC0 assets · OpenAI Codex

@@ -56,3 +56,10 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 - Barrels: land on the planks 6-13 m ahead along the route (`barrelSpot` in run.js), pause 0.6 s, roll straight along the board axis, fall into the sea off the end. No steering toward the player.
 - Snipers: a viewer figure (mini character picked from the username) stands beside the cannon on the watchtower, red pennant marks the tower, gunner cheers on a hit.
 - Declutter: one goal beam at a time (others are faint stubs), minimap hidden (M / Tab toggles), no mode label / progress bar / rule chip during play, style score hidden at 0, voice meter only during voice set pieces. Loose Cannon is hidden until it wakes (it used to fill the start camera).
+
+## v3: Beach waiter (Claude, Nov 1, night). See GAME_DESIGN.md
+- Core loop replaced: `shift.js` (seeded customers on islets, patience bubbles, bar at the plaza, tips, walkouts, `!order` raffle) and `tray.js` (up to 5 glasses, shared slosh, top tier spills first; same API as glass.js). recipe.js now only supplies INGREDIENTS / todaysOrder (today's 3-drink menu).
+- The run ends at 90 s; score = tips*10 + style. Receipt = stars per customer. Results show tips / served / walkouts / served list.
+- Chat director v3 (src/twitch.js): ballots (`openBallot`, votes 1/2/3 or a command name, one changeable vote per viewer, `tick()` returns `ballotEnd` with a drawn face), big-chat gating (5+ active chatters means free chaos commands are muted and vote instead), `!order`/`!drink` with sub tickets. main.js opens a ballot every 12 s while chat is connected. Dev: `lastSip.fakeChat()`.
+- Loose Cannon only on LOOSE CANNON rule days; it naps 18 s after a hit and is slower than a run. The house starts at 10 s and fires every 7-10 s. The boards have no junk props; posters sit in the water.
+- TODO: real Twitch test (type `!order`, `1`, `!sniper` in a live channel), demo video, Codex session ID, deploy (`npx vercel deploy --prod --yes`), first-time hints, colourblind shapes on the red rings.
