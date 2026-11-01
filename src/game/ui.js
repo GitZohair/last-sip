@@ -8,6 +8,7 @@ const MOD_LABEL = { moon: 'MOON GRAVITY', tilt: 'TILTED', tiny: 'TINY', bigglass
 const MOD_ICON = { soft: 'pillows' };
 const REEL = ['bomb', 'banana', 'ducks', 'fridge', 'moon', 'disco', 'lava', 'cans', 'balls', 'gust'];
 let modsKey = '', trickT = 0, lastRoom = '';
+const LABEL = { sniper: 'SNIPER', barrel: 'BARREL', drop: 'SKY DROP', storm: 'SEA BREEZE', deck: 'MYSTERY', calm: 'LIFEBUOY' };
 
 export const ui = {
   bind({ start, practice, connect, mic, signIn, lock }) {
@@ -90,6 +91,22 @@ export const ui = {
   },
   order(ids, labels, colors, got = [], rule) {
     $('order').innerHTML = ids.map(id => `<span class="${got.includes(id) ? 'got' : ''}" style="--c:${colors[id]}"><i></i>${labels[id]}</span>`).join('') + (rule ? `<span class="rule">${rule.label}</span>` : '');
+  },
+  // CHAT VOTE card: options with live counts and a draining bar; then the result with the drawn face
+  ballot(st, result) {
+    let el = $('ballot'); if (!el) { el = document.createElement('div'); el.id = 'ballot'; $('hud').appendChild(el); }
+    clearTimeout(el._t);
+    if (result) { el.className = 'on result'; el.innerHTML = `<small>CHAT PICKED</small><b>${esc(result.label)}</b><span>${esc(result.user)} is on the island · ${result.votes} vote${result.votes > 1 ? 's' : ''}</span>`; el._t = setTimeout(() => el.className = '', 2200); return; }
+    if (!st) { el.className = ''; return; }
+    el.className = 'on'; el._k = '';
+    el.innerHTML = `<small>CHAT VOTE · TYPE 1 2 3</small><div class="opts">${st.options.map((o, i) => `<span><em>${i + 1}</em>${LABEL[o] || o}<b>0</b></span>`).join('')}</div><i></i>`;
+    ui.ballotTick(st);
+  },
+  ballotTick(st) {
+    const el = $('ballot'); if (!el || !st) return; const k = st.counts.join() + '|' + Math.ceil(st.left);
+    if (el._k === k) return; el._k = k; const total = st.counts.reduce((a, b) => a + b, 0) || 1;
+    el.querySelectorAll('.opts span').forEach((sp, i) => { sp.querySelector('b').textContent = st.counts[i]; sp.style.setProperty('--p', st.counts[i] / total); });
+    el.querySelector('i').style.transform = `scaleX(${st.left / st.seconds})`;
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },

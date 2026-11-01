@@ -33,6 +33,8 @@ function onChat(msg) {
   if (msg.emotes[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
   const r = director.handle(msg); if (!r) return;
   if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users);
+  else if (r.kind === 'order') { run?.shift?.enter(r.user, r.tickets); if (director.active() < 5) ui.feed(`${r.user} ordered a drink`, 'help', 'glass'); }
+  else if (r.kind === 'ballot') ui.ballot(r);
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} is queued`, 'muted', 'stopwatch');
   else if (r.kind === 'vote') ui.feed(`LIFEGUARD VOTE ${r.have}/${r.needed}`, 'help', 'steady', 'vote');
   else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]]) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
@@ -54,7 +56,12 @@ function play(event, users, opts) {
   if (card.r === 'l') clipIt('legendary');
 }
 async function clipIt(why) { const url = await tw.clip(session); if (url) ui.feed(`Auto-clipped: ${why}`, 'help', 'twitch'); }
-let simN = 0;
+let simN = 0, ballotT = 6;
+const BALLOT_LABEL = { sniper: 'SNIPER', barrel: 'BARREL', drop: 'SKY DROP', storm: 'SEA BREEZE', deck: 'MYSTERY CARD', calm: 'LIFEBUOY', bomb: 'BOMB', fridge: 'FRIDGE' };
+function pickBallot() { // two sabotage options, sometimes one helpful
+  const bad = ['sniper', 'barrel', 'drop', 'storm', 'deck'].sort(() => Math.random() - .5);
+  return Math.random() < .35 ? [bad[0], bad[1], 'calm'] : bad.slice(0, 3);
+}
 const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `test_viewer_${simN % 6}`, text, bits: 0, mod: true, emotes: [] });
 
 // ---------- runs
@@ -135,7 +142,12 @@ function loop(now) {
     acc += dt; let n = 0;
     while (acc >= STEP && n++ < 12) { prev.x = player.pos.x; prev.y = player.y; prev.z = player.pos.z; info = run.step(STEP); acc -= STEP; }
     if (n > 12) acc = 0; // after a long stall, don't try to catch up
-    const q = director.tick(); if (q) play(q.event, q.users);
+    const q = director.tick();
+    if (q?.kind === 'ballotEnd') { ui.ballot(null, q.event ? { label: BALLOT_LABEL[q.event], user: q.users[0], votes: q.votes } : null); if (q.event) play(q.event, q.users.slice(0, 1)); }
+    else if (q) play(q.event, q.users);
+    // free viewers vote every ~12 s while chat is connected (supporters and small chats still fire directly)
+    if (chat && !director.ballot && (ballotT -= dt) <= 0) { ballotT = 12; const opts = pickBallot(); director.openBallot(opts, 8); ui.ballot({ options: opts, counts: opts.map(() => 0), left: 8, seconds: 8 }); }
+    if (director.ballot) ui.ballotTick(director.ballotState());
   }
   // Render between the last two sim steps (smooth motion at any refresh rate). Skipped on teleports.
   real.x = player.pos.x; real.y = player.y; real.z = player.pos.z;
@@ -165,7 +177,7 @@ function devShot(pos, look, fov = 50) {
   img.src = cv.toDataURL();
 }
 if (params.has('dev')) window.lastSip = { run: () => run, world, shot: devShot, frame: (n = 1) => { for (let i = 0; i < n; i++) { run.render(1 / 60, i / 60); } },
-  simulate, play, start,
+  simulate, play, start, director, fakeChat: () => { chat = { channel: 'dev', close() {} }; },
   state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
   tp: (x, z) => player.reset({ x, z, yaw: 0 }), player: () => player,
   goto: key => { const r = run.level.rooms.find(x => x.key === key); player.reset({ x: 0, z: r.z0 - 1.2, yaw: 0 }); return r.name; },

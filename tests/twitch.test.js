@@ -41,3 +41,24 @@ test('ledger blames hot causes, else the streamer', () => {
   const c = l.credits(); assert.equal(c[0].name, 'viewer'); assert.equal(l.villain().name, 'viewer');
   assert.ok(Math.abs(c.find(x => x.name === 'YOUR OWN HANDS').amount - .15) < 1e-9);
 });
+
+test('ballot: one changeable vote per viewer, winner fires with a voter as its face', () => {
+  let now = 0; const d = new ChatDirector({ now: () => now });
+  const m = (login, text, extra = {}) => ({ user: login.toUpperCase(), login, text, bits: 0, mod: false, emotes: [], ...extra });
+  d.openBallot(['sniper', 'barrel', 'drop'], 8);
+  d.handle(m('a', '1')); d.handle(m('b', '2')); d.handle(m('c', '2')); d.handle(m('a', '2')); // a changes vote
+  assert.deepEqual(d.ballotState().counts, [0, 3, 0]);
+  d.handle(m('e', '!sniper')); assert.equal(d.ballotState().counts[0], 1); // command name counts as a vote
+  now = 9; const end = d.tick();
+  assert.equal(end.kind, 'ballotEnd'); assert.equal(end.event, 'barrel'); assert.equal(end.users.length, 3);
+  assert.ok(['A', 'B', 'C'].includes(end.users[0]));
+});
+
+test('big chat: free chaos commands are muted (vote instead); !order enters the raffle, subs get 2 tickets', () => {
+  let now = 0; const d = new ChatDirector({ now: () => now });
+  const m = (login, text, extra = {}) => ({ user: login, login, text, bits: 0, mod: false, emotes: [], ...extra });
+  for (const u of ['v1', 'v2', 'v3', 'v4', 'v5']) d.handle(m(u, 'hi'));
+  assert.equal(d.handle(m('v6', '!barrel')).kind, 'muted');
+  assert.equal(d.handle(m('mod', '!barrel', { mod: true })).kind, 'chaos');
+  assert.deepEqual(d.handle(m('v7', '!order', { sub: true })), { kind: 'order', user: 'v7', tickets: 2 });
+});

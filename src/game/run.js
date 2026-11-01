@@ -51,9 +51,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const drops = createDrops(scene, level, { sfx, onImpact: (d, dist) => { gallery.shake(1); if (dist < 6) run.shakeT = .35; } });
   // where to drop: on the route a few metres ahead of the streamer (so it lands in their way, telegraphed)
   // Spaced 2.4 m from other drops and alternating sides, so the boards never get fully blocked (always a squeeze-past gap).
+  function ahead(d) { return { x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d }; }
   let dropSide = 1;
   const dropSpot = (k = 0) => {
-    const g = guide.goal(player.pos), dx = g.x - player.pos.x, dz = g.z - player.pos.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+    const g = guide.goal(player.pos) || ahead(6), dx = g.x - player.pos.x, dz = g.z - player.pos.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
     const lead = Math.hypot(player.vel.x, player.vel.z) * 1.25; // aim where you'll BE when it lands: read the shadow, brake or sidestep
     let a = Math.max(1.8, lead + .4) + k * 2.4, x, z; dropSide = -dropSide;
     for (let tries = 0; tries < 6; tries++, a += 2.4) { x = player.pos.x + ux * a - uz * .35 * dropSide; z = player.pos.z + uz * a + ux * .35 * dropSide; if (!drops.list.some(o => Math.hypot(o.x - x, o.z - z) < 2.4)) break; }
@@ -62,7 +63,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   // barrels: a point ON THE PLANKS 6-13 m ahead along the route; it rolls back along that same board axis
   const onBoards = (x, z) => level.colliders.some(c => x > c.minX && x < c.maxX && z > c.minZ && z < c.maxZ && c.top <= .1 && c.top > -.5);
   const barrelSpot = () => {
-    const g = guide.goal(player.pos); let dx = g.x - player.pos.x, dz = g.z - player.pos.z;
+    const g = guide.goal(player.pos) || ahead(6); let dx = g.x - player.pos.x, dz = g.z - player.pos.z;
     if (Math.abs(dx) > Math.abs(dz)) { dx = Math.sign(dx); dz = 0; } else { dz = Math.sign(dz) || -1; dx = 0; }
     for (let a = 13; a >= 6; a -= .5) { const x = dz ? (Math.abs(player.pos.x) < 1.2 ? 0 : player.pos.x) : player.pos.x + dx * a, z = dx ? player.pos.z : player.pos.z + dz * a; if (onBoards(x, z)) return { x, z, dir: { x: -dx, z: -dz } }; }
     return null;
@@ -87,7 +88,6 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   }
   chaos.onBlast = f => { sfx.boom(); gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
 
-  const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
   const api = {
     fire: type => type === 'storm' ? wind.gust(3.2) : type === 'crate' ? (() => { const p = dropSpot(); drops.furniture(api.user || 'CHAT', p.x, p.z, FURNITURE[0]); })() : chaos.fire(type),
     rain: n => { for (let i = 0; i < Math.min(n, 3); i++) setTimeout(() => { const p = dropSpot(i % 3); drops.furniture(api.user || 'CHAT', p.x, p.z); }, i * 450); },

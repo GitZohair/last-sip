@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { model, textTexture } from './assets.js';
 import { PADS } from './island.js';
-import { INGREDIENTS } from './recipe.js';
+import { INGREDIENTS, todaysOrder } from './recipe.js';
 import { rng } from './rng.js';
 import { viewer, preloadCrew } from './actors.js';
 
@@ -27,7 +27,7 @@ function drawBubble(c, color, k, mood) { // order bubble: drink icon + a patienc
 
 export async function createShift(scene, seed, tray) {
   await preloadCrew();
-  const r = rng(seed + ':shift'), flavours = Object.keys(INGREDIENTS);
+  const r = rng(seed + ':shift'), flavours = todaysOrder(seed); // today's menu: 3 drinks, same as the intro shows
   // seeded timeline: first customers quickly, then one every 5-8 s
   const names = r.shuffle(TOURISTS), schedule = []; for (let t = 1.5, i = 0; t < 82; t += i < 2 ? 3.5 : r.range(5, 8), i++) schedule.push({ at: t, spots: i === 0 ? ['lemon', 'coconut'] : r.shuffle(Object.keys(SPOTS)), flavour: r.pick(flavours), tourist: names[i % names.length] });
   // the bar: Kenney counter + stools + pennant, a purple floor ring and a BAR sign

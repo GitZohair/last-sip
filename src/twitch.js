@@ -24,6 +24,9 @@ export const COMMANDS = {
   shelter: { kind: 'help', event: 'calm', needed: 3 },
   // Decoration: hang an emote (or approved image) in a picture frame on the course.
   frame: { kind: 'frame' },
+  // Beach waiter: enter the customer raffle.
+  order: { kind: 'order' },
+  drink: { kind: 'order' },
 };
 
 export function parseTags(raw = '') {
@@ -66,6 +69,7 @@ export function parseLine(line) {
     text,
     bits: Number(tags.bits || 0),
     mod: tags.mod === '1' || badges.includes('broadcaster'),
+    sub: /subscriber|founder/.test(badges),
     color: /^#[0-9a-f]{6}$/i.test(tags.color || '') ? tags.color : null,
     emotes,
   };
@@ -88,7 +92,8 @@ export function parseCommand(msg) {
 // - every resulting event carries the names of who caused it (for spill blame + credits).
 export class ChatDirector {
   constructor({ userCooldown = 15, chaosCooldown = 4, helpWindow = 6, now = () => performance.now() / 1000 } = {}) {
-    Object.assign(this, { userCooldown, chaosCooldown, helpWindow, now });
+    Object.assign(this, { userCooldown, chaosCooldown, helpWindow, now, bigChat: 5 });
+    this.seen = new Map(); this.ballot = null;
     this.lastByUser = new Map();
     this.lastChaos = -Infinity;
     this.helpVotes = new Map(); // event -> Map(user -> time)
@@ -96,10 +101,24 @@ export class ChatDirector {
   }
 
   // Returns {event, users, kind} to fire now, {queued:true}, {frame}, or null.
+  // BALLOTS: in a big chat, free viewers vote instead of firing directly. One vote per viewer (changeable).
+  openBallot(options, seconds = 8) { this.ballot = { options, votes: new Map(), ends: this.now() + seconds, seconds }; return this.ballot; }
+  ballotState() { const b = this.ballot; if (!b) return null; const counts = b.options.map((_, i) => [...b.votes.values()].filter(v => v.i === i).length); return { options: b.options, counts, left: Math.max(0, b.ends - this.now()), seconds: b.seconds }; }
+  active(window = 60) { const t = this.now(); let n = 0; for (const v of this.seen.values()) if (t - v < window) n++; return n; }
+  vote(msg, text) {
+    const b = this.ballot; if (!b) return null;
+    const m = /^!?([1-9])$/.exec(text.trim()); let i = m ? Number(m[1]) - 1 : -1;
+    if (i < 0) { const c = parseCommand(msg); if (c) i = b.options.indexOf(c.event); }
+    if (i < 0 || i >= b.options.length) return null;
+    b.votes.set(msg.login, { i, user: msg.user }); return { kind: 'ballot', ...this.ballotState() };
+  }
   handle(msg) {
+    const t = this.now();
+    this.seen ??= new Map(); this.seen.set(msg.login, t);
+    const voted = this.vote(msg, msg.text); if (voted) return voted;
     const cmd = parseCommand(msg);
     if (!cmd) return null;
-    const t = this.now();
+    if (cmd.kind === 'order') return { kind: 'order', user: msg.user, tickets: msg.sub ? 2 : 1 };
     if (cmd.kind === 'frame') {
       const emote = msg.emotes[0];
       return emote ? { kind: 'frame', user: msg.user, image: emoteUrl(emote.id), title: emote.name, trusted: true }
@@ -121,6 +140,8 @@ export class ChatDirector {
       }
       return { kind: 'vote', event: cmd.event, have: votes.size, needed: cmd.needed, users: [msg.user] };
     }
+    // big chat: free chaos commands only count as votes (handled above); mods always fire
+    if (!msg.mod && this.active() >= this.bigChat) return { kind: 'muted', event: cmd.event, users: [msg.user] };
     const fired = { kind: 'chaos', event: cmd.event, users: [msg.user] };
     if (t - this.lastChaos >= this.chaosCooldown) { this.lastChaos = t; return fired; }
     this.queue.push(fired);
@@ -131,6 +152,13 @@ export class ChatDirector {
   // Call every frame; releases one queued chaos event when the global cooldown allows.
   tick() {
     const t = this.now();
+    if (this.ballot && t >= this.ballot.ends) { // close the ballot: the winner fires, one winning voter is its face
+      const b = this.ballot, st = this.ballotState(); this.ballot = null;
+      const best = Math.max(...st.counts); if (!best) return { kind: 'ballotEnd', event: null, users: [] };
+      const tied = st.counts.map((c, i) => c === best ? i : -1).filter(i => i >= 0), win = tied[Math.floor(Math.random() * tied.length)];
+      const voters = [...b.votes.values()].filter(v => v.i === win).map(v => v.user), face = voters[Math.floor(Math.random() * voters.length)];
+      return { kind: 'ballotEnd', event: b.options[win], users: [face, ...voters.filter(v => v !== face)], votes: best };
+    }
     if (this.queue.length && t - this.lastChaos >= this.chaosCooldown) { this.lastChaos = t; return this.queue.shift(); }
     return null;
   }
