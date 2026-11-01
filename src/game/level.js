@@ -4,7 +4,7 @@ import { makeShell } from './shell.js';
 import { ROOMS } from './rooms.js';
 import { rng } from './rng.js';
 
-const WALLS = { kitchen: '#f2d7b6', hallway: '#e9c4c8', living: '#c9dcc8', laundry: '#cfd8ea', stream: '#43345e' };
+const WALLS = { kitchen: '#f2d7b6', hallway: '#e9c4c8', living: '#c9dcc8', laundry: '#cfd8ea', bathroom: '#bfe0e6', bedroom: '#e8d6f0', stream: '#43345e' };
 
 // Daily house: kitchen first, stream desk last, middle rooms + door positions shuffled by the seed.
 export async function buildLevel(scene, seed) {
@@ -18,7 +18,7 @@ export async function buildLevel(scene, seed) {
       pending.push(p); return p;
     },
   };
-  const order = ['kitchen', ...r.shuffle(['hallway', 'living', 'laundry']), 'stream'];
+  const order = ['kitchen', ...r.shuffle(['hallway', 'living', 'laundry', 'bathroom', 'bedroom']).slice(0, 3), 'stream'];
   const rooms = [], doors = []; let z = 0;
   for (const key of order) {
     const room = ROOMS[key](ctx, z, r);
@@ -40,7 +40,7 @@ export async function buildLevel(scene, seed) {
   return {
     rooms, doors, colliders: shell.colliders,
     hazards: rooms.flatMap(x => x.hazards), slots: rooms.flatMap(x => x.slots),
-    finish: rooms.at(-1).finish, spawn: { x: 0, z: -1.6, yaw: 0 }, length: -z,
+    finish: rooms.at(-1).finish, spawn: { x: 0, z: -3.4, yaw: 0 }, length: -z,
     roomAt: zz => rooms.find(x => zz <= x.z0 && zz > x.z1) || rooms.at(-1),
   };
 }

@@ -22,7 +22,7 @@ code { background: #ffffff1a; padding: .1em .4em; border-radius: .4em; }
 body.low .glass-meter { animation: pulse .5s infinite alternate; } @keyframes pulse { to { border-color: var(--pink); } }
 .top { position: absolute; top: 1.4rem; left: 0; right: 0; text-align: center; display: grid; gap: .2rem; } #room { font-weight: 800; font-size: 1.4rem; letter-spacing: .05em; text-shadow: 0 2px 8px #000a; } #hazard { color: #ffd36b; font-weight: 800; }
 .timer { position: absolute; right: 1.5rem; top: 1.2rem; font-size: 2.6rem; font-weight: 800; text-shadow: 0 2px 8px #000a; }
-#progress { position: absolute; top: 5rem; left: 30%; right: 30%; height: 6px; border-radius: 6px; background: #ffffff26; } #progress-fill { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--water); }
+#progress { position: absolute; top: 4.1rem; left: 30%; right: 30%; height: 6px; border-radius: 6px; background: #ffffff26; } #progress-fill { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--water); }
 #feed { position: absolute; left: 1.5rem; top: 11rem; margin: 0; padding: 0; list-style: none; display: grid; gap: .35rem; max-width: 24rem; }
 #feed li { background: #1b1530cc; padding: .4em .8em; border-radius: .7em; font-weight: 700; border-left: 4px solid var(--pink); transition: opacity 1s; animation: slide .25s; } #feed li.help { border-color: #5dffa0; } #feed li.muted { opacity: .6; border-color: #888; } #feed li.old { opacity: .35; }
 @keyframes slide { from { transform: translateX(-30px); opacity: 0; } }
@@ -75,3 +75,13 @@ body.lastsip #hud::after { content: 'LAST SIP'; position: absolute; top: 40%; le
 #vac span { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: .75rem; font-weight: 800; letter-spacing: .2em; opacity: .8; }
 #vac-fill { display: block; height: 100%; border-radius: 10px; background: linear-gradient(90deg, #ffd36b, #ff3b5c); transform-origin: left; transform: scaleX(0); }
 #vac[data-hot="1"] #vac-fill { animation: pulse .18s infinite alternate; } #vac[data-hot="1"] span { color: #ff5c7a; }
+
+/* ---- voice meter: level fill, shout line, side gauge = smart-lock charge (green) or roommate alert (red) ---- */
+#voice { position: absolute; left: 1.5rem; bottom: 6rem; display: grid; justify-items: center; gap: .3rem; transition: opacity .3s; }
+#voice small { font-size: .65rem; font-weight: 800; letter-spacing: .15em; opacity: .7; }
+#voice .bar { position: relative; width: 14px; height: 120px; border-radius: 8px; background: #ffffff1f; }
+#voice-fill { position: absolute; inset: 0; border-radius: 8px; background: linear-gradient(0deg, #7fd6ff, #a970ff 55%, #ff3b5c); transform-origin: bottom; transform: scaleY(0); }
+#voice .bar b { position: absolute; left: -4px; right: -4px; bottom: 55%; height: 2px; background: #fff; opacity: .8; }
+#voice-goal { position: absolute; left: 20px; width: 6px; top: 0; bottom: 0; border-radius: 6px; background: #5dff9b; transform-origin: bottom; transform: scaleY(0); }
+#voice[data-mode="quiet"] #voice-goal { background: #ff3b5c; } #voice[data-mode="quiet"] .bar b { bottom: 30%; background: #ff3b5c; }
+.top #hazard { margin-top: .9rem; text-shadow: 0 2px 8px #000c; font-size: 1.05rem; letter-spacing: .04em; }

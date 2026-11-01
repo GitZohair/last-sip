@@ -4,14 +4,14 @@ import { screenImage } from '../moderation.js';
 
 // Seeded mess: every house is dressed differently. Wall decor hugs side walls (no doors there),
 // loose physics props litter the floor, and one GOLDEN DUCK hides somewhere (find it: +5% water).
-const WALL_DECOR = ['bookcaseOpen', 'lampRoundFloor', 'pottedPlant', 'plantSmall1', 'sideTable', 'speaker', 'coatRackStanding', 'trashcan', 'radio'];
+const WALL_DECOR = ['bookcaseOpen', 'bookcaseOpenLow', 'lampRoundFloor', 'lampSquareFloor', 'pottedPlant', 'plantSmall1', 'plantSmall2', 'plantSmall3', 'sideTable', 'sideTableDrawers', 'speaker', 'speakerSmall', 'coatRackStanding', 'trashcan', 'radio', 'loungeChair', 'chairRounded', 'cardboardBoxOpen', 'books'];
 const LOOSE = ['banana', 'ball', 'duck', 'can', 'donut', 'box', 'pizza', 'pillow'];
 
 export async function dress(scene, level, props, r) {
   const jobs = [];
   for (const room of level.rooms) {
     if (room.key === 'stream') continue;
-    const n = 3 + Math.floor(r() * 4);
+    const n = Math.floor(room.len / 2.2) + Math.floor(r() * 3);
     for (let i = 0; i < n; i++) {
       const side = r() > .5 ? 1 : -1, z = room.z0 - 1 - r() * (room.len - 2), name = r.pick(WALL_DECOR);
       jobs.push(model('furniture', name).then(m => {
@@ -20,7 +20,7 @@ export async function dress(scene, level, props, r) {
         if (b.max.y > .4) level.colliders.push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z, top: b.max.y });
       }));
     }
-    const loose = 2 + Math.floor(r() * 5);
+    const loose = Math.floor(room.len / 3) + Math.floor(r() * 4);
     for (let i = 0; i < loose; i++) jobs.push(props.spawn(r.pick(LOOSE), r.range(-room.w / 2 + .6, room.w / 2 - .6), .5, room.z0 - 1 - r() * (room.len - 2)));
   }
   await Promise.all(jobs);

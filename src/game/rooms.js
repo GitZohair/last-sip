@@ -1,84 +1,69 @@
-import * as THREE from 'three';
 import { checker, planks } from './assets.js';
+import { zone, patrol, launcher } from './roomkit.js';
+import { MORE } from './rooms2.js';
 
-// Each room: build(ctx, z0, r) -> { name, len, w, hazards, slots }.
-// ctx.place(kit, name, x, z, rotY, solid=true) places a Kenney model (+collider).
-// Hazard zones: {minX,maxX,minZ,maxZ, push?:{x,z}, slip?, shake?, label, update?(t)}.
-const zone = (x, z, w, d, extra) => ({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, ...extra });
+// Each room: build(ctx, z0, r) -> { name, len, w, hazards, slots, finish?, sleeper? }.
+// ctx.place(kit, name, x, z, rotY, solid=true) places a Kenney model (+collider). Course runs toward -z.
+// Rooms are arenas, not corridors: every room has a blocker in the middle that splits it into routes.
+const L = Math.PI / 2, R = -Math.PI / 2;
 
 export const ROOMS = {
   kitchen(ctx, z0, r) {
-    const w = 8, len = 9, zc = z0 - len / 2;
-    ctx.shell.floor(0, zc, w, len, checker('#f3ead8', '#d9c9a8', 6));
-    for (let i = 0; i < 6; i++) ctx.place('furniture', i === 2 ? 'kitchenSink' : i === 4 ? 'kitchenStove' : 'kitchenCabinet', -w / 2 + .5, z0 - 1.2 - i * .9, Math.PI / 2);
-    ctx.place('furniture', 'kitchenFridgeLarge', w / 2 - .6, z0 - 1.2, -Math.PI / 2);
-    ctx.place('furniture', 'table', r.range(-.8, .8), zc - .5, 0);
-    for (const dx of [-1, 1]) ctx.place('furniture', 'chair', dx * 1.1, zc - .5 + r.range(-.4, .4), r.range(0, 6), false);
+    const w = 11, len = 12, zc = z0 - len / 2;
+    ctx.shell.floor(0, zc, w, len, checker('#f3ead8', '#d9c9a8', 8));
+    const run = ['kitchenCabinet', 'kitchenCabinetDrawer', 'kitchenSink', 'kitchenCabinet', 'kitchenStove', 'kitchenCabinet', 'kitchenCabinetDrawer', 'kitchenCoffeeMachine'];
+    run.forEach((n, i) => ctx.place('furniture', n === 'kitchenCoffeeMachine' ? 'kitchenCabinet' : n, -w / 2 + .5, z0 - 1.5 - i, L));
+    ctx.place('furniture', 'kitchenCoffeeMachine', -w / 2 + .45, z0 - 8.5, L, false).then(m => m.position.y = .9);
+    ctx.place('furniture', 'hoodModern', -w / 2 + .35, z0 - 5.5, L, false).then(m => m.position.y = 1.7);
+    ctx.place('furniture', 'kitchenFridgeLarge', w / 2 - .6, z0 - 1.4, R);
+    ctx.place('furniture', 'kitchenFridgeSmall', w / 2 - .5, z0 - 3, R);
+    // The island: a bar run across the middle with one end open; the toaster on it lobs donuts at you.
+    const ix = r() > .5 ? 1 : -1, iz = zc - .5;
+    for (let i = 0; i < 4; i++) ctx.place('furniture', i === 3 ? 'kitchenBarEnd' : 'kitchenBar', ix * (-2.6 + i * 1.05), iz, ix > 0 ? 0 : Math.PI);
+    for (let i = 0; i < 4; i++) ctx.place('furniture', 'stoolBar', ix * (-2.6 + i * 1.05), iz + 1, r.range(0, 6), false);
+    const tx = ix * -1.5;
+    ctx.place('furniture', 'toaster', tx, iz, 0, false).then(m => m.position.y = .95);
+    ctx.place('furniture', 'kitchenBlender', ix * -.3, iz, 0, false).then(m => m.position.y = .95);
+    ctx.place('furniture', 'tableRound', ix * -2.8, z0 - len + 2.4, 0);
+    for (const a of [0, 2.1, 4.2]) ctx.place('furniture', 'chairCushion', ix * -2.8 + Math.sin(a) * 1.1, z0 - len + 2.4 + Math.cos(a) * 1.1, a + Math.PI, false);
     ctx.place('furniture', 'trashcan', w / 2 - .5, z0 - len + 1, 0);
-    return { name: 'THE KITCHEN', len, w, hazards: [], slots: [] };
+    return { name: 'THE KITCHEN', len, w, slots: [], hazards: [launcher(tx, 1.25, iz, { label: 'TOASTER', every: 2.2, range: 6.5 })] };
   },
   hallway(ctx, z0, r) {
-    const w = 3.2, len = 16, zc = z0 - len / 2;
-    ctx.shell.floor(0, zc, w, len, planks('#a8754f', '#7d5539', 8));
+    const w = 5, len = 20, zc = z0 - len / 2;
+    ctx.shell.floor(0, zc, w, len, planks('#a8754f', '#7d5539', 10));
     const slots = [];
-    for (let i = 0; i < 5; i++) for (const s of [-1, 1]) slots.push({ x: s * (w / 2 - .12), y: 1.6, z: z0 - 2 - i * 3 - (s > 0 ? 1.5 : 0), rot: s > 0 ? -Math.PI / 2 : Math.PI / 2 });
+    for (let i = 0; i < 6; i++) for (const s of [-1, 1]) slots.push({ x: s * (w / 2 - .12), y: 1.6, z: z0 - 2 - i * 3 - (s > 0 ? 1.5 : 0), rot: s > 0 ? R : L });
     ctx.place('furniture', 'coatRackStanding', -w / 2 + .4, z0 - 1.2, 0);
-    ctx.place('furniture', 'pottedPlant', w / 2 - .35, z0 - 7, 0);
-    // The rug pull: a rug that slides backward. Readable, avoidable at the edges.
-    const rugZ = zc + r.range(-3, 1);
-    const rug = ctx.place('furniture', 'rugRectangle', 0, rugZ, Math.PI / 2, false);
-    // Robo-bear: a teddy riding a vacuum, patrolling side to side.
-    const bear = ctx.place('furniture', 'bear', 0, z0 - len + 3, 0, false);
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.35, .38, .12, 24), new THREE.MeshStandardMaterial({ color: '#33363d', roughness: .4 }));
-    disc.position.y = .06; bear.then(b => { b.add(disc); b.children[0].position.y += .12; });
-    const bearCol = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, top: .6 }; ctx.shell.colliders.push(bearCol);
-    const phase = r.range(0, 6);
-    const hazards = [
-      zone(0, rugZ, 1.6, 3, { push: { x: 0, z: 3.2 }, label: 'RUG PULL', update(t) { rug.then(m => m.children[0] && (m.children[0].position.z = ((t * 3.2) % .6) - .3)); } }),
-      { minX: 0, maxX: 0, minZ: 0, maxZ: 0, label: 'ROBO-BEAR', update(t) {
-        const x = Math.sin(t * 1.4 + phase) * (w / 2 - .6), z = z0 - len + 3;
-        bear.then(b => { b.position.x = x; b.rotation.y = Math.cos(t * 1.4 + phase) > 0 ? -Math.PI / 2 : Math.PI / 2; });
-        Object.assign(bearCol, { minX: x - .35, maxX: x + .35, minZ: z - .35, maxZ: z + .35 });
-      } },
-    ];
-    return { name: 'THE CHAT GALLERY', len, w, hazards, slots };
+    // Benches alternate sides: a slalom. Low enough to hop.
+    for (let i = 0; i < 4; i++) { const s = i % 2 ? 1 : -1; ctx.place('furniture', i % 2 ? 'benchCushion' : 'bench', s * (w / 2 - .45), z0 - 4 - i * 4 + r.range(-.6, .6), s > 0 ? R : L); }
+    ctx.place('furniture', 'pottedPlant', w / 2 - .35, z0 - len + 1.2, 0);
+    const rugZ = zc + r.range(-3, 2);
+    const rug = ctx.place('furniture', 'rugRectangle', 0, rugZ, L, false);
+    return { name: 'THE CHAT GALLERY', len, w, slots, hazards: [
+      zone(0, rugZ, 1.8, 3.4, { push: { x: 0, z: 3.4 }, label: 'RUG PULL', update(t) { rug.then(m => m.children[0] && (m.children[0].position.z = ((t * 3.2) % .6) - .3)); } }),
+      patrol(ctx, -w / 2 + .7, w / 2 - .7, z0 - 7.5, 1.5, r.range(0, 6)),
+      patrol(ctx, -w / 2 + .7, w / 2 - .7, z0 - len + 3.5, 1.9, r.range(0, 6)),
+    ] };
   },
   living(ctx, z0, r) {
-    const w = 10, len = 14, zc = z0 - len / 2;
-    ctx.shell.floor(0, zc, w, len, checker('#6f8fa8', '#6688a0', 10, 32));
-    ctx.place('furniture', 'rugRound', 0, zc, 0, false);
-    // Sofa slalom: alternating sofas force a weave.
-    for (let i = 0; i < 3; i++) { const s = i % 2 ? 1 : -1; ctx.place('furniture', i === 1 ? 'loungeSofaLong' : 'loungeSofa', s * r.range(1.2, 2.2), z0 - 3 - i * 3.6, s > 0 ? -Math.PI / 2 : Math.PI / 2); }
-    ctx.place('furniture', 'tableCoffee', r.range(-1, 1), zc, 0);
-    ctx.place('furniture', 'cabinetTelevision', -w / 2 + .5, zc, Math.PI / 2);
-    ctx.place('furniture', 'televisionModern', -w / 2 + .5, zc, Math.PI / 2, false).then(m => m.position.y = .62);
-    ctx.place('furniture', 'lampRoundFloor', w / 2 - .5, z0 - 1, 0);
+    const w = 14, len = 18, zc = z0 - len / 2;
+    ctx.shell.floor(0, zc, w, len, checker('#6f8fa8', '#6688a0', 14, 32));
+    ctx.place('furniture', 'rugRound', 0, zc, 0, false); ctx.place('furniture', 'rugSquare', 0, z0 - len + 4, 0, false);
+    // Sofa slalom: alternating sofas + ottomans force a weave across the whole width.
+    const sofas = ['loungeSofa', 'loungeSofaLong', 'loungeDesignSofa', 'loungeSofaCorner'];
+    for (let i = 0; i < 4; i++) { const s = i % 2 ? 1 : -1; ctx.place('furniture', sofas[i], s * r.range(1.8, 3.2), z0 - 3 - i * 3.6, s > 0 ? R : L); ctx.place('furniture', 'loungeSofaOttoman', -s * r.range(.5, 2), z0 - 4.6 - i * 3.6, 0); }
+    ctx.place('furniture', 'tableCoffeeGlass', r.range(-1, 1), zc, 0);
+    ctx.place('furniture', 'cabinetTelevision', -w / 2 + .5, zc, L);
+    ctx.place('furniture', 'televisionModern', -w / 2 + .5, zc, L, false).then(m => m.position.y = .62);
+    for (const z of [z0 - 2, z0 - len + 2]) ctx.place('furniture', 'loungeChairRelax', w / 2 - 1, z, R);
+    ctx.place('furniture', 'lampSquareFloor', w / 2 - .5, z0 - 1, 0);
     const fan = ctx.place('furniture', 'ceilingFan', 0, zc, 0, false); fan.then(m => m.position.y = 2.5);
     const dir = r() > .5 ? 1 : -1;
     return { name: 'THE LIVING ROOM', len, w, slots: [], hazards: [
-      zone(0, zc, 7, 6, { label: 'CEILING FAN', update(t) { this.push = { x: dir * 2.4 * Math.max(0, Math.sin(t * .9)), z: 0 }; fan.then(m => m.rotation.y = t * 9); } }),
+      zone(0, zc, 9, 7, { label: 'CEILING FAN', update(t) { this.push = { x: dir * 2.6 * Math.max(0, Math.sin(t * .9)), z: 0 }; fan.then(m => m.rotation.y = t * 9); } }),
+      patrol(ctx, -w / 2 + 1, w / 2 - 1, z0 - len + 4, 1.2, r.range(0, 6), 'radio', 'BOOMBOX BOT'),
     ] };
   },
-  laundry(ctx, z0, r) {
-    const w = 6, len = 8, zc = z0 - len / 2;
-    ctx.shell.floor(0, zc, w, len, checker('#e6e6ee', '#cfd3e0', 8));
-    for (let i = 0; i < 3; i++) ctx.place('furniture', 'washer', -w / 2 + .5, z0 - 1.5 - i * 1.1, Math.PI / 2);
-    // Box wall with one gap; boxes are low enough to hop (Space) as a risky shortcut.
-    const gap = Math.floor(r.range(0, 5));
-    for (let i = 0; i < 6; i++) if (i !== gap) ctx.place('furniture', 'cardboardBoxClosed', -w / 2 + .6 + i * 1, zc - .5, r.range(-.2, .2));
-    return { name: 'THE LAUNDRY ROOM', len, w, slots: [], hazards: [
-      zone(-w / 2 + 1.4, z0 - 2.6, 1.6, 3.6, { shake: 1, label: 'SPIN CYCLE' }),
-    ] };
-  },
-  stream(ctx, z0) {
-    const w = 8, len = 8, zc = z0 - len / 2;
-    ctx.shell.floor(0, zc, w, len, planks('#3a2d4f', '#2a2040', 6));
-    const deskZ = z0 - len + 1;
-    ctx.place('furniture', 'desk', 0, deskZ, 0);
-    ctx.place('furniture', 'computerScreen', 0, deskZ - .25, 0, false).then(m => m.position.y = .76);
-    ctx.place('furniture', 'chairDesk', 0, deskZ + 1.2, Math.PI, false);
-    for (const s of [-1, 1]) ctx.place('furniture', 'speaker', s * 1.3, deskZ - .2, 0);
-    const neon = new THREE.PointLight('#a970ff', 6, 7); neon.position.set(0, 2, deskZ + .5); ctx.scene.add(neon);
-    return { name: 'YOUR STREAM DESK', len, w, slots: [], hazards: [], finish: { x: 0, z: deskZ + 1.2, r: .9 } };
-  },
+  ...MORE,
 };

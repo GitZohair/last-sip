@@ -10,6 +10,9 @@ export const TRICKS = {
   outrun: { label: 'OUTRAN THE VACUUM', pts: 90 },
   duck: { label: 'GOLDEN DUCK', pts: 150 },
   legend: { label: 'SURVIVED A LEGENDARY', pts: 200 },
+  shout: { label: 'BROKE THE SMART LOCK', pts: 100 },
+  scare: { label: 'SCARED THE VACUUM', pts: 110 },
+  bounce: { label: 'TRAMPOLINE', pts: 50 },
 };
 
 export function createStyle() {

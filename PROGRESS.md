@@ -19,10 +19,11 @@ Pitch line: *"Crowd Control lets chat mess with your game. LAST SIP is a daily g
 |---|---|---|
 | Core | Third-person robot (CC0 RobotExpressive) carrying a glass, waiter pose; over-shoulder chase cam that rises over the head in tight spaces | `character.js` |
 | Core | Slosh spring + spill + droplets + puddles (slippery) | `glass.js`, `chaos.js` |
-| Level | Seeded daily house: kitchen → 3 shuffled rooms → stream desk; Kenney furniture; random clutter; golden duck | `level.js`, `rooms.js`, `clutter.js` |
+| Level | Seeded daily house: kitchen → **3 of 5** rooms (hallway, living, laundry, **bathroom**, **bedroom**) → stream desk. Rooms ~1.5x bigger (arenas, not corridors), each with a centre blocker that splits routes. 90 Kenney models. Toaster/dryer launchers lob props at you, robo-bear + boombox patrols, bench slalom, double box walls, wet tile + grip mats, shower spray, trampoline bed. 90 s timer | `level.js`, `rooms.js`, `rooms2.js`, `roomkit.js`, `clutter.js` |
 | Pressure | **Slamming doors** in every doorway (seeded timing, "DOOR CLOSING" warning), **swinging pendulum lamps**, **THE VACUUM** chaser (follows your trail, accelerates, eats puddles) | `hazards.js` |
 | Pressure | House director pulls seeded cards when chat is quiet; 60 s timer; LAST SIP slow-mo below 15% | `run.js` |
-| Skill | CATCH IT [E] slow-mo save; Shift careful steps; Space hop; mic scream-to-dash | `run.js`, `scream.js` |
+| Skill | CATCH IT [E] slow-mo save; Shift careful steps; Space hop | `run.js` |
+| **Voice** | Mic is part of the game (auto-requested on start; **hold V = shout** fallback). **SMART LOCK** door into the stream room opens only after ~1.2 s of shouting. **Shout near the vacuum** stuns it for 2.5 s, otherwise a shout dash. **Sleeping roommate** (bedroom): your voice or running fills their alert; they wake up and throw pillows; sneak with Shift. Yelling shakes your own glass. HUD voice meter with shout line + lock/alert gauge. Verified by stepping the sim | `voice.js`, `voicegames.js` |
 | Score | **Style combo**: near miss, door dash, hop, catch, clean sprint, outrun the vacuum, duck, survive a legendary; combo up to x8; adds to score | `style.js` |
 | Chaos | 30-card deck (common/rare/legendary, ~25% help), slot-reel reveal, goofy sphere props (bananas, balls, ducks, cans) | `deck.js`, `props.js`, `mods.js` |
 | Twitch | Anonymous IRC chat + Bits (zero setup, verified live); director with cooldowns/queue/3-viewer help votes | `twitch.js` |
@@ -34,8 +35,8 @@ Pitch line: *"Crowd Control lets chat mess with your game. LAST SIP is a daily g
 | Infra | Vercel prod deploy, GitHub private repo, `.env.local` template, tests (10 passing) | — |
 
 ## In progress / next (in priority order)
-1. **Playtest + balance with a real keyboard.** Target: a careful run keeps ~70% water in ~45 s; reckless ~35%; the vacuum should catch a crawler around 25–30 s. Tune `hazards.js` (door period/closed, vacuum speed ramp), `glass.js` (rimAllow, spill coefficient), `run.js` (house interval).
-2. **Two more rooms using the copied models**: `bathroom` (bathtub, toilet, showerRound, bathroomSink; slippery tile = permanent low traction strip) and `bedroom` (bedDouble as a trampoline shortcut: landing on it launches you; pillows). Add to `ROOMS` in `rooms.js`, then shuffle 3 of 5 middle rooms in `level.js`. Models are already in `public/assets/kenney/furniture-kit/`.
+1. **Playtest + balance with a real keyboard and a real mic** (the shout threshold `SHOUT` in `voice.js` is a guess; tune it so a normal yell crosses it and talking does not). Also check the bedroom quiet line (noise > .3) and whether the 90 s timer is right for the bigger house. Target: a careful run keeps ~70% water in ~45 s; reckless ~35%; the vacuum should catch a crawler around 25–30 s. Tune `hazards.js` (door period/closed, vacuum speed ramp), `glass.js` (rimAllow, spill coefficient), `run.js` (house interval).
+2. **More voice set pieces** (ideas): clap-on lights (dark room lights up while you're loud), a dog that only sits when you shout SIT, chat votes `!loud` / `!quiet` to flip the roommate's sensitivity.
 3. **Sound** (biggest remaining gap): Kenney CC0 audio (Impact Sounds, Interface Sounds). `sfx.js` with footsteps, slosh, splash, door slam + creak warning, vacuum whirr (volume by distance), fuse + boom, slot tick + rarity jingles, catch ding, last-sip heartbeat, credits fanfare.
 4. **Viewer meta-game on the results/board** (the anti-Crowd-Control pillar): a "Chat vs Chat" board (total damage per channel today + top helper), and the viewer's cross-channel rank shown in Spill Credits ("#3 most wanted on Twitch today").
 5. **Intro screen polish**: a proper title-card layout, the day's house preview (top-down render), and a Twitch-purple sign-in button with an icon instead of text-only buttons.
@@ -51,4 +52,5 @@ Pitch line: *"Crowd Control lets chat mess with your game. LAST SIP is a daily g
 - `profile.emotes` (signed-in) aren't yet used in gallery frames.
 
 ## Session log
+- **2026-11-01 (Claude, later):** voice as a core mechanic (smart lock, vacuum scare, sleeping roommate), bigger rooms, bathroom + bedroom, launchers/patrols, 35 more Kenney models, timer 90 s. Dev helpers: `lastSip.tp(x,z)`, `lastSip.player()`, `lastSip.goto(room)`. Seeds with the new rooms: `?seed=2026-11-02` (bedroom, laundry, bathroom).
 - **2026-11-01 (Claude):** concept overhaul, third-person rebuild, Twitch layers, Supabase + Vercel live, emoji removal + icon system, hazards (doors/lamps/vacuum), style combo, this file.

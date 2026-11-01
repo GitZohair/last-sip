@@ -7,7 +7,7 @@ import { today, recordPour, receipt, dayNumber, submit, boards } from './daily.j
 import { ChatDirector, connectChat, emoteUrl } from '../twitch.js';
 import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
-import { createScream } from './scream.js';
+import { createVoice } from './voice.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -17,7 +17,7 @@ const world = createWorld($('world'));
 const player = createPlayer(world.renderer.domElement);
 const chase = createChaseCam(world.camera);
 const director = new ChatDirector();
-const scream = createScream();
+const voice = createVoice();
 const lastEmote = new Map(); // viewer -> their last emote url (for MOST WANTED posters)
 let run = null, chat = null, session = null, profile = null, official = false, slowmo = 0;
 
@@ -50,12 +50,13 @@ const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `tes
 // ---------- runs
 async function start(asPour) {
   const d = today(seed); official = asPour && !d.poured;
+  voice.enable(); // the mic is part of the game; V is the fallback if it's refused
   ui.loading(true);
-  run = await createRun(world, player, { seed, scream, profile: profile || (chat ? { name: chat.channel } : null), hooks: {
-    spill: (who, amt) => ui.blame(who, amt), toast: t => ui.feed(t, 'help'),
+  run = await createRun(world, player, { seed, voice, profile: profile || (chat ? { name: chat.channel } : null), hooks: {
+    spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); ui.feed(`Caught it. ${n} save${n > 1 ? 's' : ''}`, 'help', 'catch'); },
-    scream: () => ui.feed('Scream dash', 'muted', 'mic'),
+    scream: k => ui.feed(k === 'scare' ? 'Scared the vacuum' : 'Shout dash', 'muted', k === 'scare' ? 'vacuum' : 'mic'),
     lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
@@ -77,7 +78,7 @@ async function finish(r) {
 }
 
 // ---------- boot
-ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => scream.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
+ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
 (async () => {
   ui.intro({ seed, number: dayNumber(seed), daily: today(seed), canSignIn: !!tw.CLIENT_ID });
   session = await tw.restore().catch(() => null);
@@ -109,12 +110,13 @@ function loop(now) {
   const m = run.mods;
   chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
-  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style });
+  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice });
   world.renderer.render(world.scene, world.camera);
 }
 requestAnimationFrame(loop);
 if (params.has('dev')) window.lastSip = { run: () => run,
   simulate, play, start,
   state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
+  tp: (x, z) => player.reset({ x, z, yaw: 0 }), player: () => player,
   goto: key => { const r = run.level.rooms.find(x => x.key === key); player.reset({ x: 0, z: r.z0 - 1.2, yaw: 0 }); return r.name; },
 };

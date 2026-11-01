@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { model } from './assets.js';
+import { voiceDoor, roommate } from './voicegames.js';
 
 // Timed house hazards that turn walking into dodging. All timing is seeded, so every streamer
 // faces the same rhythm on the same day. Each hazard reports hits as {kind, dir:{x,z}, power}.
@@ -67,15 +68,18 @@ function vacuum(scene, spawn) {
   const eye = new THREE.Mesh(new THREE.SphereGeometry(.05, 16, 12), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff2d55', emissiveIntensity: 3 })); eye.position.set(0, .19, -.22); g.add(eye);
   const brush = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .02, 3), new THREE.MeshStandardMaterial({ color: '#888' })); brush.position.set(.25, .02, -.25); g.add(brush);
   g.position.set(spawn.x, 0, spawn.z + 1); scene.add(g);
-  const trail = []; let speed = 0, wake = 6, cool = 0;
+  const trail = []; let speed = 0, wake = 6, cool = 0, stun = 0;
   return {
     kind: 'vacuum', label: 'THE VACUUM', mesh: g,
     distance: 99,
+    stun(s) { stun = s; speed = Math.max(0, speed - 1); ring.material.color.set('#5ab8ff'); ring.material.emissive.set('#2a8cff'); },
+    get stunned() { return stun > 0; },
     update(t, player, dt, chaos) {
       const last = trail.at(-1);
       if (!last || Math.hypot(last.x - player.pos.x, last.z - player.pos.z) > .35) trail.push({ x: player.pos.x, z: player.pos.z });
       brush.rotation.y += dt * 30; cool -= dt;
       if (t < wake) { this.distance = 99; return null; }
+      if (stun > 0) { stun -= dt; g.rotation.y += dt * 14; if (stun <= 0) { ring.material.color.set('#ff3b5c'); ring.material.emissive.set('#ff1e46'); } this.distance = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z); return null; }
       speed = Math.min(4.6, 2.2 + (t - wake) * .07);
       let move = speed * dt;
       while (move > 0 && trail.length) {
@@ -93,19 +97,21 @@ function vacuum(scene, spawn) {
   };
 }
 
-export async function createHazards(scene, level, r, spawn) {
+export async function createHazards(scene, level, r, spawn, props) {
   const list = [];
-  for (const d of level.doors) list.push(door(scene, level.colliders, d, r));
+  level.doors.forEach((d, i) => i === level.doors.length - 1 ? 0 : list.push(door(scene, level.colliders, d, r)));
+  const lock = await voiceDoor(scene, level.colliders, level.doors.at(-1)); list.push(lock);
+  const mate = roommate(level.rooms.find(x => x.key === 'bedroom'), props); if (mate) list.push(mate);
   for (const room of level.rooms) {
-    if (room.key === 'living' || room.key === 'hallway' || room.key === 'laundry') {
+    if (['kitchen', 'living', 'hallway', 'laundry', 'bathroom'].includes(room.key)) {
       const z = room.z0 - room.len * (.35 + r() * .3);
       list.push(await pendulum(scene, r.range(-.4, .4), z, r, Math.min(room.w - 1, 3.2)));
     }
   }
   const vac = vacuum(scene, spawn); list.push(vac);
   return {
-    list, vacuum: vac,
-    update(t, player, dt, chaos) { const hits = []; for (const h of list) { const hit = h.update(t, player, dt, chaos); if (hit) hits.push({ ...hit, label: h.label }); } return hits; },
+    list, vacuum: vac, lock, mate,
+    update(t, player, dt, chaos, voice) { const hits = []; for (const h of list) { const hit = h.update(t, player, dt, h.kind === 'vacuum' ? chaos : voice); if (hit) hits.push({ ...hit, label: h.label }); } return hits; },
     doorWarning: (t, player) => list.some(h => h.kind === 'door' && h.warn(t) && Math.abs(player.pos.z - h.z) < 4),
   };
 }

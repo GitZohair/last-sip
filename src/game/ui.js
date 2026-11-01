@@ -14,7 +14,7 @@ export const ui = {
     $('connect').onclick = () => { const v = $('channel').value.trim().replace(/^.*twitch\.tv\//, ''); if (v) connect(v); };
     $('channel').value = localStorage.getItem('lastsip:channel') || '';
     $('signin').onclick = signIn;
-    $('mic-on').onclick = async () => { $('mic-on').textContent = (await mic()) ? 'SCREAM TO DASH: ON' : 'MICROPHONE BLOCKED'; };
+    $('mic-on').onclick = async () => { $('mic-on').textContent = (await mic()) ? 'MICROPHONE ON' : 'MIC BLOCKED: HOLD V TO SHOUT'; };
     $('world').onclick = lock;
     addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) practice(); });
   },
@@ -55,7 +55,7 @@ export const ui = {
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
-  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style }) {
+  hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice }) {
     const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
     set('water', Math.round(water * 100)); $('water-fill').style.transform = `scaleY(${water})`;
     $('danger').style.transform = `scaleX(${danger})`; $('danger').dataset.hot = danger > .85 ? '1' : '';
@@ -63,6 +63,7 @@ export const ui = {
     set('hazard', hazard ? hazard : calm ? 'CHAT IS STEADYING YOU' : steady ? 'CAREFUL STEPS' : '');
     const key = mods.join(); if (key !== modsKey) { modsKey = key; $('mods').innerHTML = mods.filter(m => MOD_LABEL[m]).map(m => `<span>${icon(MOD_ICON[m] || m)}${MOD_LABEL[m]}</span>`).join(''); }
     const near = Math.max(0, Math.min(1, 1 - (vacuum - 1) / 7)); $('vac').style.opacity = vacuum < 8 ? 1 : 0; $('vac-fill').style.transform = `scaleX(${near})`; $('vac').dataset.hot = vacuum < 2.5 ? '1' : '';
+    if (voice) { const v = $('voice'); v.style.opacity = voice.level > .08 || voice.lock >= 0 || voice.alert >= 0 ? 1 : .35; $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
     if (style) { set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', water < .25);
