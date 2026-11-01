@@ -8,14 +8,19 @@ const R = .11, H = .26;
 export function createGlass(parent) {
   const s = { water: 1, tx: 0, tz: 0, vx: 0, vz: 0, spillRate: 0, danger: 0, scale: 1 };
   const g = new THREE.Group(); parent.add(g);
-  const glassMat = new THREE.MeshStandardMaterial({ color: '#e8fbff', transparent: true, opacity: .28, roughness: .05, depthWrite: false, side: THREE.DoubleSide });
+  const glassMat = new THREE.MeshLambertMaterial({ color: '#c9f3ff', emissive: '#3a7f99', emissiveIntensity: .25, transparent: true, opacity: .5, depthWrite: false, side: THREE.DoubleSide }); // readable even when empty
   g.add(new THREE.Mesh(new THREE.CylinderGeometry(R, R * .8, H, 28, 1, true), glassMat));
   const base = new THREE.Mesh(new THREE.CylinderGeometry(R * .8, R * .8, .03, 28), glassMat); base.position.y = -H / 2; g.add(base);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(R, .006, 6, 32), new THREE.MeshStandardMaterial({ color: '#fff' })); rim.rotation.x = Math.PI / 2; rim.position.y = H / 2; g.add(rim);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(R, .014, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffffff' })); rim.rotation.x = Math.PI / 2; rim.position.y = H / 2; g.add(rim);
   const waterMat = new THREE.MeshStandardMaterial({ color: '#3fb6ff', transparent: true, opacity: .7, roughness: .1, emissive: '#0b4a80', emissiveIntensity: .5 });
   const body = new THREE.Mesh(new THREE.CylinderGeometry(R * .95, R * .78, 1, 28), waterMat); g.add(body);
   const surface = new THREE.Mesh(new THREE.CircleGeometry(R * .96, 28), new THREE.MeshStandardMaterial({ color: '#b5ecff', roughness: .05, emissive: '#3a90d0', emissiveIntensity: .45, side: THREE.DoubleSide }));
   g.add(surface);
+  // beach-drink silhouette: striped straw + a pink cocktail umbrella (they tip with the slosh, so the danger reads at a glance)
+  const deco = new THREE.Group(); g.add(deco);
+  const straw = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, .34, 8), new THREE.MeshBasicMaterial({ color: '#ff4f6d' })); straw.position.set(.04, .06, 0); straw.rotation.z = -.25; deco.add(straw);
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .3, 5), new THREE.MeshBasicMaterial({ color: '#f4e3c0' })); stick.position.set(-.05, .1, .02); stick.rotation.z = .3; deco.add(stick);
+  const brolly = new THREE.Mesh(new THREE.ConeGeometry(.11, .05, 8, 1, true), new THREE.MeshLambertMaterial({ color: '#ff5fa2', side: THREE.DoubleSide })); brolly.position.set(-.095, .245, .02); brolly.rotation.z = .3; deco.add(brolly);
 
   function step(dt, { ax = 0, az = 0, turn = 0, steady = false, calm = false, wobble = 0, gain = 1, noSpill = false }) {
     const k = steady || calm ? 24 : 12, c = steady ? 7 : calm ? 9 : 2.4, a = (steady ? .03 : .055) * gain;

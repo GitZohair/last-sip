@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createPlayer } from './player.js';
 import { createChaseCam } from './character.js';
@@ -145,7 +146,18 @@ function loop(now) {
   player.pos.x = real.x; player.y = real.y; player.pos.z = real.z;
 }
 requestAnimationFrame(loop);
-if (params.has('dev')) window.lastSip = { run: () => run, world,
+// dev: render a still from any camera into an overlay image (works while the tab is in the background)
+function devShot(pos, look, fov = 50) {
+  if (!pos) { document.getElementById('dev-shot')?.remove(); return; }
+  const w = 640, h = 480, cam = new THREE.PerspectiveCamera(fov, w / h, .05, 200); cam.position.set(...pos); cam.lookAt(...look);
+  const R = world.renderer, rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 }); R.setRenderTarget(rt); R.render(world.scene, cam);
+  const px = new Uint8Array(w * h * 4); R.readRenderTargetPixels(rt, 0, 0, w, h, px); R.setRenderTarget(null); rt.dispose();
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d'), id = g.createImageData(w, h);
+  for (let y = 0; y < h; y++) id.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); g.putImageData(id, 0, 0);
+  let img = document.getElementById('dev-shot'); if (!img) { img = document.createElement('img'); img.id = 'dev-shot'; img.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:99999;pointer-events:none'; document.body.appendChild(img); }
+  img.src = cv.toDataURL();
+}
+if (params.has('dev')) window.lastSip = { run: () => run, world, shot: devShot, frame: (n = 1) => { for (let i = 0; i < n; i++) { run.render(1 / 60, i / 60); } },
   simulate, play, start,
   state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
   tp: (x, z) => player.reset({ x, z, yaw: 0 }), player: () => player,
