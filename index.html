@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAST SIP — your chat is home alone with your glass of water</title>
+  <link rel="stylesheet" href="/src/game/game.css" />
+</head>
+<body>
+  <canvas id="world"></canvas>
+  <div id="dark-mask"></div>
+  <div id="loading">Filling the glass…</div>
+
+  <section id="intro">
+    <h1>LAST <em>SIP</em></h1>
+    <p class="tag">You got up to grab water. <b>Chat is home alone with you.</b><br>Carry one full glass from the kitchen back to your stream desk. Chat controls the house, not you.</p>
+    <div class="connect">
+      <input id="channel" placeholder="your twitch channel" autocomplete="off" />
+      <button id="connect">CONNECT CHAT</button>
+      <span id="chat-status">○ not connected</span>
+    </div>
+    <p class="cmds">Chat types: <code>!bomb</code> <code>!fridge</code> <code>!gust</code> <code>!ice</code> <code>!lights</code> <code>!quake</code> · help: <code>!steady</code> (3 viewers) · art: <code>!frame &lt;emote&gt;</code> · Cheers fire instantly</p>
+    <button id="start" class="big" disabled>START TODAY'S HOUSE ↗</button>
+    <p class="keys">Click to look · WASD move · SHIFT / right-click careful steps · SPACE hop · R retry</p>
+  </section>
+
+  <section id="hud" hidden>
+    <div class="glass-meter"><div id="water-fill"></div><strong><span><span id="water">100</span>%</span></strong></div>
+    <div class="top"><span id="room">THE KITCHEN</span><span id="hazard"></span></div>
+    <div class="timer" id="timer">90.0</div>
+    <div id="progress"><i id="progress-fill"></i></div>
+    <ol id="feed"></ol>
+    <div id="banner"></div>
+    <div id="blame"></div>
+    <div class="sim"><span>NO VIEWERS? TEST CHAT:</span>
+      <button data-sim="!bomb">!bomb</button><button data-sim="!fridge">!fridge</button><button data-sim="!gust">!gust</button><button data-sim="!ice">!ice</button><button data-sim="!lights">!lights</button><button data-sim="!quake">!quake</button><button data-sim="!steady">!steady</button>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <span class="kicker">TODAY'S HOUSE</span>
+    <h2 id="r-title">Hydrated.</h2>
+    <div id="r-stats"></div>
+    <h3>SPILL CREDITS</h3>
+    <ol id="credits"></ol>
+    <div class="actions"><button id="again" class="big">AGAIN (R)</button><button id="share">COPY RESULT</button></div>
+  </section>
+  <script type="module" src="/src/game/main.js"></script>
+</body>
+</html>

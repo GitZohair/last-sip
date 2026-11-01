@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createState,step,applyEvent,score,onSurface,dailySeed} from '../src/simulation.js';
+test('daily seed uses UTC, including near the Pakistan midnight boundary',()=>{assert.equal(dailySeed(new Date('2026-11-01T02:00:00+05:00')),'2026-10-31');});
+test('the same seed and inputs replay to the same state',()=>{const a=createState('2026-11-01'),b=createState('2026-11-01');for(let i=0;i<1200;i++){const input={forward:1,sprint:i%300<150,steady:i%300>=150};step(a,input,1/120);step(b,input,1/120);}assert.deepEqual(a,b);});
+test('falling returns to the checkpoint and loses water once, not every frame',()=>{const s=createState();s.x=90;step(s,{},1/120);assert.equal(s.falls,1);assert.equal(s.x,0);assert.ok(s.water<.87);for(let i=0;i<30;i++)step(s,{},1/120);assert.equal(s.falls,1);});
+test('support only changes gameplay at the threshold and labels the assisted run',()=>{const s=createState();applyEvent(s,'cheer');assert.equal(s.crowd,false);applyEvent(s,'tip');assert.equal(s.calm,0);applyEvent(s,'cheer');assert.equal(s.crowd,true);assert.equal(s.calm,6);assert.equal(s.support,0);});
+test('water stays bounded and a completed run cannot be mutated by viewer events',()=>{const s=createState();s.water=.001;s.x=99;step(s,{},1/120);assert.equal(s.water,0);assert.equal(s.done,true);const before=structuredClone(s);assert.equal(applyEvent(s,'calm'),false);step(s,{forward:1},1/120);assert.deepEqual(s,before);assert.equal(score(s),0);});
+test('course junctions connect and finish gives an actual completed score',()=>{assert.ok(onSurface(0,-20));assert.ok(onSurface(18,-22));assert.ok(onSurface(18,-49));assert.ok(onSurface(-5,-49));const s=createState();s.x=-5;s.z=-76;s.leg=4;s.time=50;s.water=.8;step(s,{},1/120);assert.equal(s.finished,true);assert.ok(score(s)>990);});

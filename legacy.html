@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#c7e4df" />
+    <meta name="description" content="A playable first-person daily balance-racing experiment. All records stay in your browser; viewer events are simulated." />
+    <title>LAST SIP — a tiny daily balancing act</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/history.css" />
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="world" aria-label="First-person seaside obstacle course"></canvas>
+      <div id="vignette"></div>
+      <header>
+        <a class="brand" href="/" aria-label="Last Sip home"><span class="brand-mark">◒</span> LAST SIP<span class="brand-sub">A TINY DAILY BALANCING ACT</span></a>
+        <div class="top-actions"><span class="prototype-pill">PLAYABLE EXPERIMENT · LOCAL ONLY</span><button id="records-toggle" class="icon-button">YOUR RUNS</button><button id="sound" class="icon-button" title="Toggle sound" aria-label="Enable sound">SOUND OFF</button><button id="lab-toggle" class="icon-button">VIEWER LAB ↗</button></div>
+      </header>
+      <div id="hud" class="hidden">
+        <div class="hud-top"><div class="metric water-metric"><span>WATER LEFT</span><strong id="water">100<span>%</span></strong><div class="water-track"><i id="water-bar"></i></div></div><div class="run-label"><span id="mode-label">TODAY'S COURSE · LOCAL PRACTICE</span><strong id="sector">01 / THE WARM-UP</strong><small id="wind-label">A little breeze. A very full glass.</small></div><div class="metric time-metric"><span>TIME LEFT</span><strong id="timer">75<span>.0</span></strong></div></div>
+        <div id="progress-track"><div id="progress-fill"></div><i style="left:31%"></i><i style="left:66%"></i><span>FINISH</span></div>
+        <div id="crosshair">·</div><div id="steady-status">HOLD SPACE TO STEADY</div><div id="feedback" role="status" aria-live="polite"></div>
+        <div class="game-bottom"><div class="control-legend"><b>W A S D</b> MOVE <span>·</span> <b>DRAG / Q E</b> LOOK <span>·</span> <b>SHIFT</b> HURRY <span>·</span> <b>SPACE</b> STEADY</div><button id="pause" class="icon-button">PAUSE / ESC</button><button id="restart" class="icon-button">RESTART / R</button></div>
+      </div>
+      <section id="intro" class="intro">
+        <div class="eyebrow"><i></i> DAILY COURSE <span id="daily-number">001</span> <span class="divider">/</span> <span id="daily-date"></span></div>
+        <h1>BIG HURRY.<br>SMALL <em>SIP.</em></h1>
+        <p class="intro-copy">One full glass. One very questionable shortcut.<br>Get to the finish with your dignity. And some water.</p>
+        <div class="intro-actions"><button id="start" class="primary-button">LET'S NOT SPILL IT <span>↗</span></button><button id="how-toggle" class="text-button">HOW TO PLAY <span>+</span></button></div>
+        <div id="how" class="how hidden">WASD moves. Tap Q / E for a quarter turn; drag the scene or use arrow keys for fine look. Shift runs; Space steadies your glass. Turns, wind and bumps make water slosh. Stay on the boardwalk. Speed helps your score, but an empty glass doesn't. There is no jump.</div>
+        <div class="intro-stats"><div><strong>~60 SEC</strong><span>OF QUESTIONABLE DECISIONS</span></div><div><strong>1 COURSE</strong><span>A NEW SEED EVERY UTC DAY</span></div><div><strong id="intro-best">—</strong><span>YOUR LOCAL BEST</span></div></div>
+        <div class="intro-footnote"><span class="tiny-star">✳</span> No accounts. No downloads. Just a little coordination.<small>Desktop keyboard recommended. Twitch, Cheers and tips are simulations in this prototype.</small></div>
+      </section>
+      <div id="course-sticker" class="course-sticker"><span>WELCOME TO</span><strong>THE LONG<br>WAY ROUND</strong><small>SEASIDE CIRCUIT / 01</small><i>↝</i></div>
+      <aside id="lab" class="hidden" aria-label="Simulated viewer controls">
+        <div class="lab-heading"><span>THE PEANUT GALLERY</span><button id="lab-close" aria-label="Close viewer lab">×</button></div><div class="sim-label"><i></i> SIMULATED INPUTS · NO TWITCH CONNECTION</div>
+        <h2>What if chat<br>had a button?</h2><p>Try audience help and trouble. Any gameplay intervention makes this a <b>Crowd practice</b> run.</p>
+        <div class="lab-buttons"><button data-event="left"><span>↖</span> GUST LEFT <small>FREE CHAT ACTION</small></button><button data-event="right"><span>↗</span> GUST RIGHT <small>FREE CHAT ACTION</small></button><button data-event="calm"><span>≈</span> STEADY HANDS <small>FREE TEAM ASSIST</small></button></div>
+        <div class="support-box"><div><b>THE COMMUNITY WINDBREAK</b><span id="support-count">0 / 3</span></div><div class="support-track"><i id="support-bar"></i></div><p>Support fills the sails. A full meter gives the whole crew 6 seconds of calm. It never buys a daily score.</p><div><button data-event="cheer">SIMULATE CHEER</button><button data-event="tip">SIMULATE TIP</button></div></div>
+        <div id="event-log" aria-live="polite">Lab ready. Nothing here sends a real payment.</div>
+      </aside>
+      <section id="paused" class="modal-wrap hidden"><div class="pause-card"><span class="eyebrow">TAKE A BREATH</span><h2>Hold that sip.</h2><p>Your timer and your glass are paused.</p><button id="resume" class="primary-button">BACK TO IT <span>↗</span></button><button id="pause-home" class="text-button">RETURN TO START</button></div></section>
+      <section id="records" class="modal-wrap hidden" aria-label="Local run history"><div class="result-card"><div class="result-top"><span class="eyebrow">THE PERSONAL SCOREBOARD</span><button id="records-close" class="text-button">CLOSE ×</button></div><h2>Your little rivalry.</h2><p>Same browser. Real attempts. Daily and crowd runs have separate bests.</p><div class="chart-caption"><b>PACE VS. PRESERVATION</b><span>LEFT IS FASTER · HIGHER IS CLEANER</span></div><svg id="history-chart" viewBox="0 0 560 130" role="img" aria-label="Finish time versus water retained for your saved runs"></svg><div id="records-list"></div><small class="local-note">Local practice only. No invented opponents or global rankings. Coral = daily; green = crowd.</small></div></section>
+      <section id="results" class="modal-wrap hidden"><div class="result-card"><div class="result-top"><span class="eyebrow" id="result-mode">LOCAL DAILY PRACTICE</span><span id="result-case">COURSE 001</span></div><h2 id="result-title">A glass act.</h2><p id="result-subtitle">You made it. Most of the water did too.</p><div class="result-metrics"><div><strong id="result-score">0</strong><span>POINTS</span></div><div><strong id="result-water">0%</strong><span>WATER KEPT</span></div><div><strong id="result-time">0s</strong><span>FINISH TIME</span></div></div><div class="chart-caption"><b>THE DAMAGE REPORT</b><span>WATER REMAINING THROUGH YOUR RUN</span></div><svg id="result-chart" viewBox="0 0 560 100" role="img" aria-label="Water remaining over this run"></svg><div class="record-row"><span id="record-note"></span><span id="streak-note"></span></div><div class="result-actions"><button id="again" class="primary-button">ONE MORE SIP <span>↗</span></button><button id="share" class="text-button">COPY RESULT ↗</button><button id="home" class="text-button">HOME</button></div><small class="local-note">Browser-only personal records. No global leaderboard or real Twitch integration.</small></div></section>
+      <div id="loading"><span class="brand-mark">◒</span><p>FILLING YOUR GLASS…</p></div>
+      <div id="error" class="modal-wrap hidden"><div class="pause-card"><h2>A small technical spill.</h2><p id="error-message"></p></div></div>
+      <div id="mobile-note">This experiment needs a keyboard. Open it on desktop to play.</div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
