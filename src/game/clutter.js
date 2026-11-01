@@ -6,7 +6,7 @@ import { screenImage } from '../moderation.js';
 const SPOTS = [[2, -2], [-2, -10], [1, -24], [-3, -33], [3, -30], [0, -44], [-1, -60], [1, -70], [-12, -16], [12, -48]];
 
 export async function dress(scene, level, props, r) {
-  await Promise.all(SPOTS.map(([x, z]) => props.spawn(r.pick(['ball', 'ball', 'duck', 'can', 'banana', 'pizza']), x + r.range(-.5, .5), .5, z)));
+  void SPOTS; void props; void r; // the boards stay clear: loose junk only arrives from chat cards
   const duck = new THREE.Mesh(new THREE.SphereGeometry(.16, 20, 14), new THREE.MeshStandardMaterial({ color: '#ffcc33', metalness: .9, roughness: .2, emissive: '#7a5200', emissiveIntensity: .5 }));
   duck.position.set(17, .16, -62); scene.add(duck);
   return { goldenDuck: duck };

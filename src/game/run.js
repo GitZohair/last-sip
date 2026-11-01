@@ -46,7 +46,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const prompts = createPrompts(scene, hazards);
   const actors = createActors(scene, level, sfx);
   const rule = todaysRule(seed), wind = createWind(scene, seed, rule === 'windy'); // always present: SEA BREEZE cards use it too
-  if (rule === 'hungry') hazards.vacuum.hungry = true;
+  hazards.vacuum.hungry = rule === 'hungry'; hazards.vacuum.enabled = rule === 'hungry'; // only on LOOSE CANNON days, and it naps after every hit
   const guide = createGuide(scene, { shift, actors, level });
   const drops = createDrops(scene, level, { sfx, onImpact: (d, dist) => { gallery.shake(1); if (dist < 6) run.shakeT = .35; } });
   // where to drop: on the route a few metres ahead of the streamer (so it lands in their way, telegraphed)
@@ -71,7 +71,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const spawnActor = (kind, user) => actors.spawn(kind, user, player, kind === 'barrel' ? { spot: barrelSpot() } : {});
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
-  const run = { drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 10, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
   // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
   await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ...FURNITURE.map(([n]) => ['furniture', n])]);
@@ -252,7 +252,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // THE HOUSE: seeded daily script keeps pressure on when chat is quiet; faster in later rooms.
     run.houseNext -= dt;
     if (run.houseNext <= 0) {
-      const ri = level.rooms.indexOf(room); run.houseNext = Math.max(2.2, 6 - ri * .9) + houseRng() * 2;
+      const ri = level.rooms.indexOf(room); run.houseNext = 7 + houseRng() * 3 - Math.min(2, run.t / 45); // calm opening, one house event every 7-10 s; void ri
       if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
       else if (run.t - run.lastChat > 3 && houseRng() < .2) { const p = dropSpot(); drops.furniture('THE HOUSE', p.x, p.z); }
       else if (run.t - run.lastChat > 3 && houseRng() < .35) { spawnActor(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE'); }

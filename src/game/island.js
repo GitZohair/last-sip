@@ -58,9 +58,8 @@ export async function buildIsland(scene) {
   glow.rotation.x = -Math.PI / 2; glow.position.set(0, .02, -84); scene.add(glow); // LIVE glow on the hut floor (no point light: lights cost every pixel)
   colliders.push({ minX: -1.2, maxX: 1.2, minZ: -85.2, maxZ: -84.1, top: .78 });
   // poster boards along the boardwalk: chat's !frame emotes and yesterday's MOST WANTED hang here
-  const slots = [[-1.7, -9], [1.7, -13], [-1.7, -41], [1.7, -45], [-1.7, -59], [1.7, -71]].map(([x, z]) => {
-    const p = new THREE.Mesh(postGeo, postMat); p.scale.y = .9; p.position.set(x, .2, z); p.castShadow = true; statics.add(p);
-    colliders.push({ minX: x - .12, maxX: x + .12, minZ: z - .12, maxZ: z + .12, top: 2 });
+  const slots = [[-4.2, -9], [4.2, -24], [-4.2, -42], [4.2, -70]].map(([x, z]) => { // out in the water, clear of the path
+    const p = new THREE.Mesh(postGeo, postMat); p.scale.y = 1.4; p.position.set(x, -.3, z); p.castShadow = true; statics.add(p);
     return { x, y: 1.85, z, rot: x < 0 ? Math.PI / 2 : -Math.PI / 2 };
   });
   const length = 90;
