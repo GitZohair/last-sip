@@ -8,7 +8,7 @@
 - There was too much on screen and no single thing to look at.
 
 ## The core loop (10-20 s, repeated for a 90 s shift)
-1. **ORDER.** A customer appears on an islet with a name tag and a drink bubble. With chat connected, **customers are viewers**: `!order` (or the first message from a new chatter) puts *that viewer* on the island waiting for a drink. With no chat, tourists from the daily seed fill in.
+1. **ORDER.** A customer appears on an islet with a name tag and a drink bubble. With chat connected, **customers are viewers**: `!order` enters the order raffle, and each seeded customer slot draws one name from it (see below). With no chat, tourists fill in.
 2. **LOAD.** Walk into the **bar** (centre plaza). The tray loads one glass per waiting customer (max 5). More glasses = more tips per trip, but a taller, wobblier stack. *This is the risk/reward decision.*
 3. **CARRY.** The tray sloshes (one shared spring; upper glasses spill first). Snipers, barrels, sky drops, the Loose Cannon and wind all hit the tray.
 4. **SERVE.** Walk into a customer: they grab their glass and react. Tip = fill % (full = $10), minus salt if you fell in the sea. Under 30% gets an angry reaction and a 1-star line in chat-facing text ("1 STAR from @viewer").
@@ -28,6 +28,20 @@
 | Quiet chat | THE HOUSE plays the same cards so a solo run (or a judge) sees everything |
 
 Every hit is credited to a viewer: **Spill Credits**, the **Most Wanted** poster tomorrow, the cross-Twitch board. Every served drink is credited too ("Served: @a, @b...").
+
+## Chat at any size: votes for everyone, a direct lane for supporters
+A 20-viewer chat and a 20,000-viewer chat must both work, and nobody can flood the island.
+- **Free viewers vote.** Every ~12 s a ballot shows on screen: `1 SNIPER · 2 BARREL · 3 SKY DROP` (three options drawn from the deck, often one helpful). Typing `1`/`2`/`3` (or the command name) casts one vote per viewer per ballot; a viewer can change it. The window is 8 s, long enough for stream delay. The winner fires, and **one voter from the winning side is drawn as its face** (the gunner's name tag, the barrel's tag). With no votes, THE HOUSE picks the default. Every voter on the winning side shares the blame credit.
+- **Supporters act directly.** Bits (100+), subs, raids and channel-point redemptions skip the ballot: named, immediate, on a short global cooldown so the streamer still gets a beat. Payments buy spectacle, never score.
+- **Customers are a raffle.** `!order` puts a viewer in the order pool. Customer *slots and timing* come from the daily seed (the same for every streamer, so tips stay comparable); when a slot opens, one name is drawn from the pool (subs get 2 tickets). An empty pool gives a tourist.
+- **Small chats stay snappy.** With fewer than ~5 active chatters in the last minute, direct commands (`!sniper`, `!barrel`, `!drop`) fire straight away with per-viewer cooldowns; above that, they count as votes.
+- **Mods and the broadcaster** can always fire directly (for testing on stream).
+
+## What makes it new (innovation is the tie-break)
+1. **Chat sits on both sides of the counter**: viewers are the customers you serve *and* the saboteurs, by name, in one 90 s shift.
+2. **Votes with a face**: a crowd vote of any size still produces one named villain on the island, drawn from the winning voters.
+3. **Fair daily Pour under chaos**: seeded customer slots mean tips compare across channels, while chat changes only the spectacle and the names.
+4. **Blame and gratitude ledgers**: Spill Credits, Most Wanted, plus a "served" list. Viewers are remembered tomorrow.
 
 ## Screen (one thing to look at)
 - Top: shift timer, tips $, tray count.
@@ -55,5 +69,6 @@ Every hit is credited to a viewer: **Spill Credits**, the **Most Wanted** poster
 2. `shift.js`: the bar, customer spots, chat or house customers, patience and tips.
 3. `run.js` wiring: replace the recipe and hut; the shift ends at 90 s.
 4. Guide beams, route arrow and minimap follow customers or the bar.
-5. HUD (tips, tray), results (tips, served, walkouts, credits), receipt, intro copy, `!order` in twitch.js.
-6. Playtest plus a perf check, then update PROGRESS.md and DEVPOST_SUBMISSION.md.
+5. HUD (tips, tray), results (tips, served, walkouts, credits), receipt, intro copy.
+6. Chat director v3: ballots, the order raffle, small-chat direct mode, the supporter lane; ballot UI on screen.
+7. Playtest plus a perf check, then update PROGRESS.md and DEVPOST_SUBMISSION.md.
