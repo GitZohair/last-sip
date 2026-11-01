@@ -22,7 +22,7 @@ export const CARDS = [
   { id: 'pillows', label: 'SOFT LANDINGS', r: 'c', help: true, apply: x => x.mod('soft', 10) },
   // ---- rare chaos
   { id: 'fridge', label: 'FRIDGE DELIVERY', r: 'r', apply: x => x.fire('crate') },
-  { id: 'fridges', label: 'IT IS RAINING FRIDGES', r: 'r', apply: x => { x.fire('crate'); setTimeout(() => x.fire('crate'), 500); setTimeout(() => x.fire('crate'), 1000); } },
+  { id: 'fridges', label: 'IT IS RAINING FURNITURE', r: 'r', apply: x => x.rain(4) },
   { id: 'moon', label: 'MOON GRAVITY', r: 'r', apply: x => x.mod('moon', 8) },
   { id: 'tilt', label: 'THE ISLAND IS TILTING', r: 'r', apply: x => x.mod('tilt', 7) },
   { id: 'tiny', label: 'HONEY I SHRUNK THE STREAMER', r: 'r', apply: x => x.mod('tiny', 8) },

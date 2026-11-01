@@ -19,6 +19,7 @@ import { createActors, ballMat, lifebuoy } from './actors.js';
 import { model, preload } from './assets.js';
 import { todaysRule, createWind } from './rules.js';
 import { createGuide } from './guide.js';
+import { createDrops, FURNITURE } from './drops.js';
 
 export const LIMIT = 90;
 const LEGACY = { storm: 'gust', crate: 'fridge', ice: 'mop', quake: 'bass', calm: 'steady', bomb: 'bomb', lights: 'lights' };
@@ -46,13 +47,24 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const rule = todaysRule(seed), wind = createWind(scene, seed, rule === 'windy'); // always present: SEA BREEZE cards use it too
   if (rule === 'hungry') hazards.vacuum.hungry = true;
   const guide = createGuide(scene, { recipe, actors, level });
+  const drops = createDrops(scene, level, { sfx, onImpact: (d, dist) => { gallery.shake(1); if (dist < 6) run.shakeT = .35; } });
+  // where to drop: on the route a few metres ahead of the streamer (so it lands in their way, telegraphed)
+  // Spaced 2.4 m from other drops and alternating sides, so the boards never get fully blocked (always a squeeze-past gap).
+  let dropSide = 1;
+  const dropSpot = (k = 0) => {
+    const g = guide.goal(player.pos), dx = g.x - player.pos.x, dz = g.z - player.pos.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+    const lead = Math.hypot(player.vel.x, player.vel.z) * 1.25; // aim where you'll BE when it lands: read the shadow, brake or sidestep
+    let a = Math.max(1.8, lead + .4) + k * 2.4, x, z; dropSide = -dropSide;
+    for (let tries = 0; tries < 6; tries++, a += 2.4) { x = player.pos.x + ux * a - uz * .35 * dropSide; z = player.pos.z + uz * a + ux * .35 * dropSide; if (!drops.list.some(o => Math.hypot(o.x - x, o.z - z) < 2.4)) break; }
+    return { x, z };
+  };
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
   glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
-  const run = { rule, wind, guide, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { drops, shakeT: 0, rule, wind, guide, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
   // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
-  await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ['furniture', 'kitchenFridge']]);
+  await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ...FURNITURE.map(([n]) => ['furniture', n])]);
   {
     const temp = new THREE.Group(), geo = new THREE.SphereGeometry(.1, 6, 4); scene.add(temp);
     temp.add(new THREE.Mesh(geo, ballMat), new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true })), new THREE.Mesh(geo, new THREE.MeshStandardMaterial()), await model('furniture', 'kitchenFridge'));
@@ -66,7 +78,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
   const api = {
-    fire: type => type === 'storm' ? wind.gust(3.2) : chaos.fire(type),
+    fire: type => type === 'storm' ? wind.gust(3.2) : type === 'crate' ? (() => { const p = dropSpot(); drops.furniture(api.user || 'CHAT', p.x, p.z, FURNITURE[0]); })() : chaos.fire(type),
+    rain: n => { for (let i = 0; i < Math.min(n, 3); i++) setTimeout(() => { const p = dropSpot(i % 3); drops.furniture(api.user || 'CHAT', p.x, p.z); }, i * 450); },
     mod: (n, s) => mods.set(n, s),
     refill: f => { glass.state.water = Math.min(1, glass.state.water + f); },
     clearPuddles: () => chaos.clearPuddles(),
@@ -82,12 +95,17 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
 
   // Play a card from chat. eventName may be a card id, a legacy event name, or 'deck' (random draw).
   // viewer characters spawn by name; the card system handles everything else
-  run.summon = (kind, user) => { if (run.state !== 'play') return false; actors.spawn(kind, user, player); run.lastChat = run.t; return true; };
+  run.summon = (kind, user) => {
+    if (run.state !== 'play') return false;
+    if (kind === 'drop') { const p = dropSpot(); drops.furniture(user, p.x, p.z); } else actors.spawn(kind, user, player);
+    run.lastChat = run.t; return true;
+  };
+  run.dropFrame = async ({ user, image, trusted }) => { if (run.state !== 'play') return { ok: false, reason: 'not playing' }; const p = dropSpot(); const d = await drops.frame(user, p.x, p.z, image, trusted); run.lastChat = run.t; return d ? { ok: true } : { ok: false, reason: 'image rejected' }; };
   run.play = (eventName, users, { bias = 0 } = {}) => {
     if (run.state !== 'play') return null;
     const card = eventName === 'deck' ? draw(Math.random, { bias }) : byId(LEGACY[eventName] || eventName);
     if (!card) return null;
-    card.apply(api);
+    api.user = users[0]; card.apply(api);
     if (users[0] !== 'THE HOUSE') run.lastChat = run.t;
     if (!card.help) ledger.blame(users, card.label, card.id === 'mop' ? 8 : 4, run.t);
     else avatar.emote('ThumbsUp', .9);
@@ -158,7 +176,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
       ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; hooks.hit?.(hit.label, 'BUMPED'); avatar.emote('No', .5); style.combo = 1;
     }
-    for (const hit of actors.update(dt, run.t, player)) {
+    for (const hit of [...actors.update(dt, run.t, player), ...drops.update(dt, run.t, player)]) {
       if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
       sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
@@ -225,6 +243,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.houseNext <= 0) {
       const ri = level.rooms.indexOf(room); run.houseNext = Math.max(2.2, 6 - ri * .9) + houseRng() * 2;
       if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
+      else if (run.t - run.lastChat > 3 && houseRng() < .2) { const p = dropSpot(); drops.furniture('THE HOUSE', p.x, p.z); }
       else if (run.t - run.lastChat > 3 && houseRng() < .35) { actors.spawn(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE', player); }
       else if (run.t - run.lastChat > 3) { const card = draw(houseRng); if (card.r !== 'l' && !card.help) hooks.house?.(run.play(card.id, ['THE HOUSE'])); }
     }

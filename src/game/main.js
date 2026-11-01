@@ -36,7 +36,7 @@ function onChat(msg) {
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} is queued`, 'muted', 'stopwatch');
   else if (r.kind === 'vote') ui.feed(`LIFEGUARD VOTE ${r.have}/${r.needed}`, 'help', 'steady', 'vote');
   else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]]) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
-  else if (r.kind === 'frame') run?.gallery.hang(r).then(res => ui.feed(res.ok ? `${r.user} hung a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
+  else if (r.kind === 'frame') run?.dropFrame(r).then(res => ui.feed(res.ok ? `${r.user} dropped a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
 }
 function onEventSub(e) {
   if (e.type === 'sub' || (e.type === 'cheer' && e.amount >= 100)) return play('sniper', [e.user]);
@@ -45,6 +45,7 @@ function onEventSub(e) {
   const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
 }
 function play(event, users, opts) {
+  if (event === 'drop') { if (run?.summon('drop', users[0])) ui.feed(`${users[0]}: SKY DROP`, 'legend', 'fridge'); return; }
   if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0])) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
   if (event === 'calm' && users[0]) run?.summon('lifeguard', users[0]);
   const card = run?.play(event, users, opts); if (!card) return;
@@ -67,7 +68,7 @@ async function start(asPour) {
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
     lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), collect: (id, n, total) => { showOrder(); cues?.pop(`+ ${INGREDIENTS[id].label}  ${n}/${total}`, INGREDIENTS[id].color, true); if (n === total) setTimeout(() => cues?.pop('TO THE HUT', '#c9a2ff', true), 900); },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
-    hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : `${kind === 'SNIPER' ? 'SNIPED' : 'ROLLED'} BY ${who}`, '#ff5c7a'),
+    hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : kind === 'SNIPER' ? `SNIPED BY ${who}` : kind === 'BARREL' ? `ROLLED BY ${who}` : `${kind} FROM ${who}`, '#ff5c7a'),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
@@ -137,7 +138,8 @@ function loop(now) {
   if (a < 1 && Math.hypot(real.x - prev.x, real.z - prev.z) < 1) { player.pos.x = prev.x + (real.x - prev.x) * a; player.y = prev.y + (real.y - prev.y) * a; player.pos.z = prev.z + (real.z - prev.z) * a; }
   run.render(dt, t);
   const m = run.mods;
-  chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : 0);
+  run.shakeT = Math.max(0, (run.shakeT || 0) - dt);
+  chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : run.shakeT * .3);
   cues?.update(dt, run, player, world.camera, run.wind);
   document.body.classList.toggle('dark', run.chaos.active.lights > 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
