@@ -11,7 +11,7 @@ function vacuum(scene, spawn) {
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.37, .018, 10, 48), new THREE.MeshStandardMaterial({ color: '#ff3b5c', emissive: '#ff1e46', emissiveIntensity: 1.6 })); ring.rotation.x = Math.PI / 2; ring.position.y = .12; g.add(ring);
   const eye = new THREE.Mesh(new THREE.SphereGeometry(.05, 16, 12), new THREE.MeshStandardMaterial({ color: '#fff', emissive: '#ff2d55', emissiveIntensity: 3 })); eye.position.set(0, .19, -.22); g.add(eye);
   const brush = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .02, 3), new THREE.MeshStandardMaterial({ color: '#888' })); brush.position.set(.25, .02, -.25); g.add(brush);
-  g.position.set(spawn.x, 0, spawn.z + 1); scene.add(g);
+  g.scale.setScalar(1.8); g.position.set(spawn.x, 0, spawn.z + 2); scene.add(g); // big enough to read at chase-cam distance
   const trail = []; let speed = 0, wake = 6, cool = 0, stun = 0;
   return {
     kind: 'vacuum', label: 'THE VACUUM', mesh: g,
@@ -35,7 +35,7 @@ function vacuum(scene, spawn) {
       const dx = player.pos.x - g.position.x, dz = player.pos.z - g.position.z, d = Math.hypot(dx, dz);
       this.distance = d;
       ring.material.emissiveIntensity = 1 + Math.max(0, 3 - d) * 1.2 + Math.sin(t * 12) * .4;
-      if (d < .7 && cool <= 0 && player.y < .3) { cool = 1.4; trail.length = 0; return { kind: 'vacuum', dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: 8 }; }
+      if (d < 1 && cool <= 0 && player.y < .3) { cool = 1.4; trail.length = 0; return { kind: 'vacuum', dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: 8 }; }
       return null;
     },
   };

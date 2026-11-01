@@ -95,10 +95,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   };
 
   const trick = id => { const g = style.add(id); if (g) { hooks.trick?.(style.last); sfx.pop(style.combo); } };
-  // Falling in: splash, lose 12% of the glass, respawn at the last safe spot. Very clippable.
+  // Falling in: splash, lose 30% of the drink, respawn at the last safe spot. Very clippable.
   run.safe = { x: level.spawn.x, z: level.spawn.z }; run.falls = 0;
   const fall = (room) => {
-    run.falls++; const before = glass.state.water; glass.state.water = Math.max(0, before - .12); run.roomLoss[room.key] += before - glass.state.water;
+    run.falls++; const before = glass.state.water; glass.state.water = before * .7; // lose 30% of what's in the glass run.roomLoss[room.key] += before - glass.state.water;
     ledger.spill(before - glass.state.water, run.t, 'THE WATER'); hooks.spill?.('THE WATER', before - glass.state.water);
     splash.emit({ x: player.pos.x, y: 0, z: player.pos.z }, { x: 0, z: 0 }, 24); sfx.splash(); avatar.emote('No', .8);
     player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); style.combo = 1; hooks.fell?.(run.falls);
@@ -129,7 +129,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // timed hazards + the vacuum: hits shove the player and slosh the glass; blamed on the house
     for (const hit of hazards.update(run.t, player, dt, chaos, voice)) {
       if (hit.opened) { sfx.unlock2(); trick('shout'); continue; }
-      if (hit.woke) { sfx.wake(); hooks.toast?.('YOU WOKE THE ROOMMATE', 'pillows'); hooks.clip?.('roommate'); continue; }
+      if (hit.woke) { sfx.wake(); continue; }
       if (hit.kind === 'door') sfx.slam(); else sfx.thud(.8);
       player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
@@ -156,7 +156,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (player.landed) sfx.thud(Math.min(1, player.landed / 8));
     if (player.landed) glass.kick(0, -player.landed * (mods.soft ? .05 : .25));
     if (player.justJumped) { player.justJumped = false; if (props.list.some(p => Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) < 1.2)) trick('hop'); }
-    if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'THE FLOOR IS LAVA — GET ON FURNITURE'; }
+    if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'KEEP HOPPING'; }
     const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh * (rule === 'heavy' ? 1.3 : 1), noSpill: mods.noSpill });
     if (lost > 0) {
       if ((spillCd -= dt) <= 0) { spillCd = .12; sfx.spill(lost); }

@@ -5,7 +5,7 @@ import { model } from './assets.js';
 export const EVENTS = {
   bomb: { label: 'CHAT BOMB' },
   crate: { label: 'FRIDGE DELIVERY' },
-  storm: { label: 'DRAFT' },
+  storm: { label: 'SEA BREEZE' },
   ice: { label: 'MOPPED FLOOR' },
   lights: { label: 'LIGHTS OUT' },
   quake: { label: 'BASS DROP' },
