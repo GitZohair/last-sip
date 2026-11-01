@@ -16,7 +16,7 @@ export async function createCharacter(scene) {
   model.scale.setScalar(s); model.rotation.y = Math.PI; // model faces +z; our forward is -z
   model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false; } });
   const root = new THREE.Group(); const lean = new THREE.Group(); lean.add(model); root.add(lean); scene.add(root);
-  const holder = new THREE.Group(); holder.position.set(.32, HEIGHT * 1.02, -.18); holder.scale.setScalar(1.5); lean.add(holder); // waiter pose: glass up by the right shoulder, always visible
+  const holder = new THREE.Group(); holder.position.set(0, HEIGHT * .6, -.36); holder.scale.setScalar(1.25); lean.add(holder); // carried in front of the chest, both hands
 
   const mixer = new THREE.AnimationMixer(model);
   const actions = Object.fromEntries(gltf.animations.map(a => [a.name, mixer.clipAction(a)]));

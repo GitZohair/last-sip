@@ -6,6 +6,19 @@ Living status doc. Whoever picks this up (Claude or Codex): read this first, the
 **Run locally:** `npm run dev` → http://localhost:5173 (`?dev=1` exposes `window.lastSip` for QA, `?seed=YYYY-MM-DD` picks a day)
 **Deploy:** `npx vercel deploy --prod --yes` · **Tests:** `npm test` · **Build:** `npm run build`
 
+## V4 PLAN (2026-11-01, from user feedback) — build in this order
+Feedback: too text heavy, pixelated, glass on the shoulder looks weird, room-to-room walking is dull, no visible chaos, too many detailed random rooms. The beach prototype (`legacy.html`) had the right feel: one fixed elevated course, you can fall off, bright clean look, editorial front page.
+Reference look (checked on Steam): R.E.P.O. = moody interiors, pools of warm light, strong bloom, goofy smooth robots, physics props. RV There Yet? = bright warm sun, saturated colour, soft shadows, haze, chunky toy shapes. Both rely on lighting + post FX, not geometry detail.
+
+**Design v4: THE STILT HOUSE (fixed level) + ONE DAILY PROBLEM**
+1. **Fixed level** (same every day, so players master it like a Wordle grid): a stilt house over the sea. Kitchen → plank walk → living room → plank walk → bedroom → stream room. Planks have no railings: chat gusts and hazards push you into the sea (splash, lose 12%, respawn). The flooded room becomes the outdoor water itself.
+2. **Daily problem = THE CODE LOCK** (Wordle mechanic): the stream-room door has a 4-symbol lock out of 6 symbols (duck, banana, fridge, moon, bomb, ball). Step on symbol tiles to enter a guess; tiles light green (right place), yellow (wrong place), grey (absent). Wrong guess = the house punishes you (a chaos card). Picture frames in the house show seeded hints (one each). Chat can backseat. Score counts guesses; the share receipt shows the guess grid (text squares, no emoji).
+3. **Daily additionals**: one seeded House Rule per day shown on the front page (Windy: gusts every 8 s; Wet Floors; Hungry Vacuum; Lights Out; Heavy Glass). Same for everyone.
+4. **Chaos must be visible**: wind streak particles + plank sway for gusts, seagulls, trapdoor planks, fridge drops with shadows, screen shake. Each card shows as an icon banner, not text.
+5. **Front page** like the beach version: editorial layout, live 3D house backdrop, tabs PLAY / LEADERBOARD / STATS / HOW TO PLAY. Stats = Wordle-style: played, win %, streak, best, guess distribution histogram.
+6. **Look**: smooth shading, MSAA on, DPR ≥ 1, no nearest filtering (done); bloom + vignette + warm grade; sea + sky; warm practical lights inside.
+7. **Sound**: replace synth with CC0 samples (Kenney Impact/Interface/Digital audio packs, needs download approval) + a light music loop; keep synth as fallback.
+
 ## Positioning (why this isn't Crowd Control)
 Crowd Control adds paid viewer effects to existing games. LAST SIP is a game built around chat as **player two**:
 1. Every spilled drop is attributed to the viewer who caused it, which feeds the Spill Credits and a **cross-channel daily Most Wanted** board, so viewers have a score and an identity across all of Twitch.

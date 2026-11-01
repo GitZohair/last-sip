@@ -14,6 +14,9 @@ export const COMMANDS = {
   bass: { kind: 'chaos', event: 'quake', cost: 1 },
   chaos: { kind: 'chaos', event: 'deck', cost: 1 },
   roll: { kind: 'chaos', event: 'deck', cost: 1 },
+  // Viewer characters: you appear on the island with your name on it.
+  sniper: { kind: 'chaos', event: 'sniper', cost: 2 },
+  barrel: { kind: 'chaos', event: 'barrel', cost: 1 },
   // Help: needs several different viewers inside a short window.
   steady: { kind: 'help', event: 'calm', needed: 3 },
   shelter: { kind: 'help', event: 'calm', needed: 3 },

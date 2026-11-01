@@ -29,8 +29,9 @@ export function createPrompts(scene, hazards) {
     zzz.userData.base = new THREE.Vector3(mate.x, 1.9, mate.z); alarm.position.set(mate.x, 2.1, mate.z);
   }
   return {
-    update(t, voice) {
-      mic.visible = !lock.open; const k = lock.near ? 1 + lock.charge * .5 + (voice.loud ? Math.sin(t * 30) * .08 : Math.sin(t * 5) * .05) : .8;
+    update(t, voice, run) {
+
+      mic.visible = !lock.open && lock.kind !== 'none'; const k = lock.near ? 1 + lock.charge * .5 + (voice.loud ? Math.sin(t * 30) * .08 : Math.sin(t * 5) * .05) : .8;
       mic.scale.setScalar(.6 * k); mic.position.y = 2.45 + Math.sin(t * 2) * .05; mic.material.opacity = lock.near ? 1 : .6;
       if (zzz) {
         const asleep = mate.awake <= 0, k2 = (t * .5) % 1;

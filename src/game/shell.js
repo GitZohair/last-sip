@@ -39,8 +39,8 @@ export function makeShell(scene) {
 }
 
 // Circle-vs-AABB push-out for the player. Returns the standing height under the player.
-export function collide(pos, radius, y, colliders) {
-  let ground = 0;
+export function collide(pos, radius, y, colliders, base = 0) {
+  let ground = base; // base < 0 over pits (water, trapdoors)
   for (const c of colliders) {
     if (c.disabled) continue;
     const nx = Math.max(c.minX, Math.min(pos.x, c.maxX)), nz = Math.max(c.minZ, Math.min(pos.z, c.maxZ));

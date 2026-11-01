@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Kenney Furniture Kit / Food Kit (CC0). The furniture kit is ~half real scale, so it is scaled x2.
 const loader = new GLTFLoader();
 const cache = new Map();
-const KITS = { furniture: ['/assets/kenney/furniture-kit/', 2], food: ['/assets/kenney/food-kit/', 1] };
+const KITS = { furniture: ['/assets/kenney/furniture-kit/', 2], food: ['/assets/kenney/food-kit/', 1], pirate: ['/assets/kenney/pirate-kit/', 1] };
 
 export function preload(list) {
   return Promise.all(list.map(([kit, name]) => load(kit, name)));
@@ -46,7 +46,7 @@ export function checker(a, b, repeat = 4, size = 64) {
   x.fillStyle = a; x.fillRect(0, 0, c.width, c.height);
   x.fillStyle = b; x.fillRect(0, 0, size, size); x.fillRect(size, size, size, size);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat);
-  t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; return t;
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
 
 export function planks(base, line, repeat = 4) {

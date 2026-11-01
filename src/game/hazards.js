@@ -100,7 +100,8 @@ function vacuum(scene, spawn) {
 export async function createHazards(scene, level, r, spawn, props) {
   const list = [];
   level.doors.forEach((d, i) => i === level.doors.length - 1 ? 0 : list.push(door(scene, level.colliders, d, r)));
-  const lock = await voiceDoor(scene, level.colliders, level.doors.at(-1)); list.push(lock);
+  const lock = level.doors.length ? await voiceDoor(scene, level.colliders, level.doors.at(-1)) : { kind: 'none', near: false, open: true, charge: 0, x: 0, z: 0, update: () => null };
+  list.push(lock);
   const mate = roommate(level.rooms.find(x => x.key === 'bedroom'), props); if (mate) list.push(mate);
   for (const room of level.rooms) {
     if (['kitchen', 'living', 'hallway', 'laundry', 'bathroom'].includes(room.key)) {

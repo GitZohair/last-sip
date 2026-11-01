@@ -5,8 +5,8 @@ import * as THREE from 'three';
 // - one shadowed sun that follows the player with a tight frustum, PCF (not PCFSoft)
 // - two "follow lamps" instead of a point light per room (point lights are the main fragment cost)
 export function createWorld(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
-  let ratio = Math.min(devicePixelRatio, 1.25);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false });
+  let ratio = Math.min(devicePixelRatio, 1.5);
   renderer.setPixelRatio(ratio); renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
@@ -32,7 +32,7 @@ export function createWorld(canvas) {
   function adapt(dt) { // every ~1s, compare average frame time
     acc += dt; frames++; if (acc < 1) return;
     const avg = acc / frames; acc = 0; frames = 0;
-    const next = avg > 1 / 45 ? Math.max(.6, ratio - .15) : avg < 1 / 58 ? Math.min(devicePixelRatio, 1.25, ratio + .1) : ratio;
+    const next = avg > 1 / 45 ? Math.max(1, ratio - .15) : avg < 1 / 58 ? Math.min(devicePixelRatio, 1.5, ratio + .1) : ratio;
     if (Math.abs(next - ratio) > .01) { ratio = next; renderer.setPixelRatio(ratio); renderer.setSize(innerWidth, innerHeight); }
   }
   const disco = new THREE.Color();

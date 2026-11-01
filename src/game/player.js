@@ -18,7 +18,7 @@ export function createPlayer(dom) {
 
   p.reset = (spawn) => { Object.assign(p.pos, { x: spawn.x, z: spawn.z }); p.yaw = spawn.yaw; p.pitch = 0; p.y = 0; p.vy = 0; p.vel.x = p.vel.z = 0; mouseX = 0; };
 
-  p.step = (dt, { colliders, push = { x: 0, z: 0 }, slip = false, gravity = 14, speedMul = 1, mirror = 1 }) => {
+  p.step = (dt, { colliders, push = { x: 0, z: 0 }, slip = false, gravity = 14, speedMul = 1, mirror = 1, base = 0 }) => {
     const k = p.keys, f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
     const s = ((k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0)) * mirror;
     if (k.has('ArrowLeft')) p.yaw -= 2 * dt; if (k.has('ArrowRight')) p.yaw += 2 * dt;
@@ -36,7 +36,7 @@ export function createPlayer(dom) {
     p.pos.x += p.vel.x * dt; p.pos.z += p.vel.z * dt;
     if (k.has('Space') && p.grounded) { p.vy = 4.6; p.grounded = false; p.justJumped = true; }
     p.vy -= gravity * dt; p.y += p.vy * dt;
-    const ground = collide(p.pos, .3, p.y, colliders);
+    const ground = collide(p.pos, .3, p.y, colliders, base);
     const wasAir = !p.grounded;
     if (p.y <= ground) { p.landed = wasAir && p.vy < -3 ? -p.vy : 0; p.y = ground; p.vy = 0; p.grounded = true; } else { p.grounded = p.y - ground < .02; p.landed = 0; }
   };

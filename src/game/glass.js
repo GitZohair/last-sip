@@ -43,7 +43,9 @@ export function createGlass(parent) {
     surface.rotation.set(-Math.PI / 2 - g.rotation.x * 1.6 + Math.sin(t * 7) * .03 * s.danger, 0, -g.rotation.z * 1.6);
     waterMat.emissiveIntensity = .5 + s.danger * .6;
   }
-  return { state: s, step, kick, render, lip, group: g };
+  // tint the drink as ingredients go in (the recipe sets this)
+  const tint = c => { waterMat.color.copy(c); waterMat.emissive.copy(c).multiplyScalar(.25); surface.material.color.copy(c).lerp(new THREE.Color('#fff'), .35); surface.material.emissive.copy(c).multiplyScalar(.2); };
+  return { state: s, step, kick, render, lip, tint, group: g };
 }
 
 // Droplets: pooled instanced spheres. They arc out of the rim and turn into puddles where they land.

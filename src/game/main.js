@@ -9,6 +9,7 @@ import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
 import { createVoice } from './voice.js';
 import { sfx } from './sfx.js';
+import { INGREDIENTS } from './recipe.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -30,15 +31,17 @@ function onChat(msg) {
   if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users);
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} queued a pull`, 'muted', 'stopwatch');
   else if (r.kind === 'vote') ui.feed(`${r.users[0]} wants to steady you (${r.have}/${r.needed})`, 'help', 'steady');
-  else if (r.kind === 'support') play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
+  else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]]) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
   else if (r.kind === 'frame') run?.gallery.hang(r).then(res => ui.feed(res.ok ? `${r.user} hung a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
 }
 function onEventSub(e) {
-  const map = { cheer: ['deck', Math.min(1, e.amount / 500)], follow: ['deck', 0], sub: ['deck', .5], raid: ['nuke', 0], hype: ['deck', 1] };
+  if (e.type === 'sub' || (e.type === 'cheer' && e.amount >= 100)) return play('sniper', [e.user]);
+  const map = { cheer: ['deck', Math.min(1, e.amount / 500)], follow: ['barrel', 0], sub: ['deck', .5], raid: ['nuke', 0], hype: ['deck', 1] };
   if (e.type === 'redeem') return play(/fridge/i.test(e.title) ? 'fridge' : /lid/i.test(e.title) ? 'lid' : 'deck', [e.user]);
   const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
 }
 function play(event, users, opts) {
+  if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0])) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
   const card = run?.play(event, users, opts); if (!card) return;
   ui.feed(`${users.join(', ')}: ${card.label}`, card.help ? 'help' : card.r === 'l' ? 'legend' : 'chaos', card.id);
   ui.slot(card, users.join(', '));
@@ -57,14 +60,15 @@ async function start(asPour) {
     spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
-    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t),
+    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: t => ui.trick(t), fell: () => ui.big('SPLASH'), collect: () => showOrder(),
   } });
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
-  ui.loading(false); ui.show('hud'); run.state = 'ready'; ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
+  ui.loading(false); ui.show('hud'); run.state = 'ready'; showOrder(); ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
   lockPointer();
   const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
+function showOrder() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got); }
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
   const water = r.glass.state.water, time = r.t, score = r.won ? Math.round(water * 1000 + Math.max(0, LIMIT - time) * 6 + r.style.points) : 0;

@@ -8,9 +8,15 @@ const WALL_DECOR = ['bookcaseOpen', 'bookcaseOpenLow', 'lampRoundFloor', 'lampSq
 const LOOSE = ['banana', 'ball', 'duck', 'can', 'donut', 'box', 'pizza', 'pillow'];
 
 export async function dress(scene, level, props, r) {
+  if (level.open) { // island: beach junk on the boards and sand, golden duck on the far east islet
+    const spots = [[2, -2], [-2, -10], [1, -24], [-3, -33], [3, -30], [0, -44], [-1, -60], [1, -70], [-12, -16], [12, -48]];
+    await Promise.all(spots.map(([x, z]) => props.spawn(r.pick(['ball', 'ball', 'duck', 'can', 'banana', 'pizza']), x + r.range(-.5, .5), .5, z)));
+    const duck = new THREE.Mesh(new THREE.SphereGeometry(.16, 20, 14), new THREE.MeshStandardMaterial({ color: '#ffcc33', metalness: .9, roughness: .2, emissive: '#7a5200', emissiveIntensity: .5 }));
+    duck.position.set(17, .16, -62); scene.add(duck); return { goldenDuck: duck };
+  }
   const jobs = [];
   for (const room of level.rooms) {
-    if (room.key === 'stream') continue;
+    if (room.key === 'stream' || room.key === 'flooded') continue;
     const n = Math.floor(room.len / 2.2) + Math.floor(r() * 3);
     for (let i = 0; i < n; i++) {
       const side = r() > .5 ? 1 : -1, z = room.z0 - 1 - r() * (room.len - 2), name = r.pick(WALL_DECOR);
@@ -25,7 +31,7 @@ export async function dress(scene, level, props, r) {
   }
   await Promise.all(jobs);
   // golden duck: in a random room corner-ish spot
-  const room = r.pick(level.rooms.slice(1, -1));
+  const room = r.pick(level.rooms.slice(1, -1).filter(x => x.key !== 'flooded'));
   const duck = new THREE.Mesh(new THREE.SphereGeometry(.16, 20, 14), new THREE.MeshStandardMaterial({ color: '#ffcc33', metalness: .9, roughness: .2, emissive: '#7a5200', emissiveIntensity: .5 }));
   duck.position.set((r() > .5 ? 1 : -1) * (room.w / 2 - .5), .16, room.z1 + .8 + r() * 1.5); scene.add(duck);
   return { goldenDuck: duck };

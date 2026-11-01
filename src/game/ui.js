@@ -56,6 +56,7 @@ export const ui = {
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(trickT); trickT = setTimeout(() => el.classList.remove('on'), 1300);
   },
   // 3-2-1-POUR. Resolves when the run should start.
+  big(text) { const el = $('count'); el.textContent = text; el.className = ''; void el.offsetWidth; el.className = 'on'; },
   countdown() {
     const el = $('count'), steps = ['3', '2', '1', 'POUR'];
     return new Promise(done => steps.forEach((s, i) => setTimeout(() => {
@@ -66,6 +67,9 @@ export const ui = {
   confetti() {
     const fx = document.body, colors = ['#a970ff', '#5dd6ff', '#ffd36b', '#ff5fa2', '#5dff9b'];
     for (let i = 0; i < 90; i++) { const d = document.createElement('i'); d.className = 'confetti'; d.style.cssText = `left:${Math.random() * 100}vw;background:${colors[i % 5]};animation-delay:${Math.random() * .6}s;animation-duration:${1.8 + Math.random() * 1.6}s;transform:rotate(${Math.random() * 360}deg)`; fx.appendChild(d); setTimeout(() => d.remove(), 4200); }
+  },
+  order(ids, labels, colors, got = []) {
+    $('order').innerHTML = ids.map(id => `<span class="${got.includes(id) ? 'got' : ''}" style="--c:${colors[id]}"><i></i>${labels[id]}</span>`).join('');
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
@@ -81,7 +85,7 @@ export const ui = {
     if (voice) { const v = $('voice'); v.style.opacity = voice.level > .08 || voice.lock >= 0 || voice.alert >= 0 ? 1 : .35; $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
     if (style) { set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
     $('progress-fill').style.transform = `scaleX(${progress})`;
-    document.body.classList.toggle('low', water < .25);
+    document.body.classList.toggle('low', water < .25 && water > .001);
   },
   results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board }) {
     ui.show('results');

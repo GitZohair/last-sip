@@ -13,6 +13,8 @@ export const TRICKS = {
   shout: { label: 'BROKE THE SMART LOCK', pts: 100 },
   scare: { label: 'SCARED THE VACUUM', pts: 110 },
   bounce: { label: 'TRAMPOLINE', pts: 50 },
+  brim: { label: 'FILLED TO THE BRIM', pts: 80 },
+  collect: { label: 'INGREDIENT', pts: 100 },
 };
 
 export function createStyle() {

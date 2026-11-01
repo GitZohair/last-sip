@@ -89,7 +89,7 @@ body.lastsip #hud::after { content: 'LAST SIP'; position: absolute; top: 40%; le
 /* ---- less text: room name is a banner on entry, icons replace labels ---- */
 #room { opacity: 0; transform: scale(.9); transition: opacity .6s, transform .6s; }
 #room.enter { animation: roomIn 2.4s ease-out forwards; }
-@keyframes roomIn { 0% { opacity: 0; transform: translateY(14vh) scale(1.6); } 12% { opacity: 1; transform: translateY(14vh) scale(1.6); } 75% { opacity: 1; transform: translateY(14vh) scale(1.6); } 100% { opacity: .0; transform: translateY(0) scale(1); } }
+@keyframes roomIn { 0% { opacity: 0; transform: scale(1.5); } 12% { opacity: 1; transform: scale(1.25); } 75% { opacity: 1; transform: scale(1.25); } 100% { opacity: 0; transform: scale(1); } }
 .ic svg { width: 22px; height: 22px; fill: currentColor; opacity: .85; } #vac .ic { display: flex; justify-content: center; bottom: 14px; }
 #feed li.old { opacity: 0; transform: translateX(-12px); transition: opacity .8s, transform .8s; }
 
@@ -109,3 +109,14 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #grades b { font: 900 2rem/1 system-ui; } #grades span { font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .7; margin-top: .25rem; }
 .g-A b { color: #5dff9b; } .g-B b { color: #5dd6ff; } .g-C b { color: #ffd36b; } .g-F b { color: #ff3b5c; }
 @keyframes gradeIn { from { opacity: 0; transform: translateY(10px) scale(.8); } }
+/* chat card lives on the right edge, out of the player's line of sight */
+#slot { top: 9.5rem; left: auto; right: 1.5rem; transform: translateX(30px) scale(.9); min-width: 0; width: 15rem; padding: .6rem 1rem; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: .7rem; align-items: center; }
+#slot.on { transform: none; }
+#slot b { grid-row: span 2; font-size: 2.2rem; } #slot strong { font-size: 1.05rem; line-height: 1.1; } #slot span { font-size: .75rem; }
+#slot .reel { width: 2.4rem; height: 2.4rem; }
+#count { font-size: 7rem; }
+
+#order { position: absolute; top: 5.2rem; left: 50%; transform: translateX(-50%); display: flex; gap: .5rem; }
+#order span { display: flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 999px; background: #1b1530cc; font: 800 .72rem/1 system-ui; letter-spacing: .1em; border: 2px solid var(--c); }
+#order i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--c); }
+#order span.got { background: var(--c); color: #1b1530; } #order span.got i { background: #1b1530; }

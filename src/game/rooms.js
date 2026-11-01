@@ -1,6 +1,7 @@
 import { checker, planks } from './assets.js';
 import { zone, patrol, launcher } from './roomkit.js';
 import { MORE } from './rooms2.js';
+import { FLOODED } from './rooms3.js';
 
 // Each room: build(ctx, z0, r) -> { name, len, w, hazards, slots, finish?, sleeper? }.
 // ctx.place(kit, name, x, z, rotY, solid=true) places a Kenney model (+collider). Course runs toward -z.
@@ -27,7 +28,7 @@ export const ROOMS = {
     ctx.place('furniture', 'tableRound', ix * -2.8, z0 - len + 2.4, 0);
     for (const a of [0, 2.1, 4.2]) ctx.place('furniture', 'chairCushion', ix * -2.8 + Math.sin(a) * 1.1, z0 - len + 2.4 + Math.cos(a) * 1.1, a + Math.PI, false);
     ctx.place('furniture', 'trashcan', w / 2 - .5, z0 - len + 1, 0);
-    return { name: 'THE KITCHEN', len, w, slots: [], hazards: [launcher(tx, 1.25, iz, { label: 'TOASTER', every: 2.2, range: 6.5 })] };
+    return { name: 'THE KITCHEN', len, w, sink: { x: -w / 2 + 1.25, z: z0 - 3.5 }, slots: [], hazards: [launcher(tx, 1.25, iz, { label: 'TOASTER', every: 2.2, range: 6.5 })] };
   },
   hallway(ctx, z0, r) {
     const w = 5, len = 20, zc = z0 - len / 2;
@@ -66,4 +67,5 @@ export const ROOMS = {
     ] };
   },
   ...MORE,
+  ...FLOODED,
 };
