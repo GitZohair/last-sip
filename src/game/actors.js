@@ -1,5 +1,26 @@
 import * as THREE from 'three';
 import { model, textTexture } from './assets.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
+
+// viewer figures (Kenney Mini Characters): the gunner on a sniper tower is a little person, not just a cannon
+const CREW = ['character-female-a', 'character-male-c', 'character-female-d', 'character-male-e', 'character-female-f', 'character-male-a'];
+const crewCache = new Map(), gltfLoader = new GLTFLoader();
+async function viewer(user) {
+  const name = CREW[[...user].reduce((h, c) => h + c.charCodeAt(0), 0) % CREW.length]; // same viewer, same look
+  if (!crewCache.has(name)) crewCache.set(name, gltfLoader.loadAsync(`/assets/kenney/mini-characters/${name}.glb`));
+  const g = await crewCache.get(name), m = skeletonClone(g.scene); m.scale.setScalar(1.5);
+  m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  const mixer = new THREE.AnimationMixer(m), clip = n => g.animations.find(a => a.name === n);
+  const idle = mixer.clipAction(clip('idle')); idle.play();
+  return { m, mixer, cheer: () => { const a = clip('emote-yes'); if (!a) return; const act = mixer.clipAction(a); act.reset().setLoop(THREE.LoopOnce).play(); act.clampWhenFinished = false; } };
+}
+function flag() { // red pennant on a pole: "this tower is hostile"
+  const g = new THREE.Group(), pole = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1.6, 6), new THREE.MeshLambertMaterial({ color: '#3a3040' }));
+  pole.position.y = .8; g.add(pole);
+  const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(.9, -.22); sh.lineTo(0, -.44);
+  const cloth = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: '#ff2040', side: THREE.DoubleSide })); cloth.position.y = 1.58; g.add(cloth); g.userData.cloth = cloth; return g;
+}
 
 // VIEWER CHARACTERS: chat doesn't just trigger effects, it shows up on the island with its name on it.
 //   SNIPER  (!sniper, 100+ bits, sub)  mounts a water cannon on the lifeguard tower nearest ahead of you,
@@ -27,9 +48,10 @@ export function createActors(scene, level, sfx) {
       if (kind === 'sniper') {
         const ahead = level.towers.filter(t => t.z < player.pos.z + 4 && !list.some(a => a.tower === t)).sort((a, b) => b.z - a.z)[0] || level.towers[0];
         const cannon = await model('pirate', 'cannon'); cannon.position.set(ahead.x, ahead.y, ahead.z); cannon.scale.setScalar(.8); scene.add(cannon);
-        const t = tag(user); t.position.set(ahead.x, ahead.y + 2.3, ahead.z); scene.add(t);
+        const crew = await viewer(user); scene.add(crew.m); const fl = flag(); fl.position.set(ahead.x - Math.sign(ahead.x) * .6, ahead.y, ahead.z + .5); scene.add(fl);
+        const t = tag(user); t.position.set(ahead.x, ahead.y + 2.6, ahead.z); scene.add(t);
         const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), laserMat); line.visible = false; scene.add(line);
-        list.push({ kind, user, tower: ahead, objs: [cannon, t, line], cannon, line, shots: 3, aim: 1.4, ball: null });
+        list.push({ kind, user, tower: ahead, objs: [cannon, t, line, crew.m, fl], cannon, crew, flag: fl, line, shots: 3, aim: 1.4, ball: null });
       } else if (kind === 'lifeguard') {
         const tower = level.towers.slice().sort((a, b) => Math.hypot(a.x - player.pos.x, a.z - player.pos.z) - Math.hypot(b.x - player.pos.x, b.z - player.pos.z))[0];
         const t = tag(user, '#2fbf71'); t.position.set(tower.x, tower.y + 2.3, tower.z); scene.add(t);
@@ -52,7 +74,9 @@ export function createActors(scene, level, sfx) {
       for (const a of [...list]) {
         if (a.kind === 'sniper') {
           const from = new THREE.Vector3(a.tower.x, a.tower.y + .7, a.tower.z), to = new THREE.Vector3(player.pos.x, player.y + .9, player.pos.z);
-          a.cannon.rotation.y = Math.atan2(to.x - from.x, to.z - from.z) - Math.PI / 2;
+          const yaw = Math.atan2(to.x - from.x, to.z - from.z); a.cannon.rotation.y = yaw - Math.PI / 2;
+          a.crew.m.position.set(a.tower.x - Math.sin(yaw) * .3 + Math.cos(yaw) * .6, a.tower.y, a.tower.z - Math.cos(yaw) * .3 - Math.sin(yaw) * .6); a.crew.m.rotation.y = yaw; a.crew.mixer.update(dt); // gunner stands beside the cannon, in view
+          a.flag.userData.cloth.rotation.y = Math.sin(t * 7) * .35;
           if (!a.ball) {
             a.aim -= dt; a.line.visible = a.aim < 1.4 && Math.sin(t * (a.aim < .4 ? 40 : 14)) > -.3;
             a.line.geometry.setFromPoints([from, to]);
@@ -60,7 +84,7 @@ export function createActors(scene, level, sfx) {
           } else {
             const b = a.ball; b.m.position.addScaledVector(b.v, dt); b.life -= dt;
             const d = Math.hypot(b.m.position.x - player.pos.x, b.m.position.z - player.pos.z);
-            if (d < .7 && Math.abs(b.m.position.y - (player.y + .9)) < 1.1) { const dir = b.v.clone().setY(0).normalize(); hits.push({ user: a.user, kind: 'SNIPER', dir: { x: dir.x, z: dir.z }, power: 7 }); b.life = 0; }
+            if (d < .7 && Math.abs(b.m.position.y - (player.y + .9)) < 1.1) { const dir = b.v.clone().setY(0).normalize(); hits.push({ user: a.user, kind: 'SNIPER', dir: { x: dir.x, z: dir.z }, power: 7 }); b.life = 0; a.crew.cheer(); }
             if (b.life <= 0) { scene.remove(b.m); a.ball = null; a.shots--; a.aim = 1.4; if (a.shots <= 0) remove(a); }
           }
         } else if (a.kind === 'lifeguard') {
