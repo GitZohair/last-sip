@@ -15,14 +15,14 @@ export function recordPour(seed, result) {
   d.days[seed] = result; d.last = seed; save(d); return d;
 }
 
-// One emoji per room: 💧 clean (<5% lost) · 🫗 messy (5–20%) · 💥 disaster (>20%) · then extras.
+// Per-room letter grades by water lost there: A <3%, B <8%, C <15%, F otherwise. Plain text, paste-anywhere.
 export function receipt({ saves = 0, seed, number, rooms, water, time, finished, villain, duck, streak, official }) {
-  const icon = l => l < .05 ? '💧' : l < .2 ? '🫗' : '💥';
-  const line = rooms.map(r => icon(r.lost)).join('');
-  return [`LAST SIP #${number}${official ? '' : ' (practice)'} 🥛 ${finished ? Math.round(water * 100) + '%' : 'DNF'} ⏱️${time.toFixed(1)}s`,
-    `${line}${finished ? '🎮' : '❌'}${duck ? '🦆' : ''}${saves ? ' 🙌×' + saves : ''}`,
-    villain ? `Most wanted: ${villain}` : 'Chat behaved (suspicious)',
-    streak > 1 ? `🔥 ${streak} day streak` : '', 'lastsip.gg'].filter(Boolean).join('\n');
+  const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
+  const line = rooms.map(r => grade(r.lost)).join(' ');
+  return [`LAST SIP #${number}${official ? '' : ' (practice)'}  ${finished ? Math.round(water * 100) + '% water' : 'DID NOT FINISH'} in ${time.toFixed(1)}s`,
+    `Rooms  ${line}${saves ? `  |  ${saves} catch${saves > 1 ? 'es' : ''}` : ''}${duck ? '  |  golden duck' : ''}`,
+    villain ? `Most wanted: ${villain}` : 'Chat behaved. Suspicious.',
+    streak > 1 ? `${streak}-day streak` : '', 'lastsip-seven.vercel.app'].filter(Boolean).join('\n');
 }
 export const dayNumber = seed => Math.floor((Date.parse(seed) - Date.parse('2026-11-01')) / 864e5) + 1;
 

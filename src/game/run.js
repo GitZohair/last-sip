@@ -10,6 +10,8 @@ import { dress, personalize } from './clutter.js';
 import { Ledger } from './ledger.js';
 import { draw, byId } from './deck.js';
 import { rng } from './rng.js';
+import { createHazards } from './hazards.js';
+import { createStyle } from './style.js';
 
 export const LIMIT = 60;
 const LEGACY = { storm: 'gust', crate: 'fridge', ice: 'mop', quake: 'bass', calm: 'steady', bomb: 'bomb', lights: 'lights' };
@@ -29,8 +31,10 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
   const gallery = createGallery(scene, level.slots);
   const ledger = new Ledger();
   const splash = createSplash(scene, (x, z) => Math.random() < .25 && chaos.puddle(x, z, .25));
+  const hazards = await createHazards(scene, level, rng(seed + ':hazards'), level.spawn);
+  const style = createStyle();
   player.reset(level.spawn);
-  const run = { level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   chaos.onBlast = f => { gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
@@ -58,9 +62,11 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
     if (users[0] !== 'THE HOUSE') run.lastChat = run.t;
     if (!card.help) ledger.blame(users, card.label, card.id === 'mop' ? 8 : 4, run.t);
     else avatar.emote('ThumbsUp', .9);
+    if (card.r === 'l' && !card.help) run.legendT = run.t;
     return card;
   };
 
+  const trick = id => { const g = style.add(id); if (g) hooks.trick?.(style.last); };
   const lipPos = new THREE.Vector3();
   run.step = (dt) => {
     mods.step(dt); dt *= mods.timeScale; run.t += dt;
@@ -73,6 +79,15 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
       }
     }
     const fx = chaos.step(dt); push.x += fx.push.x; push.z += fx.push.z;
+    // timed hazards + the vacuum: hits shove the player and slosh the glass; blamed on the house
+    for (const hit of hazards.update(run.t, player, dt, chaos)) {
+      player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
+      glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
+      ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; avatar.emote('No', .5); style.combo = 1;
+    }
+    const vac = hazards.vacuum.distance;
+    if (vac < 1.6 && !run.vacClose) run.vacClose = true;
+    if (run.vacClose && vac > 4.5) { run.vacClose = false; trick('outrun'); }
     let slip = chaos.slipAt(player.pos.x, player.pos.z);
     player.step(dt, { colliders: level.colliders, push, slip, gravity: mods.gravity, speedMul: mods.speed, mirror: mods.mirror });
     player.mirror = mods.mirror;
@@ -82,6 +97,7 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
       else if (speed > 2) glass.kick((Math.random() - .5) * speed * .3, -speed * .2);
     }
     if (player.landed) glass.kick(0, -player.landed * (mods.soft ? .05 : .25));
+    if (player.justJumped) { player.justJumped = false; if (props.list.some(p => Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) < 1.2)) trick('hop'); }
     if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'THE FLOOR IS LAVA — GET ON FURNITURE'; }
     const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh, noSpill: mods.noSpill });
     if (lost > 0) {
@@ -92,7 +108,16 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
       if (lost > .004) avatar.emote('No', .5);
     }
     splash.step(dt);
-    if (!run.duck && deco.goldenDuck.visible && Math.hypot(player.pos.x - deco.goldenDuck.position.x, player.pos.z - deco.goldenDuck.position.z) < .7) { run.duck = true; deco.goldenDuck.visible = false; api.refill(.05); hooks.toast?.('🦆 GOLDEN DUCK! +5% water'); }
+    const spd = Math.hypot(player.vel.x, player.vel.z);
+    run.sprintClean = spd > 3.6 && glass.state.danger < .7 ? run.sprintClean + dt : 0;
+    if (run.sprintClean > 3) { run.sprintClean = 0; trick('cleanSprint'); }
+    for (const h of hazards.list) {
+      if (h.kind === 'pendulum') { const d = h.near(player); if (d < .95 && d > .55 && !h.close) { h.close = true; trick('nearmiss'); } else if (d > 1.6) h.close = false; }
+      if (h.kind === 'door') { const across = Math.sign(player.pos.z - h.z); if (h.side && across !== h.side && h.warn(run.t)) trick('doorDash'); h.side = across; }
+    }
+    if (run.legendT > 0 && run.t - run.legendT > 6) { run.legendT = -9; if (glass.state.water > .2) trick('legend'); }
+    style.step(dt, lost);
+    if (!run.duck && deco.goldenDuck.visible && Math.hypot(player.pos.x - deco.goldenDuck.position.x, player.pos.z - deco.goldenDuck.position.z) < .7) { run.duck = true; deco.goldenDuck.visible = false; api.refill(.05); trick('duck'); }
     deco.goldenDuck.rotation.y += dt * 2;
     if (!run.lastSip && glass.state.water < .15) { run.lastSip = true; hooks.lastSip?.(); }
     // THE HOUSE: seeded daily script keeps pressure on when chat is quiet; faster in later rooms.
@@ -104,7 +129,7 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
     // CATCH IT: when the glass is about to go, a short window to press E for a slow-mo save.
     if (run.catchWin > 0) {
       run.catchWin -= dt;
-      if (player.keys.has('KeyE')) { glass.state.vx = glass.state.vz = 0; glass.state.tx *= .3; glass.state.tz *= .3; run.saves++; run.catchWin = -1.2; hooks.saved?.(run.saves); avatar.emote('Yes', .6); }
+      if (player.keys.has('KeyE')) { glass.state.vx = glass.state.vz = 0; glass.state.tx *= .3; glass.state.tz *= .3; run.saves++; trick('catch'); run.catchWin = -1.2; hooks.saved?.(run.saves); avatar.emote('Yes', .6); }
       else if (run.catchWin <= 0) { run.catchWin = -1.2; hooks.catchPrompt?.(false); }
     } else if (run.catchWin < 0) run.catchWin = Math.min(0, run.catchWin + dt);
     else if (glass.state.danger > .9 && glass.state.water > .02) { run.catchWin = .5; hooks.catchPrompt?.(true); }
@@ -113,7 +138,8 @@ export async function createRun(world, player, { seed, profile, hooks, scream })
     const f = level.finish;
     if (Math.hypot(player.pos.x - f.x, player.pos.z - f.z) < f.r) run.end(true);
     else if (glass.state.water <= .001 || run.t >= LIMIT) run.end(false);
-    return { room, hazard, calm: fx.calm };
+    if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
+    return { room, hazard, calm: fx.calm, vacuum: vac, style };
   };
   run.render = (dt, t) => { avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
   run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };

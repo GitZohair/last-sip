@@ -19,7 +19,7 @@ export async function buildLevel(scene, seed) {
     },
   };
   const order = ['kitchen', ...r.shuffle(['hallway', 'living', 'laundry']), 'stream'];
-  const rooms = []; let z = 0;
+  const rooms = [], doors = []; let z = 0;
   for (const key of order) {
     const room = ROOMS[key](ctx, z, r);
     Object.assign(room, { key, z0: z, z1: z - room.len });
@@ -32,11 +32,13 @@ export async function buildLevel(scene, seed) {
     ceil.rotation.x = Math.PI / 2; ceil.position.set(0, 2.8, (a.z0 + a.z1) / 2); scene.add(ceil);
     if (i === 0) shell.crossWall(a.z0, -a.w / 2 - .2, a.w / 2 + .2, col);
     const span = Math.max(a.w, b?.w ?? a.w) / 2 + .2, narrow = Math.min(a.w, b?.w ?? a.w) / 2;
-    shell.crossWall(a.z1, -span, span, col, b ? r.range(-narrow + 1.1, narrow - 1.1) : null);
+    const doorX = b ? r.range(-narrow + 1.1, narrow - 1.1) : null;
+    shell.crossWall(a.z1, -span, span, col, doorX);
+    if (b) doors.push({ x: doorX, z: a.z1, from: a.key, to: b.key });
   }
   await Promise.all(pending);
   return {
-    rooms, colliders: shell.colliders,
+    rooms, doors, colliders: shell.colliders,
     hazards: rooms.flatMap(x => x.hazards), slots: rooms.flatMap(x => x.slots),
     finish: rooms.at(-1).finish, spawn: { x: 0, z: -1.6, yaw: 0 }, length: -z,
     roomAt: zz => rooms.find(x => zz <= x.z0 && zz > x.z1) || rooms.at(-1),

@@ -57,10 +57,12 @@ export function createChaseCam(camera) {
       for (let d = .4; d < maxD; d += .25) { const x = target.x + dx * d, z = target.z + dz * d; if (x > c.minX - .15 && x < c.maxX + .15 && z > c.minZ - .15 && z < c.maxZ + .15) { maxD = d; break; } }
     }
     dist += (Math.max(.6, maxD - .2) - dist) * Math.min(1, dt * (maxD < dist ? 20 : 4));
-    want.set(target.x + dx * dist, Math.min(2.6, target.y + height * dist / back), target.z + dz * dist);
+    // as walls pull the boom in, rise over the head so the robot never fills the screen
+    const squeeze = 1 - dist / back;
+    want.set(target.x + dx * dist, Math.min(2.65, target.y + height * dist / back + squeeze * 1.25), target.z + dz * dist);
     camera.position.lerp(want, Math.min(1, dt * 14));
     camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake;
-    camera.lookAt(target.x - dx * 1.5, target.y + .1 - player.pitch * 1.2, target.z - dz * 1.5);
+    camera.lookAt(target.x - dx * (1.5 + squeeze * 2), target.y + .1 - squeeze * .6 - player.pitch * 1.2, target.z - dz * (1.5 + squeeze * 2));
     camera.rotateZ(roll);
   };
 }

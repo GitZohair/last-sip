@@ -3,13 +3,13 @@ import { model } from './assets.js';
 
 // Chat events. Chat never touches the controls: it changes the house around the streamer.
 export const EVENTS = {
-  bomb: { label: 'CHAT BOMB', icon: '💣' },
-  crate: { label: 'FRIDGE DELIVERY', icon: '🧊' },
-  storm: { label: 'DRAFT', icon: '🌬️' },
-  ice: { label: 'MOPPED FLOOR', icon: '🧽' },
-  lights: { label: 'LIGHTS OUT', icon: '🌑' },
-  quake: { label: 'BASS DROP', icon: '🔊' },
-  calm: { label: 'CHAT STEADIES YOU', icon: '🫶' },
+  bomb: { label: 'CHAT BOMB' },
+  crate: { label: 'FRIDGE DELIVERY' },
+  storm: { label: 'DRAFT' },
+  ice: { label: 'MOPPED FLOOR' },
+  lights: { label: 'LIGHTS OUT' },
+  quake: { label: 'BASS DROP' },
+  calm: { label: 'CHAT STEADIES YOU' },
 };
 
 export function createChaos({ scene, level, player, glass, props }) {
@@ -73,8 +73,9 @@ export function createChaos({ scene, level, player, glass, props }) {
   function render(dt) {
     for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.life -= dt; f.m.scale.setScalar(1 + (.4 - f.life) * 14); f.m.material.opacity = Math.max(0, f.life / .4); if (f.life <= 0) { scene.remove(f.m); flashes.splice(i, 1); } }
   }
+  function eatPuddle(x, z) { for (let i = puddles.length - 1; i >= 0; i--) { const p = puddles[i]; if (Math.hypot(p.x - x, p.z - z) < p.r + .3) { scene.remove(p.mesh); puddles.splice(i, 1); } } }
   function clearPuddles() { for (const p of puddles) scene.remove(p.mesh); puddles.length = 0; }
-  const this_ = { fire, step, render, puddle, slipAt, active, clearPuddles, onBlast: null };
+  const this_ = { fire, step, render, puddle, slipAt, active, clearPuddles, eatPuddle, onBlast: null };
   return this_;
 }
 

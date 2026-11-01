@@ -3,7 +3,7 @@ import { model, textTexture } from './assets.js';
 import { screenImage } from '../moderation.js';
 
 // Seeded mess: every house is dressed differently. Wall decor hugs side walls (no doors there),
-// loose physics props litter the floor, and one GOLDEN DUCK hides somewhere (find it: +5% water, 🦆 in the receipt).
+// loose physics props litter the floor, and one GOLDEN DUCK hides somewhere (find it: +5% water).
 const WALL_DECOR = ['bookcaseOpen', 'lampRoundFloor', 'pottedPlant', 'plantSmall1', 'sideTable', 'speaker', 'coatRackStanding', 'trashcan', 'radio'];
 const LOOSE = ['banana', 'ball', 'duck', 'can', 'donut', 'box', 'pizza', 'pillow'];
 
