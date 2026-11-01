@@ -90,7 +90,8 @@ export async function createShift(scene, seed, tray) {
         if (d < 1.7 && !swim && tray.glasses.some(g => g.id === c.id)) {
           const g = tray.take(c.id), clean = g.water >= .85 && g.salt <= 0, quick = c.patience / c.max > .5;
           S.streak = clean ? S.streak + 1 : 0; const mult = 1 + Math.min(4, Math.max(0, S.streak - 1)) * .25; // clean serves in a row multiply tips (up to x2)
-          const tip = Math.max(0, Math.round(10 * g.water * (1 - g.salt * .7) * mult * (c.far ? 2 : 1)) + (quick && clean ? 2 : 0)); // castaways tip double c.mult = mult; c.quick = quick && clean;
+          const tip = Math.max(0, Math.round(10 * g.water * (1 - g.salt * .7) * mult * (c.far ? 2 : 1)) + (quick && clean ? 2 : 0)); // castaways tip double
+          c.mult = mult; c.quick = quick && clean;
           c.mood = g.water < .3 || tip < 3 ? 'angry' : 'happy'; c.t = 0; S.tips += tip; S.served++; S.servedBy.push(c.user); S.log.push({ user: c.user, tip, mood: c.mood });
           if (c.mood === 'happy') c.fig.cheer(); cb.served?.(c, tip, g.water);
         } else if (c.patience <= 0) { c.mood = 'angry'; c.t = 0; S.walkouts++; S.streak = 0; S.log.push({ user: c.user, tip: 0, mood: 'walkout' }); tray.drop(c.id); cb.walkout?.(c); }

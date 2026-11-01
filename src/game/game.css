@@ -214,3 +214,5 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 
 .style-box { display: none !important; } /* tips are the score now */
 #order span.streak { color: #ffd36b; border-color: #ffd36b; }
+
+body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opacity .3s; }

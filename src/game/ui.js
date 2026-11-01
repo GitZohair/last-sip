@@ -123,13 +123,14 @@ export const ui = {
     if (style) { document.querySelector('.style-box').dataset.zero = style.points ? '' : '1'; set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
     const ok = `${tips}|${tray}|${served}|${streak}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span>TRAY ${tray}/5</span>${streak > 1 ? `<span class="streak">CLEAN x${Math.min(2, 1 + (streak - 1) * .25)}</span>` : ''}`; }
     $('progress-fill').style.transform = `scaleX(${progress})`;
-    document.body.classList.toggle('low', water < .25 && water > .001);
+    document.body.classList.toggle('low', tray > 0 && water < .25 && water > .001);
+    document.body.classList.toggle('trayless', !tray); // empty tray: the drink meter fades instead of screaming 0%
   },
   results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0, tips = 0, served = 0, walkouts = 0, servedBy = [] }) {
     ui.show('results');
     set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
     set('r-title', !served ? 'Nobody got a drink.' : walkouts > served ? 'The customers have left a review.' : tips >= served * 8 ? 'Five-star waiter.' : tips < served * 4 ? 'Mostly spilled, partly seawater.' : 'Technically hospitality.');
-    $('r-stats').innerHTML = `<div><b>$${tips}</b><span>TIPS</span></div><div><b>${served}</b><span>SERVED</span></div>${walkouts ? `<div><b>${walkouts}</b><span>WALKOUTS</span></div>` : ''}<div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}</b><span>DAY STREAK</span></div>`;
+    $('r-stats').innerHTML = `<div><b>$${tips}</b><span>TIPS</span></div><div><b>${served}</b><span>SERVED</span></div>${walkouts ? `<div><b>${walkouts}</b><span>WALKOUTS</span></div>` : ''}<div><b>${score}</b><span>SCORE</span></div>${streak > 0 ? `<div><b>${streak}</b><span>DAY STREAK</span></div>` : ''}`;
     $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
     const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
     $('grades').innerHTML = servedBy.length ? `<p class="served">SERVED: ${servedBy.map(esc).join(', ')}</p>` : '';
