@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { model } from './assets.js';
 import { buildSea } from './outside.js';
+import { bake } from './bake.js';
 
 // THE ISLAND: one fixed open map (Kenney Pirate Kit, CC0). A boardwalk spine runs from the beach bar to
 // your stream hut; side branches lead to six ingredient islets. Off the boards is open sea: fall = splash.
@@ -14,11 +15,11 @@ const RUNS = [[0, -4, 0, -19], [0, -21, 0, -27.5], [-1, -16, -9, -16], [1, -16, 
 export const TOWERS = [[8, -26], [-8, -40], [8, -58], [-7, -73]];
 const ZONES = [['beach', 'THE BEACH', 6, -24], ['plaza', 'THE PLAZA', -24, -40], ['reef', 'THE REEF', -40, -72], ['hut', 'THE STREAM HUT', -72, -90]];
 
-const postGeo = new THREE.CylinderGeometry(.09, .11, 2.4, 10), postMat = new THREE.MeshStandardMaterial({ color: '#7a5233', roughness: .9 });
+const postGeo = new THREE.CylinderGeometry(.09, .11, 2.4, 10), postMat = new THREE.MeshLambertMaterial({ color: '#7a5233' });
 
 export async function buildIsland(scene) {
-  const colliders = [], jobs = [];
-  const put = (kit, name, x, y, z, rot = 0, s = 1) => { const p = model(kit, name).then(m => { m.scale.multiplyScalar(s); m.position.set(x, y, z); m.rotation.y = rot; scene.add(m); return m; }); jobs.push(p); return p; };
+  const colliders = [], jobs = [], statics = new THREE.Group(); scene.add(statics); // everything static is merged at the end
+  const put = (kit, name, x, y, z, rot = 0, s = 1) => { const p = model(kit, name).then(m => { m.scale.multiplyScalar(s); m.position.set(x, y, z); m.rotation.y = rot; statics.add(m); return m; }); jobs.push(p); return p; };
   for (const [key, [x, z]] of Object.entries(PADS)) {
     const big = key === 'start' || key === 'plaza' || key === 'hut', s = big ? 1.7 : 1.25;
     put('pirate', key === 'plaza' ? 'patch-sand' : 'patch-sand-foliage', x, -.25 * s, z, (x + z) % 3, s);
@@ -29,7 +30,7 @@ export async function buildIsland(scene) {
     for (let i = 0; i < n; i++) {
       const k = (i + .5) / n, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
       put('pirate', 'platform', x, -.23, z, alongZ ? 0 : Math.PI / 2).then(m => { m.scale.x *= .76; });
-      if (i % 2 === 0) for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * .9 : x, -1.1, alongZ ? z : z + side * .9); p.castShadow = true; scene.add(p); } // posts into the sea
+      if (i % 2 === 0) for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * .9 : x, -1.1, alongZ ? z : z + side * .9); p.castShadow = true; statics.add(p); } // posts into the sea
     }
     const hw = .95;
     colliders.push(alongZ ? { minX: x0 - hw, maxX: x0 + hw, minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1), top: 0 } : { minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: z0 - hw, maxZ: z0 + hw, top: 0 });
@@ -45,17 +46,19 @@ export async function buildIsland(scene) {
   put('pirate', 'structure', 0, 0, -84, 0, 1.7); put('pirate', 'structure-roof', 0, 3.6, -84, 0, 1.7);
   put('furniture', 'desk', 0, 0, -84.6); put('furniture', 'computerScreen', 0, .76, -84.8); put('furniture', 'chairDesk', 0, 0, -83.4, Math.PI);
   put('pirate', 'flag-high-pennant', 3.2, 0, -82, 0, .9);
-  const live = new THREE.PointLight('#a970ff', 8, 9); live.position.set(0, 2.4, -83); scene.add(live);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.2, 32), new THREE.MeshBasicMaterial({ color: '#a970ff', transparent: true, opacity: .35, depthWrite: false }));
+  glow.rotation.x = -Math.PI / 2; glow.position.set(0, .02, -84); scene.add(glow); // LIVE glow on the hut floor (no point light: lights cost every pixel)
   colliders.push({ minX: -1.2, maxX: 1.2, minZ: -85.2, maxZ: -84.1, top: .78 });
   // poster boards along the boardwalk: chat's !frame emotes and yesterday's MOST WANTED hang here
   const slots = [[-1.7, -9], [1.7, -13], [-1.7, -41], [1.7, -45], [-1.7, -59], [1.7, -71]].map(([x, z]) => {
-    const p = new THREE.Mesh(postGeo, postMat); p.scale.y = .9; p.position.set(x, .2, z); p.castShadow = true; scene.add(p);
+    const p = new THREE.Mesh(postGeo, postMat); p.scale.y = .9; p.position.set(x, .2, z); p.castShadow = true; statics.add(p);
     colliders.push({ minX: x - .12, maxX: x + .12, minZ: z - .12, maxZ: z + .12, top: 2 });
     return { x, y: 1.85, z, rot: x < 0 ? Math.PI / 2 : -Math.PI / 2 };
   });
   const length = 90;
   buildSea(scene, length);
   await Promise.all(jobs);
+  bake(statics);
   const rooms = ZONES.map(([key, name, z0, z1]) => ({ key, name, z0, z1, w: 40, len: z0 - z1, hazards: [], slots: [] }));
   return {
     rooms, doors: [], walks: [], colliders, hazards: [], slots, towers, ground: -12, open: true,

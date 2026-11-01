@@ -18,10 +18,11 @@ export function createWind(scene, seed) {
   const m = new THREE.Matrix4();
   let next = 5, t0 = -9, dir = 1;
   return {
-    push: { x: 0, z: 0 },
+    push: { x: 0, z: 0 }, state: null, dir: 1,
     update(t, dt, player) {
       if (t > next) { t0 = t; dir = r() > .5 ? 1 : -1; next = t + 6 + r() * 3; }
       const k = t - t0, warn = k >= 0 && k < .8, blow = k >= .8 && k < 2.4;
+      this.state = warn ? 'warn' : blow ? 'blow' : null; this.dir = dir;
       this.push.x = blow ? dir * 3.2 * Math.sin((k - .8) / 1.6 * Math.PI) : 0;
       streaks.material.opacity += ((warn || blow ? .55 : 0) - streaks.material.opacity) * Math.min(1, dt * 6);
       for (let i = 0; i < N; i++) {

@@ -8,10 +8,10 @@ import { model, textTexture } from './assets.js';
 // Every hit is credited to that viewer (Spill Credits, Most Wanted).
 function tag(name, color = '#ff3b5c') {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(name.slice(0, 18).toUpperCase(), { w: 512, h: 96, bg: color, font: 'bold 54px system-ui' }), depthTest: false }));
-  s.scale.set(2.2, .42, 1); s.renderOrder = 11; return s;
+  s.scale.set(3.4, .64, 1); s.renderOrder = 11; return s;
 }
 const laserMat = new THREE.LineBasicMaterial({ color: '#ff2040', transparent: true, opacity: .9 });
-const ballMat = new THREE.MeshStandardMaterial({ color: '#5cc8ff', emissive: '#2a8cff', emissiveIntensity: .8, roughness: .1 });
+export const ballMat = new THREE.MeshStandardMaterial({ color: '#5cc8ff', emissive: '#2a8cff', emissiveIntensity: .8, roughness: .1 });
 
 export function createActors(scene, level, sfx) {
   const list = [];
@@ -21,7 +21,7 @@ export function createActors(scene, level, sfx) {
       if (kind === 'sniper') {
         const ahead = level.towers.filter(t => t.z < player.pos.z + 4 && !list.some(a => a.tower === t)).sort((a, b) => b.z - a.z)[0] || level.towers[0];
         const cannon = await model('pirate', 'cannon'); cannon.position.set(ahead.x, ahead.y, ahead.z); cannon.scale.setScalar(.8); scene.add(cannon);
-        const t = tag(user); t.position.set(ahead.x, ahead.y + 1.9, ahead.z); scene.add(t);
+        const t = tag(user); t.position.set(ahead.x, ahead.y + 2.3, ahead.z); scene.add(t);
         const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), laserMat); line.visible = false; scene.add(line);
         list.push({ kind, user, tower: ahead, objs: [cannon, t, line], cannon, line, shots: 3, aim: 1.4, ball: null });
       } else if (kind === 'barrel') {

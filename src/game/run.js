@@ -15,8 +15,10 @@ import { createHazards } from './hazards.js';
 import { createStyle } from './style.js';
 import { sfx } from './sfx.js';
 import { createPrompts } from './prompts.js';
-import { createActors } from './actors.js';
+import { createActors, ballMat } from './actors.js';
+import { model, preload } from './assets.js';
 import { todaysRule, createWind } from './rules.js';
+import { createGuide } from './guide.js';
 
 export const LIMIT = 90;
 const LEGACY = { storm: 'gust', crate: 'fridge', ice: 'mop', quake: 'bass', calm: 'steady', bomb: 'bomb', lights: 'lights' };
@@ -43,9 +45,22 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const actors = createActors(scene, level, sfx);
   const rule = todaysRule(seed), wind = rule === 'windy' ? createWind(scene, seed) : null;
   if (rule === 'hungry') hazards.vacuum.hungry = true;
+  const guide = createGuide(scene, { recipe, actors, level });
   player.reset(level.spawn);
   glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
-  const run = { rule, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  const run = { rule, wind, guide, actors, recipe, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 2.5, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
+  // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
+  // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
+  await preload([['pirate', 'cannon'], ['pirate', 'barrel'], ['furniture', 'kitchenFridge']]);
+  {
+    const temp = new THREE.Group(), geo = new THREE.SphereGeometry(.1, 6, 4); scene.add(temp);
+    temp.add(new THREE.Mesh(geo, ballMat), new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true })), new THREE.Mesh(geo, new THREE.MeshStandardMaterial()), await model('furniture', 'kitchenFridge'));
+    await actors.spawn('sniper', 'warm', player); await actors.spawn('barrel', 'warm', player);
+    for (const a of actors.list) if (a.line) a.line.visible = true;
+    chaos.puddle(0, 999, .1, .01);
+    try { await world.renderer.compileAsync(scene, world.camera); } catch { world.renderer.compile(scene, world.camera); }
+    actors.clear(); chaos.clearPuddles(); scene.remove(temp); geo.dispose();
+  }
   chaos.onBlast = f => { sfx.boom(); gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };
 
   const ahead = d => ({ x: player.pos.x + Math.sin(player.yaw) * d, z: player.pos.z - Math.cos(player.yaw) * d });
@@ -118,11 +133,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (hit.kind === 'door') sfx.slam(); else sfx.thud(.8);
       player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .35, -Math.abs(hit.power) * .25);
-      ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; avatar.emote('No', .5); style.combo = 1;
+      ledger.blame([hit.label], hit.label, 1.5, run.t); hazard = hit.label; hooks.hit?.(hit.label, 'BUMPED'); avatar.emote('No', .5); style.combo = 1;
     }
     for (const hit of actors.update(dt, run.t, player)) {
       sfx.hit(); player.vel.x += hit.dir.x * hit.power; player.vel.z += hit.dir.z * hit.power;
-      glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; avatar.emote('No', .6); style.combo = 1;
+      glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
     }
     const vac = hazards.vacuum.distance;
     if (vac < 1.6 && !run.vacClose) run.vacClose = true;
@@ -205,7 +220,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (!hazard && hazards.doorWarning(run.t, player)) hazard = 'DOOR CLOSING';
     return { room, hazard, calm: fx.calm, vacuum: vac, style, voice: { level: voice.level, lock: hazards.lock.near ? hazards.lock.charge : -1, alert: mate?.inRoom ? (mate.awake > 0 ? 1 : mate.alert) : -1 } };
   };
-  run.render = (dt, t) => { prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
+  run.render = (dt, t) => { guide.update(t, player, run.state === 'play' || run.state === 'ready'); prompts.update(t, voice, run); scene.userData.sea?.userData.update(t); avatar.update(dt, player, glass.state, run.state === 'play' ? 'play' : run.won ? 'done-win' : 'done-fail'); glass.render(t, mods.on('bigglass') ? 1.8 : 1); chaos.render(dt); gallery.render(dt); };
   run.end = (won) => { if (run.state !== 'play') return; run.state = 'done'; run.won = won; sfx.silence(); won ? sfx.win() : sfx.fail(); if (won && glass.state.water < .05) hooks.clip?.('lastsip'); hooks.end?.(run); };
   return run;
 }

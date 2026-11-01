@@ -4,6 +4,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Kenney Furniture Kit / Food Kit (CC0). The furniture kit is ~half real scale, so it is scaled x2.
 const loader = new GLTFLoader();
 const cache = new Map();
+// Kenney kits use one colormap per kit: share one material (and one texture) per kit + material name,
+// so separate models can be batched and the GPU holds a single copy of each texture.
+const mats = new Map();
+function shared(kit, m) {
+  const key = kit + '/' + m.name + '/' + m.color.getHexString();
+  if (!mats.has(key)) { // Lambert: same flat Kenney look, much cheaper per pixel than PBR on laptop GPUs
+    if (m.map) m.map.anisotropy = 8;
+    mats.set(key, new THREE.MeshLambertMaterial({ name: m.name, color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap, transparent: m.transparent, opacity: m.opacity, side: m.side, vertexColors: m.vertexColors, alphaTest: m.alphaTest }));
+  }
+  return mats.get(key);
+}
 const KITS = { furniture: ['/assets/kenney/furniture-kit/', 2], food: ['/assets/kenney/food-kit/', 1], pirate: ['/assets/kenney/pirate-kit/', 1] };
 
 export function preload(list) {
@@ -15,7 +26,7 @@ function load(kit, name) {
   if (!cache.has(key)) {
     const [dir] = KITS[kit];
     cache.set(key, loader.loadAsync(dir + name + '.glb').then(g => {
-      g.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      g.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (!Array.isArray(o.material)) o.material = shared(kit, o.material); } });
       return g.scene;
     }).catch(() => null));
   }
