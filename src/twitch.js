@@ -12,6 +12,8 @@ export const COMMANDS = {
   lights: { kind: 'chaos', event: 'lights', cost: 1 },
   quake: { kind: 'chaos', event: 'quake', cost: 1 },
   bass: { kind: 'chaos', event: 'quake', cost: 1 },
+  chaos: { kind: 'chaos', event: 'deck', cost: 1 },
+  roll: { kind: 'chaos', event: 'deck', cost: 1 },
   // Help: needs several different viewers inside a short window.
   steady: { kind: 'help', event: 'calm', needed: 3 },
   shelter: { kind: 'help', event: 'calm', needed: 3 },

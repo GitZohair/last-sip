@@ -12,7 +12,7 @@ export const EVENTS = {
   calm: { label: 'CHAT STEADIES YOU', icon: '🫶' },
 };
 
-export function createChaos({ scene, level, player, glass }) {
+export function createChaos({ scene, level, player, glass, props }) {
   const active = { gust: 0, gustDir: 1, lights: 0, quake: 0, calm: 0 };
   const bombs = [], drops = [], puddles = [];
   const puddleMat = new THREE.MeshStandardMaterial({ color: '#7fd0ff', transparent: true, opacity: .55, roughness: .02, metalness: .2 });
@@ -53,6 +53,7 @@ export function createChaos({ scene, level, player, glass }) {
         const dx = player.pos.x - b.mesh.position.x, dz = player.pos.z - b.mesh.position.z, d = Math.hypot(dx, dz) || 1, f = Math.max(0, 1 - d / 4.5);
         player.vel.x += dx / d * 11 * f; player.vel.z += dz / d * 11 * f; player.vy += 4 * f;
         glass.kick((Math.random() - .5) * 5 * f, -4 * f);
+        props?.blast(b.mesh.position.x, b.mesh.position.z, 5, 14); this_.onBlast?.(f);
         flash(b.mesh.position); scene.remove(b.mesh); bombs.splice(i, 1);
       }
     }
@@ -72,7 +73,9 @@ export function createChaos({ scene, level, player, glass }) {
   function render(dt) {
     for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.life -= dt; f.m.scale.setScalar(1 + (.4 - f.life) * 14); f.m.material.opacity = Math.max(0, f.life / .4); if (f.life <= 0) { scene.remove(f.m); flashes.splice(i, 1); } }
   }
-  return { fire, step, render, puddle, slipAt, active };
+  function clearPuddles() { for (const p of puddles) scene.remove(p.mesh); puddles.length = 0; }
+  const this_ = { fire, step, render, puddle, slipAt, active, clearPuddles, onBlast: null };
+  return this_;
 }
 
 function boundsOf(m) { const b = new THREE.Box3().setFromObject(m); return { minX: b.min.x + .05, maxX: b.max.x - .05, minZ: b.min.z + .05, maxZ: b.max.z - .05, top: b.max.y }; }

@@ -1,121 +1,118 @@
-import * as THREE from 'three';
-import { buildLevel } from './level.js';
+import { createWorld } from './world.js';
 import { createPlayer } from './player.js';
-import { createGlass } from './glass.js';
-import { createChaos, EVENTS } from './chaos.js';
-import { createGallery } from './gallery.js';
-import { Ledger } from './ledger.js';
+import { createChaseCam } from './character.js';
+import { createRun, LIMIT } from './run.js';
 import { dayKey } from './rng.js';
-import { ChatDirector, connectChat } from '../twitch.js';
+import { today, recordPour, receipt, dayNumber, submit, boards } from './daily.js';
+import { ChatDirector, connectChat, emoteUrl } from '../twitch.js';
+import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
+import { createScream } from './scream.js';
 
-const LIMIT = 90;
-const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
-const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 120); camera.rotation.order = 'YXZ';
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
-
-let scene, level, player, glass, chaos, gallery, ledger, sun, hemi, flashlight, state = 'menu', t = 0, last = performance.now();
-const seed = dayKey();
+const params = new URLSearchParams(location.search);
+const seed = /^\d{4}-\d{2}-\d{2}$/.test(params.get('seed') || '') ? params.get('seed') : dayKey();
+const world = createWorld($('world'));
+const player = createPlayer(world.renderer.domElement);
+const chase = createChaseCam(world.camera);
 const director = new ChatDirector();
-let chat = null;
-player = createPlayer(renderer.domElement);
+const scream = createScream();
+const lastEmote = new Map(); // viewer -> their last emote url (for MOST WANTED posters)
+let run = null, chat = null, session = null, profile = null, official = false, slowmo = 0;
 
-async function setup() {
-  scene = new THREE.Scene(); scene.background = new THREE.Color('#2a2238'); scene.fog = new THREE.Fog('#2a2238', 14, 46);
-  hemi = new THREE.HemisphereLight('#ffe9d2', '#c9a58f', 1.7); scene.add(hemi);
-  sun = new THREE.DirectionalLight('#ffd6a8', 2.2); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-  Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03;
-  scene.add(sun, sun.target);
-  flashlight = new THREE.SpotLight('#fff3d6', 0, 14, .5, .6, 1.2); camera.add(flashlight, flashlight.target); flashlight.target.position.set(0, 0, -1);
-  scene.add(camera);
-  level = await buildLevel(scene, seed);
-  for (const room of level.rooms) { const l = new THREE.PointLight('#ffcf9a', 7, 11, 1.6); l.position.set(0, 2.5, (room.z0 + room.z1) / 2); scene.add(l); }
-  if (glass) camera.remove(glass.group);
-  glass = createGlass(camera);
-  gallery = createGallery(scene, level.slots);
-  chaos = createChaos({ scene, level, player, glass });
-  ledger = new Ledger();
-  const villain = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
-  if (villain?.image) gallery.hang({ ...villain, trusted: true, mostWanted: true });
-  player.reset(level.spawn); t = 0;
-}
-
-function fireEvent(event, users, viaChat = true) {
-  if (state !== 'play') return;
-  chaos.fire(event);
-  if (event !== 'calm') ledger.blame(users, EVENTS[event].label, event === 'ice' ? 8 : 3.5, t);
-  if (event === 'bomb') setTimeout(() => gallery.shake(1.4), 1700);
-  ui.feed(`${EVENTS[event].icon} ${users.join(', ')} → ${EVENTS[event].label}`, event === 'calm' ? 'help' : 'chaos');
-  ui.banner(EVENTS[event].label, users.join(', '));
-}
-
+// ---------- Twitch: anonymous chat (zero setup) + optional sign-in for EventSub, rewards, clips
+function connect(name) { chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
 function onChat(msg) {
-  const r = director.handle(msg);
-  if (!r) return;
-  if (r.kind === 'chaos' || r.kind === 'help') fireEvent(r.event, r.users);
-  else if (r.kind === 'queued') ui.feed(`⏳ ${r.users[0]} queued ${EVENTS[r.event].label}`, 'muted');
+  if (msg.emotes[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
+  const r = director.handle(msg); if (!r) return;
+  if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users);
+  else if (r.kind === 'queued') ui.feed(`⏳ ${r.users[0]} queued a pull`, 'muted');
   else if (r.kind === 'vote') ui.feed(`🫶 ${r.users[0]} wants to steady you (${r.have}/${r.needed})`, 'help');
-  else if (r.kind === 'support') { fireEvent(['bomb', 'crate', 'quake'][Math.floor(Math.random() * 3)], [`${r.users[0]} (${r.bits} bits)`]); }
-  else if (r.kind === 'frame') gallery?.hang(r).then(res => ui.feed(res.ok ? `🖼️ ${r.user} hung a frame` : `🚫 frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted'));
+  else if (r.kind === 'support') play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
+  else if (r.kind === 'frame') run?.gallery.hang(r).then(res => ui.feed(res.ok ? `🖼️ ${r.user} hung a frame` : `🚫 frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted'));
 }
-// Offline practice: same pipeline as real chat, with clearly fake names.
+function onEventSub(e) {
+  const map = { cheer: ['deck', Math.min(1, e.amount / 500)], follow: ['deck', 0], sub: ['deck', .5], raid: ['nuke', 0], hype: ['deck', 1] };
+  if (e.type === 'redeem') return play(/fridge/i.test(e.title) ? 'fridge' : /lid/i.test(e.title) ? 'lid' : 'deck', [e.user]);
+  const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
+}
+function play(event, users, opts) {
+  const card = run?.play(event, users, opts); if (!card) return;
+  ui.feed(`${card.icon} ${users.join(', ')} → ${card.label}`, card.help ? 'help' : card.r === 'l' ? 'legend' : 'chaos');
+  ui.slot(card, users.join(', '));
+  if (card.r === 'l') clipIt('legendary');
+}
+async function clipIt(why) { const url = await tw.clip(session); if (url) ui.feed(`🎬 auto-clipped: ${why}`, 'help'); }
 let simN = 0;
-export function simulate(text) { simN++; onChat({ user: `test_viewer_${simN % 5}`, login: `test_viewer_${simN % 5}`, text, bits: 0, mod: false, emotes: [] }); }
+const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `test_viewer_${simN % 6}`, text, bits: 0, mod: true, emotes: [] });
 
-ui.bind({
-  start: async () => { await setup(); state = 'play'; ui.show('hud'); renderer.domElement.requestPointerLock(); },
-  connect: name => { chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: (s, c) => ui.chatStatus(s, c) }); },
-  simulate,
-  lock: () => state === 'play' && renderer.domElement.requestPointerLock(),
-});
-
-function finish(success) {
-  state = 'done'; document.exitPointerLock();
-  const water = glass.state.water, score = success ? Math.round(water * 1000 + Math.max(0, LIMIT - t) * 6) : 0;
-  const v = ledger.villain();
-  if (v) localStorage.setItem('lastsip:villain', JSON.stringify({ user: v.name, image: 'https://static-cdn.jtvnw.net/emoticons/v2/86/default/dark/3.0', title: 'MOST WANTED' }));
-  ui.results({ success, water, time: t, score, credits: ledger.credits(), seed, channel: chat?.channel });
+// ---------- runs
+async function start(asPour) {
+  const d = today(seed); official = asPour && !d.poured;
+  ui.loading(true);
+  run = await createRun(world, player, { seed, scream, profile: profile || (chat ? { name: chat.channel } : null), hooks: {
+    spill: (who, amt) => ui.blame(who, amt), toast: t => ui.feed(t, 'help'),
+    house: card => card && ui.slot(card, 'THE HOUSE'),
+    catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); ui.feed(`🙌 CAUGHT IT! (${n} saves)`, 'help'); },
+    scream: () => ui.feed('🗣️ AAAAAAA (dash)', 'muted'),
+    lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish,
+  } });
+  const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
+  if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
+  ui.loading(false); ui.show('hud'); ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
+  world.renderer.domElement.requestPointerLock?.();
+}
+async function finish(r) {
+  document.exitPointerLock?.();
+  const water = r.glass.state.water, time = r.t, score = r.won ? Math.round(water * 1000 + Math.max(0, LIMIT - time) * 6) : 0;
+  const villain = r.ledger.villain();
+  if (villain) localStorage.setItem('lastsip:villain', JSON.stringify({ user: villain.name, image: lastEmote.get(villain.name) || null, title: 'MOST WANTED' }));
+  const rooms = r.level.rooms.map(x => ({ key: x.key, lost: r.roomLoss[x.key] }));
+  const d = official ? recordPour(seed, { finished: r.won, water, time, score }) : today(seed);
+  const text = receipt({ saves: r.saves, seed, number: dayNumber(seed), rooms, water, time, finished: r.won, villain: villain?.name, duck: r.duck, streak: d.streak, official });
+  if (official) submit(session, { seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: r.won, credits: r.ledger.credits().slice(0, 10) });
+  const board = await boards(seed).catch(() => null);
+  setTimeout(() => ui.results({ won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
 
+// ---------- boot
+ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => scream.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && world.renderer.domElement.requestPointerLock?.() });
+(async () => {
+  ui.intro({ seed, number: dayNumber(seed), daily: today(seed), canSignIn: !!tw.CLIENT_ID });
+  session = await tw.restore().catch(() => null);
+  if (session) {
+    ui.signedIn(session.login); connect(session.login);
+    profile = await tw.profile(session).catch(() => null);
+    tw.eventsub(session, onEventSub, s => ui.feed(`⚡ ${s} connected`, 'help'));
+    tw.ensureRewards(session);
+  } else if (localStorage.getItem('lastsip:channel')) connect(localStorage.getItem('lastsip:channel'));
+  ui.ready();
+})();
+
+// ---------- loop: fixed 120 Hz simulation, render every frame
+let last = performance.now(), acc = 0, t = 0;
+const STEP = 1 / 120;
 function loop(now) {
   requestAnimationFrame(loop);
-  const dt = Math.min(.05, (now - last) / 1000); last = now;
-  if (!scene) return;
-  if (state === 'play') {
-    t += dt;
-    const room = level.roomAt(player.pos.z);
-    let push = { x: 0, z: 0 }, shake = 0, label = null;
-    for (const h of level.hazards) {
-      h.update?.(t);
-      if (player.pos.x > h.minX && player.pos.x < h.maxX && player.pos.z > h.minZ && player.pos.z < h.maxZ && player.y < .2) {
-        if (h.push) { push.x += h.push.x; push.z += h.push.z; } if (h.shake) shake += h.shake; label = h.label;
-      }
-    }
-    const fx = chaos.step(dt); push.x += fx.push.x; push.z += fx.push.z;
-    player.step(dt, { colliders: level.colliders, push, slip: chaos.slipAt(player.pos.x, player.pos.z) });
-    if (player.landed) glass.kick(0, -player.landed * .25);
-    const spilled = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick) * 6 });
-    if (spilled > 0) {
-      const cause = ledger.spill(spilled, t, label ? 'THE HOUSE' : 'YOUR OWN HANDS');
-      if (Math.random() < spilled * 60) chaos.puddle(player.pos.x + Math.sin(player.yaw) * .5, player.pos.z - Math.cos(player.yaw) * .5, .35);
-      ui.blame(cause ? cause.users.join(', ') : label || 'YOUR OWN HANDS', spilled);
-    }
-    const q = director.tick(); if (q) fireEvent(q.event, q.users);
-    ui.hud({ water: glass.state.water, time: LIMIT - t, room: room.name, hazard: label, steady: player.steady, calm: fx.calm, lights: chaos.active.lights > 0, progress: Math.min(1, -player.pos.z / level.length) });
-    const f = level.finish; if (Math.hypot(player.pos.x - f.x, player.pos.z - f.z) < f.r) finish(true);
-    else if (glass.state.water <= .001 || t >= LIMIT) finish(false);
+  let dt = Math.min(.1, (now - last) / 1000); last = now; world.adapt(dt);
+  if (!run) return;
+  if (slowmo > 0) { slowmo -= dt; dt *= .35; }
+  t += dt;
+  let info = null;
+  if (run.state === 'play') {
+    acc += dt; let n = 0;
+    while (acc >= STEP && n++ < 12) { info = run.step(STEP); acc -= STEP; }
+    const q = director.tick(); if (q) play(q.event, q.users);
   }
-  const shakeAmt = state === 'play' ? (chaos.active.quake > 0 ? .03 : 0) : 0;
-  camera.position.set(player.pos.x + (Math.random() - .5) * shakeAmt, player.y + 1.6 + Math.sin(t * 9) * .02 * Math.min(1, Math.hypot(player.vel.x, player.vel.z) / 4), player.pos.z);
-  camera.rotation.set(-player.pitch, -player.yaw, 0);
-  sun.position.set(player.pos.x + 6, 12, player.pos.z + 4); sun.target.position.set(player.pos.x, 0, player.pos.z - 3);
-  const dark = chaos?.active.lights > 0; hemi.intensity = THREE.MathUtils.lerp(hemi.intensity, dark ? .03 : 1.6, dt * 6); sun.intensity = THREE.MathUtils.lerp(sun.intensity, dark ? 0 : 2.2, dt * 6); flashlight.intensity = dark ? 30 : 0;
-  glass?.render(t); chaos?.render(dt); gallery?.render(dt);
-  renderer.render(scene, camera);
+  run.render(dt, t);
+  const m = run.mods;
+  chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : 0);
+  world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
+  if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length) });
+  world.renderer.render(world.scene, world.camera);
 }
-
-setup().then(() => { ui.ready(); requestAnimationFrame(loop); });
-window.lastSip = { goto: key => { const r = level.rooms.find(x => x.key === key); player.reset({ x: 0, z: r.z0 - 1.2, yaw: 0 }); return r.name; }, state: () => ({ state, t, water: glass?.state.water, pos: player.pos, room: level?.roomAt(player.pos.z).name }), simulate, fireEvent };
+requestAnimationFrame(loop);
+if (params.has('dev')) window.lastSip = { run: () => run,
+  simulate, play, start,
+  state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
+  goto: key => { const r = run.level.rooms.find(x => x.key === key); player.reset({ x: 0, z: r.z0 - 1.2, yaw: 0 }); return r.name; },
+};

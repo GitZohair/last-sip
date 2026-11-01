@@ -37,3 +37,25 @@ body.low .glass-meter { animation: pulse .5s infinite alternate; } @keyframes pu
 #credits li { display: flex; justify-content: space-between; padding: .35em .2em; border-bottom: 1px dashed #ffffff33; animation: rise .5s both; font-size: 1.1rem; } #credits b { color: var(--water); }
 @keyframes rise { from { transform: translateY(20px); opacity: 0; } }
 .actions { display: flex; gap: .8rem; align-items: center; }
+/* ---- v2 additions ---- */
+#intro .kicker { font-size: .95rem; } .or { opacity: .5; }
+button.twitch { background: #9146ff; } .actions { display: flex; gap: .8rem; align-items: center; justify-content: center; }
+.cmds { display: grid; gap: .3rem; font-size: .95rem; } .cmds b { color: var(--pink); margin-right: .3rem; }
+#water-fill { height: 100%; transform-origin: bottom; transition: transform .15s; }
+#progress-fill { width: 100%; transform-origin: left; transform: scaleX(0); }
+.danger-wrap { position: absolute; left: 1.5rem; top: 9.6rem; width: 5.5rem; height: 8px; border-radius: 8px; background: #ffffff26; overflow: hidden; }
+.danger-wrap span { position: absolute; top: 10px; font-size: .7rem; font-weight: 800; opacity: .7; }
+#danger { display: block; height: 100%; background: linear-gradient(90deg, #5dffa0, #ffd36b, var(--pink)); transform-origin: left; transform: scaleX(0); }
+#danger[data-hot="1"] { animation: pulse .2s infinite alternate; }
+.top small { opacity: .7; font-weight: 800; letter-spacing: .12em; } #mods { font-weight: 800; color: #b9f; }
+#feed { top: 12rem; } #feed li.legend { border-color: #ffd36b; background: #3a2a00cc; }
+#slot { position: absolute; top: 22%; left: 50%; transform: translateX(-50%) scale(.6); opacity: 0; transition: .2s; text-align: center; background: #1b1530dd; padding: .8rem 1.6rem; border-radius: 1.2rem; border: 3px solid var(--pink); min-width: 18rem; }
+#slot.on { opacity: 1; transform: translateX(-50%) scale(1); } #slot.help { border-color: #5dffa0; } #slot.r-r { border-color: #b98bff; } #slot.r-l { border-color: #ffd36b; box-shadow: 0 0 40px #ffd36b88; }
+#slot b { display: block; font-size: 3rem; } #slot strong { display: block; font-size: 1.8rem; color: var(--pink); } #slot.help strong { color: #5dffa0; } #slot span { opacity: .85; font-weight: 700; }
+#lastsip-fx { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; box-shadow: inset 0 0 200px 60px #ff2050; }
+body.lastsip #lastsip-fx { opacity: 1; animation: pulse .35s infinite alternate; }
+body.lastsip #hud::after { content: 'LAST SIP'; position: absolute; top: 40%; left: 0; right: 0; text-align: center; font-size: 6rem; font-weight: 800; color: var(--pink); text-shadow: 0 6px 0 #000a; }
+#catch { position: absolute; top: 58%; left: 0; right: 0; text-align: center; font-size: 2.6rem; font-weight: 800; color: #ffd36b; opacity: 0; transform: scale(.7); transition: .1s; text-shadow: 0 4px 0 #000a; } #catch.on { opacity: 1; transform: scale(1); }
+#mic { position: absolute; right: 1.5rem; top: 4.6rem; width: 8rem; height: 6px; border-radius: 6px; background: #ffffff26; overflow: hidden; } #mic i { display: block; height: 100%; background: #ff9b3d; transform-origin: left; transform: scaleX(0); }
+#results .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; text-align: left; } #board { list-style: none; padding: 0; margin: 0; min-width: 16rem; } #board h4 { margin: .2rem 0; color: var(--water); letter-spacing: .1em; } #board li { display: flex; justify-content: space-between; border-bottom: 1px dashed #ffffff33; padding: .25em 0; }
+#receipt { background: #0006; padding: .8rem 1.2rem; border-radius: .8rem; font: 600 1rem/1.4 ui-monospace, monospace; margin: 0; text-align: left; }

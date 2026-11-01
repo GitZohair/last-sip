@@ -13,5 +13,5 @@ export class Ledger {
     return cause || null;
   }
   credits() { return [...this.totals].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount); }
-  villain() { return this.credits().find(c => !/^(YOUR OWN HANDS|THE HOUSE)/.test(c.name)) || null; }
+  villain() { return this.credits().find(c => !/^(YOUR OWN HANDS|THE HOUSE|THE BANANA)/.test(c.name)) || null; }
 }

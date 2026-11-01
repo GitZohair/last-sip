@@ -1,44 +1,73 @@
 export const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let blameTimer = 0, bannerTimer = 0, blameAcc = 0, blameName = '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const set = (id, v) => { const el = $(id); if (el && el.textContent !== String(v)) el.textContent = v; }; // avoid layout churn
+let blameT = 0, slotT = 0, blameAcc = 0, blameName = '', hudLast = 0;
+const MOD_LABEL = { moon: '🌙 MOON', tilt: '📐 TILT', tiny: '🐜 TINY', bigglass: '🍺 BIG GLASS', lava: '🌋 LAVA', mirror: '🪞 MIRROR', drunk: '🥴 WOBBLY', hyper: '☕ HYPER', fog: '🌫️ SMOKE', disco: '🪩 DISCO', lid: '🥤 LID', slowmo: '⏳ SLOW-MO', soft: '🛏️ CUSHION' };
 
 export const ui = {
-  bind({ start, connect, simulate, lock }) {
-    $('start').onclick = start; $('again').onclick = start;
-    $('connect').onclick = () => { const v = $('channel').value.trim(); if (v) { connect(v); localStorage.setItem('lastsip:channel', v); } };
+  bind({ start, practice, connect, mic, signIn, lock }) {
+    $('start').onclick = start; $('practice').onclick = practice; $('again').onclick = practice; $('home').onclick = () => location.reload();
+    $('connect').onclick = () => { const v = $('channel').value.trim().replace(/^.*twitch\.tv\//, ''); if (v) connect(v); };
     $('channel').value = localStorage.getItem('lastsip:channel') || '';
-    document.querySelectorAll('[data-sim]').forEach(b => b.onclick = () => simulate(b.dataset.sim));
+    $('signin').onclick = signIn;
+    $('mic-on').onclick = async () => { $('mic-on').textContent = (await mic()) ? '🎙️ SCREAM TO DASH: ON' : '🎙️ mic blocked'; };
     $('world').onclick = lock;
-    addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) start(); });
+    addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) practice(); });
   },
-  ready() { $('loading').hidden = true; $('start').disabled = false; },
+  intro({ number, daily, canSignIn }) {
+    set('day-no', `#${number}`);
+    $('start').textContent = daily.poured ? 'TODAY\'S POUR IS DONE ✓' : 'THE POUR (TODAY\'S OFFICIAL RUN)';
+    $('start').disabled = true; $('start').dataset.done = daily.poured ? '1' : '';
+    set('streak', daily.streak > 0 ? `🔥 ${daily.streak} day streak` : 'Start a streak today');
+    $('signin').hidden = !canSignIn;
+  },
+  ready() { $('loading').hidden = true; $('start').disabled = !!$('start').dataset.done; $('practice').disabled = false; },
+  loading(on) { $('loading').hidden = !on; },
+  signedIn(login) { $('signin').textContent = `✓ ${login}`; $('signin').disabled = true; },
   show(id) { for (const x of ['intro', 'hud', 'results']) $(x).hidden = x !== id; },
-  chatStatus(s, c) { $('chat-status').textContent = s === 'connected' ? `● LIVE · #${c}` : s === 'reconnecting' ? `◌ reconnecting #${c}` : '○ not connected'; $('chat-status').dataset.state = s; },
+  mode(text) { set('mode', text); },
+  chatStatus(s, c) { set('chat-status', s === 'connected' ? `● LIVE · #${c}` : s === 'reconnecting' ? `◌ reconnecting #${c}` : '○ not connected'); $('chat-status').dataset.state = s; },
   feed(text, kind = 'chaos') {
     const li = document.createElement('li'); li.textContent = text; li.className = kind; $('feed').prepend(li);
     while ($('feed').children.length > 6) $('feed').lastChild.remove();
     setTimeout(() => li.classList.add('old'), 6000);
   },
-  banner(title, by) { $('banner').innerHTML = `<b>${esc(title)}</b><span>courtesy of ${esc(by)}</span>`; $('banner').classList.add('on'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('on'), 2200); },
+  // slot reel: spins through icons then lands on the card (variable-reward reveal for viewers)
+  slot(card, by) {
+    const el = $('slot'); el.className = `on r-${card.r}${card.help ? ' help' : ''}`;
+    const icons = ['💣', '🍌', '🦆', '🧊', '🌙', '🪩', '🌋', '🥤', '🔴', '🌬️'];
+    let i = 0; clearInterval(el._spin);
+    el._spin = setInterval(() => { el.innerHTML = `<b>${icons[i++ % icons.length]}</b><span>${esc(by)} pulled the lever…</span>`; if (i > 7) { clearInterval(el._spin); el.innerHTML = `<b>${card.icon}</b><strong>${esc(card.label)}</strong><span>${card.r === 'l' ? 'LEGENDARY · ' : card.r === 'r' ? 'RARE · ' : ''}${esc(by)}</span>`; } }, 55);
+    clearTimeout(slotT); slotT = setTimeout(() => el.className = '', 2800);
+  },
   blame(name, amount) {
     if (name !== blameName) { blameName = name; blameAcc = 0; }
-    blameAcc += amount;
-    if (blameAcc < .01) return;
+    blameAcc += amount; if (blameAcc < .01) return;
     $('blame').innerHTML = `−${Math.round(blameAcc * 100)}% <span>${esc(name)}</span>`; $('blame').classList.add('on');
-    clearTimeout(blameTimer); blameTimer = setTimeout(() => { $('blame').classList.remove('on'); blameAcc = 0; }, 1400);
+    clearTimeout(blameT); blameT = setTimeout(() => { $('blame').classList.remove('on'); blameAcc = 0; }, 1400);
   },
-  hud({ water, time, room, hazard, steady, calm, lights, progress }) {
-    $('water').textContent = Math.round(water * 100); $('water-fill').style.height = `${water * 100}%`;
-    $('timer').textContent = Math.max(0, time).toFixed(1); $('room').textContent = room;
-    $('hazard').textContent = hazard ? `⚠ ${hazard}` : calm ? '🫶 CHAT IS STEADYING YOU' : steady ? 'CAREFUL STEPS' : '';
-    $('progress-fill').style.width = `${progress * 100}%`;
-    document.body.classList.toggle('dark', lights); document.body.classList.toggle('low', water < .25);
+  catchPrompt(on) { $('catch').classList.toggle('on', on); },
+  lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
+  hud({ water, danger, time, room, hazard, steady, calm, mods, progress }) {
+    const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
+    set('water', Math.round(water * 100)); $('water-fill').style.transform = `scaleY(${water})`;
+    $('danger').style.transform = `scaleX(${danger})`; $('danger').dataset.hot = danger > .85 ? '1' : '';
+    set('timer', Math.max(0, time).toFixed(1)); set('room', room);
+    set('hazard', hazard ? `⚠ ${hazard}` : calm ? '🫶 CHAT IS STEADYING YOU' : steady ? 'CAREFUL STEPS' : '');
+    set('mods', mods.map(m => MOD_LABEL[m]).filter(Boolean).join('  '));
+    $('progress-fill').style.transform = `scaleX(${progress})`;
+    document.body.classList.toggle('low', water < .25);
   },
-  results({ success, water, time, score, credits, seed, channel }) {
+  results({ won, water, time, score, credits, receipt, official, streak, board }) {
     ui.show('results');
-    $('r-title').textContent = !success ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : water > .7 ? 'Hydrated. Respect.' : water > .3 ? 'Technically a drink.' : 'One. Last. Sip.';
-    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>WATER</span></div><div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div>`;
-    $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .35}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
-    $('share').onclick = () => navigator.clipboard?.writeText(`LAST SIP ${seed}${channel ? ' #' + channel : ''}: ${Math.round(water * 100)}% water, ${time.toFixed(1)}s. Top spiller: ${credits[0]?.name || 'nobody'} 💧`);
+    set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
+    set('r-title', !won ? (water <= .001 ? 'Bone dry.' : 'The stream started without you.') : water < .05 ? 'ONE. LAST. SIP.' : water > .7 ? 'Hydrated. Respect.' : 'Technically a drink.');
+    $('r-stats').innerHTML = `<div><b>${Math.round(water * 100)}%</b><span>WATER</span></div><div><b>${time.toFixed(1)}s</b><span>TIME</span></div><div><b>${score}</b><span>SCORE</span></div><div><b>${streak || 0}🔥</b><span>STREAK</span></div>`;
+    $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
+    $('receipt').textContent = receipt;
+    $('share').onclick = () => { navigator.clipboard?.writeText(receipt); $('share').textContent = 'COPIED ✓'; };
+    const rows = board?.pour || [];
+    $('board').innerHTML = `<h4>TODAY'S POUR ${board?.local ? '(this browser)' : '· ACROSS TWITCH'}</h4>` + (rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet. Be first.</span></li>') +
+      (board?.wanted?.length ? `<h4>MOST WANTED ACROSS TWITCH</h4>` + board.wanted.map((r, i) => `<li><span>${i + 1}. ${esc(r.viewer)}</span><b>${Math.round(r.spilled * 100)}%</b></li>`).join('') : '');
   },
 };
