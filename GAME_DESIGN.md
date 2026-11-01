@@ -29,6 +29,22 @@
 
 Every hit is credited to a viewer: **Spill Credits**, the **Most Wanted** poster tomorrow, the cross-Twitch board. Every served drink is credited too ("Served: @a, @b...").
 
+## v3.1 plan: money + "the question at the counter" (planned, not built)
+**Research takeaways**
+- WarioWare: a micro-challenge must be understood instantly and last about 5-7 s ([Nintendo Life](https://3dsware.nintendolife.com/features/butt-movements-pitches-and-9-volts-retro-microgames-we-speak-with-wariowares-chief-director), [Super Jump](https://www.superjumpmagazine.com/what-are-the-components-of-a-perfect-warioware-microgame/)).
+- Quiplash: absurd, non-generic prompts and inherently funny words; the fun is in the answers, not in being "right" ([Jackbox](https://www.jackboxgames.com/the-science-of-creating-a-quiplash-prompt/), [Jackbox](https://www.jackboxgames.com/how-to-write-a-good-quiplash-prompt)).
+- Game comedy: surprise is the punchline, the author should control the delivery timing, and jokes die after 1-2 repeats ([Game Developer on Zoe Quinn's GDC talk](https://gamedeveloper.com/design/exploring-what-it-takes-to-make-a-funny-game), [Springer](https://rd.springer.com/content/pdf/10.1007/978-3-319-24589-8_6.pdf), [Aalto](https://research.aalto.fi/en/publications/featuring-comedy-through-ludonarrative-elements-of-video-games/)).
+
+**The mechanic**
+1. You reach a customer with their drink. They **hold out a hand and ask a totally unrelated question** with 3 answers (keys 1/2/3), and a 5 s timer. The tray keeps sloshing while you think (dual task = comedy), and the conductor sends no *new* threats during the question.
+2. **There is no correct answer, only the right answer for THIS customer.** Every customer has a visible personality (WHOLESOME / CHAOTIC / NERD / DRAMATIC, shown as a coloured word under their name). Each answer is tagged with a vibe. Read the room: a matching answer earns a big tip and a happy punchline; a mismatch gets a roast line and no tip; a timeout gets "I'll take the silence as a yes" and a smaller tip.
+3. **Money is the score.** Each drink pays a $5 price + a fill tip (up to $5) + a vibe bonus ($3) x the clean-serve streak. A till counter ka-chings, and bills pop from the customer.
+4. **Chat gets a say.** While a question is up, the sabotage ballot pauses and chat votes 1/2/3 ("CHAT SAYS 2"). Follow chat and be right: "CHAT CARRIED". Follow chat and be wrong: "CHAT LIED", and the liars land in Spill Credits. Very Twitch.
+5. **Never repeat a joke**: 40+ questions and 4 personalities x 3 lines, with no repeats within a run. The Pour uses seeded questions per slot (fair across streamers).
+6. **Shareable**: the results screen shows the run's best and worst exchange as a quote card, and the receipt carries one line.
+
+**Writing rules**: clean for Twitch, original, short (questions <= 70 chars, answers <= 22 chars), funny words, no real people.
+
 ## Chat at any size: votes for everyone, a direct lane for supporters
 A 20-viewer chat and a 20,000-viewer chat must both work, and nobody can flood the island.
 - **Free viewers vote.** Every ~12 s a ballot shows on screen: `1 SNIPER · 2 BARREL · 3 SKY DROP` (three options drawn from the deck, often one helpful). Typing `1`/`2`/`3` (or the command name) casts one vote per viewer per ballot; a viewer can change it. The window is 8 s, long enough for stream delay. The winner fires, and **one voter from the winning side is drawn as its face** (the gunner's name tag, the barrel's tag). With no votes, THE HOUSE picks the default. Every voter on the winning side shares the blame credit.
