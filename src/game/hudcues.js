@@ -14,6 +14,7 @@ export function createHudCues(root) {
   const edges = [0, 1, 2, 3, 4].map(() => { const e = document.createElement('div'); e.className = 'edge'; e.innerHTML = '<i></i><span></span>'; box.appendChild(e); return e; });
   const windEl = document.createElement('div'); windEl.id = 'wind'; windEl.innerHTML = icon('gust') + '<b>&#10140;</b>'; box.appendChild(windEl);
   const flash = document.createElement('div'); flash.id = 'hitflash'; box.appendChild(flash); let hitN = 0;
+  const onKey = e => { if (e.code === 'KeyM' || e.code === 'Tab') { e.preventDefault(); box.classList.toggle('map'); } }; addEventListener('keydown', onKey); // minimap on demand
   const map = document.createElement('canvas'); map.id = 'minimap'; box.appendChild(map);
   const W = 132, H = 236, S = 2; map.width = W * S; map.height = H * S; const g = map.getContext('2d'); g.scale(S, S);
   const mx = x => W / 2 + x * 2.6, mz = z => H - 14 - (6 - z) * 2.3; // forward (-z) is up
@@ -78,8 +79,8 @@ export function createHudCues(root) {
         const a0 = onScreen(camera, player.pos.x, 1, player.pos.z).clone(), a1 = onScreen(camera, player.pos.x + wind.dir * 3, 1, player.pos.z);
         windEl.querySelector('b').style.transform = `rotate(${-Math.atan2(a1.y - a0.y, a1.x - a0.x)}rad)`;
       }
-      if ((mapT -= dt) <= 0) { mapT = .1; drawMap(run, player); }
+      if (box.classList.contains('map') && (mapT -= dt) <= 0) { mapT = .1; drawMap(run, player); }
     },
-    remove() { box.remove(); },
+    remove() { box.remove(); removeEventListener('keydown', onKey); },
   };
 }

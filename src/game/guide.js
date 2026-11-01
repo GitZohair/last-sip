@@ -74,7 +74,8 @@ export function createGuide(scene, { recipe, actors, level }) {
       const swim = !!run?.swimming;
       for (const s of exitSigns) { s.visible = swim && Math.hypot(s.position.x - player.pos.x, s.position.z - player.pos.z) < 16; s.position.y = .2 + Math.sin(t * 5) * .1; }
       const fade = (x, z) => Math.min(1, Math.max(.12, (Math.hypot(x - player.pos.x, z - player.pos.z) - 2.5) / 9)); // thin out up close
-      for (const b of beams) { b.m.visible = !b.s.got; b.m.material.opacity = (.75 + Math.sin(t * 3 + b.s.x) * .2) * fade(b.s.x, b.s.z); }
+      const next = goal(player.pos).final; // one beam at a time: only the NEXT stop glows, the rest are faint stubs
+      for (const b of beams) { const on = b.s.x === next.x && b.s.z === next.z; b.m.visible = !b.s.got; b.m.scale.y = on ? 1 : .18; b.m.material.opacity = (on ? .75 + Math.sin(t * 3 + b.s.x) * .2 : .35) * fade(b.s.x, b.s.z); }
       hutBeam.visible = recipe.done; hutBeam.material.opacity = .8 + Math.sin(t * 5) * .2;
       const p = player.pos, ex = swim && run.nearestExit(p), g = ex ? { ...ex, color: '#5dffa0', final: { ...ex, x: ex.x + 99 } } : goal(p), dx = g.x - p.x, dz = g.z - p.z, d = Math.hypot(dx, dz), fd = Math.hypot(g.final.x - p.x, g.final.z - p.z);
       arrow.visible = playing && (swim || fd > 2.6);

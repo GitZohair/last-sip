@@ -194,3 +194,8 @@ kbd { font: 800 .75rem/1 system-ui; padding: .4rem .55rem; border-radius: 7px; b
 #hitflash { position: absolute; inset: 0; opacity: 0; }
 #hitflash.on { animation: hitflash .6s ease-out; }
 @keyframes hitflash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- declutter (less to read while running): only the goal, the drink and live threats stay on screen */
+#progress, #mode, #order span.rule { display: none; }
+.style-box { transition: opacity .3s; } .style-box[data-zero="1"] { opacity: 0; }
+#minimap { opacity: 0; transition: opacity .25s; } #cues.map #minimap { opacity: .92; }

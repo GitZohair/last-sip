@@ -80,7 +80,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     await actors.spawn('sniper', 'warm', player); await actors.spawn('barrel', 'warm', player, { spot: { x: 0, z: 0, dir: { x: 0, z: 1 } } });
     for (const a of actors.list) if (a.line) a.line.visible = true;
     chaos.puddle(0, 999, .1, .01);
+    hazards.vacuum.mesh.visible = true; // compile its shaders now even though it's hidden until it wakes
     try { await world.renderer.compileAsync(scene, world.camera); } catch { world.renderer.compile(scene, world.camera); }
+    hazards.vacuum.mesh.visible = false;
     actors.clear(); chaos.clearPuddles(); scene.remove(temp); geo.dispose();
   }
   chaos.onBlast = f => { sfx.boom(); gallery.shake(1.4); if (f > .3) hooks.clip?.('bomb'); };

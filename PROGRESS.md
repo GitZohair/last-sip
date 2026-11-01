@@ -50,3 +50,9 @@ One fixed island, one daily order: collect today's 3 fruits across the boardwalk
 ## Hit feedback (Claude, Nov 1)
 - Viewer hits (sniper, barrel, sky drop) now freeze the game for 70 ms, shake the camera, and flash red on the screen edge the hit came from (`run.hitStop`, `run.lastHit`, `#hitflash` in hudcues.js).
 - Still TODO from UX research: one-time hints the first time each threat appears (e.g. "SPACE" over the first barrel, "MOVE" on the first sniper ring, saved in localStorage); target crosshair ticks on red rings so they read without colour (red-green colourblindness); playtest in the browser.
+
+## Readability pass (Claude, Nov 1, evening)
+- Streamer avatar: chunky low-poly guy (Kenney male-b, torso/legs bulked via bone scale, scale tracks stripped from clips) with a purple gaming headset. `?char=character-female-b` etc. still swaps to a plain mini character.
+- Barrels: land on the planks 6-13 m ahead along the route (`barrelSpot` in run.js), pause 0.6 s, roll straight along the board axis, fall into the sea off the end. No steering toward the player.
+- Snipers: a viewer figure (mini character picked from the username) stands beside the cannon on the watchtower, red pennant marks the tower, gunner cheers on a hit.
+- Declutter: one goal beam at a time (others are faint stubs), minimap hidden (M / Tab toggles), no mode label / progress bar / rule chip during play, style score hidden at 0, voice meter only during voice set pieces. Loose Cannon is hidden until it wakes (it used to fill the start camera).

@@ -102,8 +102,8 @@ export const ui = {
     set('hazard', hazard ? hazard : calm ? 'STEADIED BY CHAT' : '');
     const key = mods.join(); if (key !== modsKey) { modsKey = key; $('mods').innerHTML = mods.filter(m => MOD_LABEL[m]).map(m => `<span>${icon(MOD_ICON[m] || m)}${MOD_LABEL[m]}</span>`).join(''); }
     const near = Math.max(0, Math.min(1, 1 - (vacuum - 1) / 7)); $('vac').style.opacity = vacuum < 8 ? 1 : 0; $('vac-fill').style.transform = `scaleX(${near})`; $('vac').dataset.hot = vacuum < 2.5 ? '1' : '';
-    if (voice) { const v = $('voice'); v.style.opacity = voice.level > .08 || voice.lock >= 0 || voice.alert >= 0 ? 1 : .35; $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
-    if (style) { set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
+    if (voice) { const v = $('voice'); v.style.opacity = voice.lock >= 0 || voice.alert >= 0 ? 1 : 0; /* only when a set piece needs your voice */ $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
+    if (style) { document.querySelector('.style-box').dataset.zero = style.points ? '' : '1'; set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', water < .25 && water > .001);
   },

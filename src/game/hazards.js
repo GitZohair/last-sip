@@ -14,7 +14,7 @@ async function vacuum(scene, spawn) {
   const puffs = [0, 1, 2, 3, 4].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), puffMat.clone()); m.visible = false; g.add(m); return { m, life: 0 }; });
   let puffT = 0;
   const brush = { rotation: { y: 0 } };
-  g.position.set(spawn.x, 0, spawn.z + 2); scene.add(g);
+  g.position.set(spawn.x, 0, spawn.z + 2); g.visible = false; scene.add(g); // hidden until it wakes, so it never fills the start camera
   const trail = []; let speed = 0, wake = 6, cool = 0, stun = 0;
   return {
     kind: 'vacuum', label: 'THE LOOSE CANNON', mesh: g,
@@ -26,6 +26,7 @@ async function vacuum(scene, spawn) {
       if (player.y > -.3 && (!last || Math.hypot(last.x - player.pos.x, last.z - player.pos.z) > .35)) trail.push({ x: player.pos.x, z: player.pos.z });
       brush.rotation.y += dt * 30; cool -= dt;
       if (t < (this.hungry ? 3 : wake)) { this.distance = 99; return null; }
+      if (!g.visible) { g.visible = true; for (const p of puffs) { p.life = .7; p.m.position.set((Math.random() - .5) * .8, .3 + Math.random() * .5, (Math.random() - .5) * .8); p.m.visible = true; } } // pops in with a puff
       if (stun > 0) { stun -= dt; g.rotation.y += dt * 14; if (stun <= 0) { ring.material.color.set('#ff3b5c'); ring.material.emissive.set('#ff1e46'); } this.distance = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z); return null; }
       speed = Math.min(4.6, 2.2 + Math.max(0, t - wake) * .07) * (this.hungry ? 1.25 : 1);
       let move = speed * dt;
