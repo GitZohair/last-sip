@@ -58,6 +58,15 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (let tries = 0; tries < 6; tries++, a += 2.4) { x = player.pos.x + ux * a - uz * .35 * dropSide; z = player.pos.z + uz * a + ux * .35 * dropSide; if (!drops.list.some(o => Math.hypot(o.x - x, o.z - z) < 2.4)) break; }
     return { x, z };
   };
+  // barrels: a point ON THE PLANKS 6-13 m ahead along the route; it rolls back along that same board axis
+  const onBoards = (x, z) => level.colliders.some(c => x > c.minX && x < c.maxX && z > c.minZ && z < c.maxZ && c.top <= .1 && c.top > -.5);
+  const barrelSpot = () => {
+    const g = guide.goal(player.pos); let dx = g.x - player.pos.x, dz = g.z - player.pos.z;
+    if (Math.abs(dx) > Math.abs(dz)) { dx = Math.sign(dx); dz = 0; } else { dz = Math.sign(dz) || -1; dx = 0; }
+    for (let a = 13; a >= 6; a -= .5) { const x = dz ? (Math.abs(player.pos.x) < 1.2 ? 0 : player.pos.x) : player.pos.x + dx * a, z = dx ? player.pos.z : player.pos.z + dz * a; if (onBoards(x, z)) return { x, z, dir: { x: -dx, z: -dz } }; }
+    return null;
+  };
+  const spawnActor = (kind, user) => actors.spawn(kind, user, player, kind === 'barrel' ? { spot: barrelSpot() } : {});
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
   glass.state.water = 0; // you start empty: today's 3 ingredients fill the glass
@@ -68,7 +77,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   {
     const temp = new THREE.Group(), geo = new THREE.SphereGeometry(.1, 6, 4); scene.add(temp);
     temp.add(new THREE.Mesh(geo, ballMat), new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true })), new THREE.Mesh(geo, new THREE.MeshStandardMaterial()), await model('furniture', 'kitchenFridge'));
-    await actors.spawn('sniper', 'warm', player); await actors.spawn('barrel', 'warm', player);
+    await actors.spawn('sniper', 'warm', player); await actors.spawn('barrel', 'warm', player, { spot: { x: 0, z: 0, dir: { x: 0, z: 1 } } });
     for (const a of actors.list) if (a.line) a.line.visible = true;
     chaos.puddle(0, 999, .1, .01);
     try { await world.renderer.compileAsync(scene, world.camera); } catch { world.renderer.compile(scene, world.camera); }
@@ -97,7 +106,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   // viewer characters spawn by name; the card system handles everything else
   run.summon = (kind, user) => {
     if (run.state !== 'play') return false;
-    if (kind === 'drop') { const p = dropSpot(); drops.furniture(user, p.x, p.z); } else actors.spawn(kind, user, player);
+    if (kind === 'drop') { const p = dropSpot(); drops.furniture(user, p.x, p.z); } else spawnActor(kind, user);
     run.lastChat = run.t; return true;
   };
   run.dropFrame = async ({ user, image, trusted }) => { if (run.state !== 'play') return { ok: false, reason: 'not playing' }; const p = dropSpot(); const d = await drops.frame(user, p.x, p.z, image, trusted); run.lastChat = run.t; return d ? { ok: true } : { ok: false, reason: 'image rejected' }; };
@@ -245,7 +254,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       const ri = level.rooms.indexOf(room); run.houseNext = Math.max(2.2, 6 - ri * .9) + houseRng() * 2;
       if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
       else if (run.t - run.lastChat > 3 && houseRng() < .2) { const p = dropSpot(); drops.furniture('THE HOUSE', p.x, p.z); }
-      else if (run.t - run.lastChat > 3 && houseRng() < .35) { actors.spawn(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE', player); }
+      else if (run.t - run.lastChat > 3 && houseRng() < .35) { spawnActor(houseRng() < .7 ? 'barrel' : 'sniper', 'THE HOUSE'); }
       else if (run.t - run.lastChat > 3) { const card = draw(houseRng); if (card.r !== 'l' && !card.help) hooks.house?.(run.play(card.id, ['THE HOUSE'])); }
     }
     // CATCH IT: when the glass is about to go, a short window to press E for a slow-mo save.

@@ -59,7 +59,7 @@ export function createHudCues(root) {
       for (const a of run.actors.list) {
         if (i >= edges.length - 1) break;
         if (a.kind === 'sniper') edge(edges[i++], camera, { x: a.tower.x, y: a.tower.y + 1, z: a.tower.z }, '#ff2040', 'cannon', a.user);
-        else if (a.kind === 'barrel' && a.z < player.pos.z) edge(edges[i++], camera, { x: a.x, y: .5, z: a.z }, '#ffb020', 'barrel', '');
+        else if (a.kind === 'barrel' && !a.sunk) edge(edges[i++], camera, { x: a.x, y: .5, z: a.z }, '#ffb020', 'barrel', '');
       }
       const vac = run.hazards.vacuum;
       if (vac.distance < 9 && !vac.stunned) edge(edges[i++], camera, { x: vac.mesh.position.x, y: .3, z: vac.mesh.position.z }, '#ff3b5c', 'cannon', 'LOOSE CANNON');

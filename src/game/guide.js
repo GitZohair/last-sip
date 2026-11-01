@@ -88,7 +88,7 @@ export function createGuide(scene, { recipe, actors, level }) {
       ring.visible = !!aiming;
       if (aiming) { ring.position.set(p.x, player.y + .03, p.z); ring.scale.setScalar(1 + aiming.aim * 1.6); ring.material.color.set(aiming.aim < .35 && Math.sin(t * 50) > 0 ? '#ffffff' : '#ff2040'); }
       let i = 0;
-      for (const a of actors.list) if (a.kind === 'barrel' && i < lanes.length) { const l = lanes[i++]; l.visible = true; l.position.set(a.x, 0, a.z); }
+      for (const a of actors.list) if (a.kind === 'barrel' && i < lanes.length) { const l = lanes[i++]; l.visible = !!a.rolling || a.wait > 0; l.position.set(a.x, .01, a.z); l.rotation.y = Math.atan2(a.dir.x, a.dir.z); }
       for (; i < lanes.length; i++) lanes[i].visible = false;
       laneMat.opacity = .22 + Math.sin(t * 12) * .1;
       const near = recipe.near; pour.visible = !!near;

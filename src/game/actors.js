@@ -4,7 +4,7 @@ import { model, textTexture } from './assets.js';
 // VIEWER CHARACTERS: chat doesn't just trigger effects, it shows up on the island with its name on it.
 //   SNIPER  (!sniper, 100+ bits, sub)  mounts a water cannon on the lifeguard tower nearest ahead of you,
 //            paints you with a laser for 1.4 s, fires. 3 shots, then leaves. Move sideways to dodge.
-//   ROLLER  (!barrel)                  rolls a barrel down the boardwalk at you. Hop it (Space).
+//   ROLLER  (!barrel)                  drops a barrel on the boards ahead; it rolls straight down the planks. Hop it (Space).
 //   LIFEGUARD (!steady x3)              a named lifeguard on a tower throws you a lifebuoy: your next fall is free.
 // Every hit is credited to that viewer (Spill Credits, Most Wanted); every save is credited too.
 export function lifebuoy() { // red/white striped ring
@@ -23,7 +23,7 @@ export function createActors(scene, level, sfx) {
   const list = [];
   const api = {
     list,
-    async spawn(kind, user, player) {
+    async spawn(kind, user, player, opts = {}) {
       if (kind === 'sniper') {
         const ahead = level.towers.filter(t => t.z < player.pos.z + 4 && !list.some(a => a.tower === t)).sort((a, b) => b.z - a.z)[0] || level.towers[0];
         const cannon = await model('pirate', 'cannon'); cannon.position.set(ahead.x, ahead.y, ahead.z); cannon.scale.setScalar(.8); scene.add(cannon);
@@ -36,10 +36,14 @@ export function createActors(scene, level, sfx) {
         const ring = lifebuoy(); ring.position.set(tower.x, tower.y + 1, tower.z); scene.add(ring);
         list.push({ kind, user, objs: [t, ring], ring, from: ring.position.clone(), k: 0, life: 2.5 });
       } else if (kind === 'barrel') {
-        const z = player.pos.z - 14, x = Math.abs(player.pos.x) < 1.2 ? 0 : player.pos.x;
-        const b = await model('pirate', 'barrel'); b.scale.setScalar(.55); b.position.set(x, .35, z); scene.add(b);
-        const t = tag(user, '#ffb020'); scene.add(t);
-        list.push({ kind, user, objs: [b, t], b, t, x, z, life: 7 });
+        // ROLLER: the barrel thumps down ON THE BOARDS ahead of you (shadow first), sits for a beat, then rolls
+        // in a straight line along the boardwalk. It never steers; if it runs off the planks it drops into the sea.
+        const spot = opts.spot; if (!spot) return;
+        const b = await model('pirate', 'barrel'); b.scale.setScalar(.55); b.rotation.z = Math.PI / 2; // lying on its side, centred so it spins about its axis
+        const bb = new THREE.Box3().setFromObject(b), r = (bb.max.y - bb.min.y) / 2; b.position.sub(bb.getCenter(new THREE.Vector3()));
+        const spin = new THREE.Group(); spin.add(b); const g = new THREE.Group(); g.add(spin); g.position.set(spot.x, 4, spot.z); g.rotation.y = Math.atan2(spot.dir.x, spot.dir.z); scene.add(g);
+        const t = tag(user, '#ffb020'); t.scale.multiplyScalar(.8); scene.add(t);
+        list.push({ kind, user, objs: [g, t], g, spin, t, x: spot.x, z: spot.z, dir: spot.dir, r, y: 4, vy: 0, wait: .6, life: 6 });
       }
     },
     // returns hits: [{ user, dir, power, kind }]
@@ -68,8 +72,14 @@ export function createActors(scene, level, sfx) {
             if (a.k >= 1) { scene.remove(a.ring); hits.push({ user: a.user, kind: 'LIFEGUARD', help: true, dir: { x: 0, z: 0 }, power: 0 }); }
           } else if ((a.life -= dt) <= 0) remove(a);
         } else if (a.kind === 'barrel') {
-          a.z += 7 * dt; a.life -= dt; a.b.position.z = a.z; a.b.rotation.x += dt * 10; a.t.position.set(a.x, 1.4, a.z);
-          if (Math.abs(a.z - player.pos.z) < .6 && Math.abs(a.x - player.pos.x) < .9 && player.y < .5) { hits.push({ user: a.user, kind: 'BARREL', dir: { x: Math.sign(player.pos.x - a.x) || 1, z: .6 }, power: 6 }); a.life = 0; }
+          a.life -= dt; const board = level.colliders.some(c => a.x > c.minX && a.x < c.maxX && a.z > c.minZ && a.z < c.maxZ && c.top <= .1 && c.top > -.5);
+          const floor = board ? a.r : -3;
+          if (a.y > floor || a.vy > 0) { a.vy -= 20 * dt; a.y = Math.max(floor, a.y + a.vy * dt); if (a.y === floor && a.vy < -4 && board) { a.vy = -a.vy * .3; sfx.thud(.6); } else if (a.y === floor) a.vy = 0; }
+          if (a.y < -1.5 && !a.sunk) { a.sunk = true; sfx.splash(); a.life = Math.min(a.life, .8); }
+          if (a.y <= floor + .01 && (a.wait -= dt) <= 0) { a.x += a.dir.x * 6.5 * dt; a.z += a.dir.z * 6.5 * dt; a.spin.rotation.x += dt * 6.5 / a.r; a.rolling = true; }
+          a.g.position.set(a.x, a.y, a.z); a.t.position.set(a.x, a.y + 1.1, a.z);
+          const rx = player.pos.x - a.x, rz = player.pos.z - a.z;
+          if (a.y > -.2 && a.y < 1 && Math.hypot(rx, rz) < .75 && player.y < .45) { const side = Math.sign(rx * a.dir.z - rz * a.dir.x) || 1; hits.push({ user: a.user, kind: 'BARREL', dir: { x: a.dir.x * .6 + a.dir.z * side, z: a.dir.z * .6 - a.dir.x * side }, power: 6 }); a.life = 0; }
           if (a.life <= 0) remove(a);
         }
       }

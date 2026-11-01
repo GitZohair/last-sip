@@ -6,7 +6,23 @@ import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 // (idle / walk / sprint / jump / fall / die / emote-yes / emote-no / holding-right ...).
 // The drink is held out in the RIGHT HAND like a waiter, beside the body, so the chase camera always sees it.
 // The right arm is driven only by the 'holding-right' pose; locomotion clips have their arm-right tracks removed.
-const CHAR = new URLSearchParams(location.search).get('char') || 'character-female-b';
+// THE STREAMER: a big, chunky low-poly guy (wide torso, thick legs) with a gaming headset, built on male-b.
+const CHAR = new URLSearchParams(location.search).get('char') || 'character-male-b';
+const BULK = { torso: [1.55, 1.12, 1.5], legs: [1.35, 1, 1.35] };
+function headset(head, model) {
+  // fit to the head mesh: its bind-pose box (model space) relative to the head bone
+  model.updateMatrixWorld(true);
+  const hm = model.getObjectByName('head-mesh'); hm.geometry.computeBoundingBox();
+  const box = hm.geometry.boundingBox.clone(), hp = new THREE.Vector3(); head.getWorldPosition(hp); model.worldToLocal(hp);
+  const w = box.max.x - box.min.x, top = box.max.y - hp.y, cy = (box.min.y + box.max.y) / 2 - hp.y, cz = (box.min.z + box.max.z) / 2 - hp.z;
+  const black = new THREE.MeshLambertMaterial({ color: '#2b2838' }), accent = new THREE.MeshLambertMaterial({ color: '#a970ff' });
+  const g = new THREE.Group(); g.position.set(0, 0, cz);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(w / 2 + .012, .014, 6, 18, Math.PI), black); band.position.y = cy; band.scale.y = (top - cy + .015) / (w / 2 + .012); g.add(band);
+  for (const sx of [-1, 1]) { const cup = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .04, 14).rotateZ(Math.PI / 2), accent); cup.position.set(sx * (w / 2 + .012), cy, 0); g.add(cup); const ring = new THREE.Mesh(new THREE.CylinderGeometry(.032, .032, .044, 12).rotateZ(Math.PI / 2), black); ring.position.copy(cup.position).x += sx * .004; g.add(ring); }
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(.007, .007, .11, 6).rotateX(Math.PI / 2), black); boom.position.set(w / 2 + .01, cy - .04, .06); boom.rotation.y = -.35; g.add(boom);
+  const mic = new THREE.Mesh(new THREE.SphereGeometry(.016, 8, 6), accent); mic.position.set(w / 2 - .01, cy - .045, .115); g.add(mic);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); head.add(g);
+}
 const SCALE = 1.75;
 let srcPromise = null;
 const NAMES = { ThumbsUp: 'emote-yes', Yes: 'emote-yes', No: 'emote-no', Death: 'die', Dance: 'emote-yes', Wave: 'emote-yes' };
@@ -15,6 +31,8 @@ export async function createCharacter(scene) {
   srcPromise ??= new GLTFLoader().loadAsync(`/assets/kenney/mini-characters/${CHAR}.glb`);
   const gltf = await srcPromise;
   const model = skeletonClone(gltf.scene);
+  const bone = n => model.getObjectByName(n);
+  if (!new URLSearchParams(location.search).has('char')) headset(bone('head'), model);
   model.scale.setScalar(SCALE); model.rotation.y = Math.PI; // model faces +z; our forward is -z
   model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false; } });
   const root = new THREE.Group(); const lean = new THREE.Group(); lean.add(model); root.add(lean); scene.add(root);
@@ -25,9 +43,16 @@ export async function createCharacter(scene) {
 
   const mixer = new THREE.AnimationMixer(model);
   const clip = name => gltf.animations.find(a => a.name === name);
-  const noArm = c => { const k = c.clone(); k.tracks = k.tracks.filter(t => !t.name.startsWith('arm-right')); return k; };
+  // scale tracks are dropped so the chunky build (set once below) isn't overwritten every frame
+  const noScale = c => { const k = c.clone(); k.tracks = k.tracks.filter(t => !t.name.endsWith('.scale')); return k; };
+  const noArm = c => { const k = noScale(c); k.tracks = k.tracks.filter(t => !t.name.startsWith('arm-right')); return k; };
   const actions = {};
-  for (const a of gltf.animations) actions[a.name] = mixer.clipAction(a.name === 'holding-right' ? a : noArm(a));
+  for (const a of gltf.animations) actions[a.name] = mixer.clipAction(a.name === 'holding-right' ? noScale(a) : noArm(a));
+  if (!new URLSearchParams(location.search).has('char')) { // chunky build: wide torso, head/arms counter-scaled so only the body bulks up
+    const [tx, ty, tz] = BULK.torso; bone('torso').scale.set(tx, ty, tz);
+    bone('head').scale.set(1.1 / tx, 1.1 / ty, 1.1 / tz); for (const n of ['arm-left', 'arm-right']) bone(n).scale.set(1.2 / tx, 1.05 / ty, 1.2 / tz);
+    for (const n of ['leg-left', 'leg-right']) bone(n).scale.set(...BULK.legs);
+  }
   for (const n of ['jump', 'die', 'emote-yes', 'emote-no', 'pick-up']) if (actions[n]) { actions[n].setLoop(THREE.LoopOnce); actions[n].clampWhenFinished = true; }
   if (actions['holding-right']) actions['holding-right'].play(); // always: the arm holds the drink out
   let current = actions.idle; current.play();
