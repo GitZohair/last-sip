@@ -30,8 +30,15 @@ let cues = null, run = null, chat = null, session = null, profile = null, offici
 // ---------- Twitch: anonymous chat (zero setup) + optional sign-in for EventSub, rewards, clips
 function connect(name) { chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
 const BOTS = /^(nightbot|streamelements|streamlabs|moobot|fossabot|wizebot|sery_bot|soundalerts|kofistreambot|botrixoficial|pokemoncommunitygame|commanderroot)$/;
+// chat's emotes float up the right edge while you play (rate-limited), so the stream's reactions are in the game
+const reacts = document.createElement('div'); reacts.id = 'reacts'; document.body.appendChild(reacts); let reactT = 0;
+function react(url) {
+  const now = performance.now(); if (now - reactT < 180 || run?.state !== 'play') return; reactT = now;
+  const i = new Image(); i.src = url; i.className = 'react'; i.alt = ''; i.style.right = `${2 + Math.random() * 9}%`; i.onanimationend = () => i.remove(); i.onerror = () => i.remove();
+  reacts.appendChild(i); if (reacts.children.length > 14) reacts.firstChild.remove();
+}
 function onChat(msg) {
-  if (msg.emotes?.[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
+  if (msg.emotes?.[0]) { lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id)); react(emoteUrl(msg.emotes[0].id, '2.0')); }
   if (BOTS.test(msg.login || '')) return; // chat bots never order drinks or vote
   if (!msg.notice && msg.user) run?.shift?.enter(msg.user, 1, msg.color); // anyone chatting can be drawn as a customer; !order = 2 tickets, subs 3
   const r = director.handle(msg); if (!r) return;
