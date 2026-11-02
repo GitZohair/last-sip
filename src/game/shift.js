@@ -13,6 +13,7 @@ const TOURISTS = ['SUNBURNT STEVE', 'AUNTIE MO', 'DJ SANDY', 'GRANDPA REEF', 'CO
 const SPOTS = { coconut: [-14, -16], lemon: [14, -16], pineapple: [-14, -48], strawberry: [14, -48], honey: [-14, -64], watermelon: [14, -64], beach: [2.6, -1], hut: [-2.6, -77] }, FAR = { castaway: [ISLE.x, ISLE.z] }; // the castaway islet: boat only
 export const BAR = { x: -2.6, z: -32, r: 2.1 };
 
+const light = hex => { if (!hex) return false; const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) > 160; }; // readable tag text on any chat colour
 function bubbleCanvas() { const c = document.createElement('canvas'); c.width = c.height = 128; return c; }
 function drawBubble(c, color, k, mood) { // order bubble: drink icon + a patience arc that drains green → red
   const g = c.getContext('2d'); g.clearRect(0, 0, 128, 128);
@@ -41,9 +42,9 @@ export async function createShift(scene, seed, tray) {
   barRing.position.set(BAR.x, .03, BAR.z); scene.add(barRing);
   const sign = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture('BAR', { w: 256, h: 96, bg: '#a970ff', fg: '#fff', font: '900 64px system-ui' }), depthTest: false })); sign.scale.set(1.4, .52, 1); sign.position.set(BAR.x, 2.6, BAR.z); sign.renderOrder = 9; scene.add(sign);
 
-  const pool = new Map(); // raffle: name -> tickets
+  const pool = new Map(), colors = new Map(); // raffle: name -> tickets; viewer -> their chat name colour
   const S = { customers: [], tips: 0, served: 0, walkouts: 0, servedBy: [], log: [], streak: 0, next: 0, near: null, atBar: false, barRing };
-  S.enter = (name, tickets = 1) => { if (!S.customers.some(c => c.user === name && c.mood === 'wait')) pool.set(name, Math.max(pool.get(name) || 0, tickets)); };
+  S.enter = (name, tickets = 1, color = null) => { if (color) colors.set(name, color); if (pool.size > 400 && !pool.has(name)) pool.delete(pool.keys().next().value); if (!S.customers.some(c => c.user === name && c.mood === 'wait')) pool.set(name, Math.max(pool.get(name) || 0, tickets)); };
   function draw() { // one name from the raffle, weighted by tickets
     const total = [...pool.values()].reduce((a, b) => a + b, 0); if (!total) return null;
     let k = Math.random() * total; for (const [n, w] of pool) { if ((k -= w) <= 0) { pool.delete(n); return n; } } return null;
@@ -56,7 +57,7 @@ export async function createShift(scene, seed, tray) {
     const fig = await viewer(c.user); fig.m.position.set(x, 0, z); fig.m.scale.setScalar(2); scene.add(fig.m); c.fig = fig;
     c.canvas = bubbleCanvas(); c.tex = new THREE.CanvasTexture(c.canvas); c.tex.colorSpace = THREE.SRGBColorSpace;
     c.bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: c.tex, depthTest: false })); c.bubble.scale.setScalar(1.1); c.bubble.renderOrder = 10; scene.add(c.bubble);
-    c.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(c.user.slice(0, 18).toUpperCase(), { w: 512, h: 96, bg: c.viewer ? '#a970ff' : '#1b1530cc', font: 'bold 54px system-ui' }), depthTest: false }));
+    c.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(c.user.slice(0, 18).toUpperCase(), { w: 512, h: 96, bg: c.viewer ? (colors.get(c.user) || '#a970ff') : '#1b1530cc', fg: light(colors.get(c.user)) ? '#1b1530' : '#fff', font: 'bold 54px system-ui' }), depthTest: false }));
     c.tag.scale.set(3.4, .64, 1); c.tag.renderOrder = 10; scene.add(c.tag);
     if (S.next === 1) tray.add(c.id, c.color); // onboarding: your first order is already on the tray, so you learn SERVE before BAR
     S.onArrive?.(c); S.cb?.order?.(c);

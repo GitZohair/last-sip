@@ -5,7 +5,7 @@ import { createChaseCam } from './character.js';
 import { createRun, LIMIT } from './run.js';
 import { dayKey } from './rng.js';
 import { today, recordPour, receipt, dayNumber, submit, boards, history } from './daily.js';
-import { ChatDirector, connectChat, emoteUrl } from '../twitch.js';
+import { ChatDirector, connectChat, emoteUrl, parseLine } from '../twitch.js';
 import * as tw from '../twitch-auth.js';
 import { $, ui } from './ui.js';
 import { createVoice } from './voice.js';
@@ -29,16 +29,31 @@ let cues = null, run = null, chat = null, session = null, profile = null, offici
 
 // ---------- Twitch: anonymous chat (zero setup) + optional sign-in for EventSub, rewards, clips
 function connect(name) { chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
+const BOTS = /^(nightbot|streamelements|streamlabs|moobot|fossabot|wizebot|sery_bot|soundalerts|kofistreambot|botrixoficial|pokemoncommunitygame|commanderroot)$/;
 function onChat(msg) {
-  if (msg.emotes[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
+  if (msg.emotes?.[0]) lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id));
+  if (BOTS.test(msg.login || '')) return; // chat bots never order drinks or vote
+  if (!msg.notice && msg.user) run?.shift?.enter(msg.user, 1, msg.color); // anyone chatting can be drawn as a customer; !order = 2 tickets, subs 3
   const r = director.handle(msg); if (!r) return;
   if (r.kind === 'chaos' || r.kind === 'help') play(r.event, r.users, { src: 'chat' });
-  else if (r.kind === 'order') { run?.shift?.enter(r.user, r.tickets); if (director.active() < 5) ui.feed(`${r.user} ordered a drink`, 'help', 'glass'); }
+  else if (r.kind === 'notice') onNotice(r);
+  else if (r.kind === 'redeem') { ui.feed(`${r.users[0]} spent channel points`, 'legend', 'twitch'); play(r.event || pickBallot()[0], r.users, { src: 'paid' }); }
+  else if (r.kind === 'first') { run?.shift?.enter(r.user, 3, r.color); ui.feed(`First chat from ${r.user}: next customer`, 'help', 'glass'); }
+  else if (r.kind === 'order') { run?.shift?.enter(r.user, r.tickets, msg.color); if (director.active() < 5) ui.feed(`${r.user} ordered a drink`, 'help', 'glass'); }
   else if (r.kind === 'ballot') ui.ballot(r);
   else if (r.kind === 'queued') ui.feed(`${r.users[0]} is queued`, 'muted', 'stopwatch');
   else if (r.kind === 'vote') ui.feed(`LIFEGUARD VOTE ${r.have}/${r.needed}`, 'help', 'steady', 'vote');
   else if (r.kind === 'support') r.bits >= 100 ? play('sniper', [r.users[0]], { src: 'paid' }) : play('deck', [`${r.users[0]} (${r.bits} bits)`], { bias: Math.min(1, r.bits / 500) });
   else if (r.kind === 'frame') run?.dropFrame(r).then(res => ui.feed(res.ok ? `${r.user} dropped a frame` : `Frame from ${r.user} rejected (${res.reason})`, res.ok ? 'help' : 'muted', res.ok ? 'chat' : 'warning'));
+}
+// Subs, gifts and raids from anonymous chat (no dev app needed): each one fires in the supporter lane AND
+// puts names into the customer raffle, so supporters show up on the island as both sabotage and customers.
+function onNotice(n) {
+  const s = run?.shift;
+  if (n.notice === 'sub') { s?.enter(n.user, 3, n.color); ui.feed(n.months > 1 ? `${n.user} resubbed (${n.months} months)` : `${n.user} subscribed`, 'legend', 'twitch'); return onEventSub({ type: 'sub', user: n.user }); }
+  if (n.notice === 'gift') { if (n.recipient) s?.enter(n.recipient, 3); ui.feed(`${n.user} gifted ${n.recipient || 'a sub'}: drinks on them`, 'legend', 'twitch'); return onEventSub({ type: 'sub', user: n.user }); }
+  if (n.notice === 'giftbomb') { ui.feed(`${n.user} gifted ${n.count} subs`, 'legend', 'twitch'); return onEventSub({ type: 'hype', user: `${n.user} (${n.count} gifts)` }); }
+  if (n.notice === 'raid') { s?.enter(n.user, 9, n.color); ui.feed(`RAID: ${n.user} brought ${n.count}`, 'legend', 'twitch'); return onEventSub({ type: 'raid', user: n.user, amount: n.count }); }
 }
 function onEventSub(e) {
   if (e.type === 'sub' || (e.type === 'cheer' && e.amount >= 100)) return play('sniper', [e.user], { src: 'paid' });
@@ -182,7 +197,7 @@ function devShot(pos, look, fov = 50) {
 }
 if (params.has('dev')) window.lastSip = { run: () => run, world, shot: devShot, frame: (n = 1) => { for (let i = 0; i < n; i++) { run.render(1 / 60, i / 60); } },
   advance: (sec = 1) => { for (let i = 0; i < sec * 60; i++) loop(last + 1000 / 60); }, // run the REAL loop (sim + camera + render) while rAF is paused
-  simulate, play, start, director, fakeChat: () => { chat = { channel: 'dev', close() {} }; },
+  simulate, play, start, director, inject: raw => { const m = parseLine(raw); if (m) onChat(m); return m; }, connect, fakeChat: () => { chat = { channel: 'dev', close() {} }; },
   state: () => run && { state: run.state, t: run.t, water: run.glass.state.water, pos: { ...player.pos }, room: run.level.roomAt(player.pos.z).name },
   tp: (x, z) => player.reset({ x, z, yaw: 0 }), player: () => player,
   goto: key => { const r = run.level.rooms.find(x => x.key === key); player.reset({ x: 0, z: r.z0 - 1.2, yaw: 0 }); return r.name; },

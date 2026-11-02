@@ -55,9 +55,25 @@ export function emoteUrl(id, scale = '3.0') {
 }
 
 // Parse one IRC line into a chat message object, or null if it is not chat.
+// USERNOTICE = subs, resubs, gift subs, raids, announcements. They reach anonymous readers too (tags + commands caps).
+export function parseNotice(line) {
+  const m = /^@(\S+) :tmi\.twitch\.tv USERNOTICE #(\w+)(?: :(.*))?$/.exec(line.trim());
+  if (!m) return null;
+  const tags = parseTags(m[1]), id = tags['msg-id'] || '', p = k => tags['msg-param-' + k];
+  const kind = { sub: 'sub', resub: 'sub', subgift: 'gift', anonsubgift: 'gift', submysterygift: 'giftbomb', anonsubmysterygift: 'giftbomb', raid: 'raid', primepaidupgrade: 'sub', giftpaidupgrade: 'sub', announcement: 'announcement' }[id];
+  if (!kind) return null;
+  return {
+    notice: kind, channel: m[2], text: m[3] || '', login: tags.login || '',
+    user: (/^anon/.test(id) ? 'AN ANONYMOUS GIFTER' : tags['display-name'] || tags.login || 'SOMEONE').slice(0, 25),
+    recipient: p('recipient-display-name') || null, months: Number(p('cumulative-months') || p('months') || 0),
+    count: Number(p('mass-gift-count') || p('viewerCount') || 1), tier: p('sub-plan') || '',
+    color: /^#[0-9a-f]{6}$/i.test(tags.color || '') ? tags.color : null,
+  };
+}
+
 export function parseLine(line) {
   const m = /^(?:@(\S+) )?:(\w+)!\S+ PRIVMSG #(\w+) :(.*)$/.exec(line.trim());
-  if (!m) return null;
+  if (!m) return parseNotice(line);
   const tags = parseTags(m[1]);
   const text = m[4];
   const badges = tags.badges || '';
@@ -71,6 +87,9 @@ export function parseLine(line) {
     mod: tags.mod === '1' || badges.includes('broadcaster'),
     sub: /subscriber|founder/.test(badges),
     color: /^#[0-9a-f]{6}$/i.test(tags.color || '') ? tags.color : null,
+    vip: badges.includes('vip/') || tags.vip === '1',
+    first: tags['first-msg'] === '1', // first message ever in this channel
+    reward: tags['custom-reward-id'] || (tags['msg-id'] === 'highlighted-message' ? 'highlight' : null), // channel points (text rewards + highlights)
     emotes,
   };
 }
@@ -114,11 +133,17 @@ export class ChatDirector {
   }
   handle(msg) {
     const t = this.now();
+    if (msg.notice) return { kind: 'notice', ...msg }; // subs, gifts, raids: the supporter lane, never a vote
     this.seen ??= new Map(); this.seen.set(msg.login, t);
+    if (msg.reward) { // channel points: a text reward ("type sniper / barrel / drop...") or a highlighted message
+      const word = (msg.text.toLowerCase().match(/[a-z]+/g) || []).find(w => COMMANDS[w]?.kind === 'chaos');
+      return { kind: 'redeem', event: word ? COMMANDS[word].event : null, users: [msg.user], text: msg.text };
+    }
+    if (msg.first) { this.firsts ??= new Set(); if (!this.firsts.has(msg.login)) { this.firsts.add(msg.login); const v = this.vote(msg, msg.text); if (!v && !parseCommand(msg)) return { kind: 'first', user: msg.user, color: msg.color }; } }
     const voted = this.vote(msg, msg.text); if (voted) return voted;
     const cmd = parseCommand(msg);
     if (!cmd) return null;
-    if (cmd.kind === 'order') return { kind: 'order', user: msg.user, tickets: msg.sub ? 2 : 1 };
+    if (cmd.kind === 'order') return { kind: 'order', user: msg.user, tickets: msg.sub ? 3 : 2 };
     if (cmd.kind === 'frame') {
       const emote = msg.emotes[0];
       return emote ? { kind: 'frame', user: msg.user, image: emoteUrl(emote.id), title: emote.name, trusted: true }
