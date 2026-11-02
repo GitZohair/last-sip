@@ -1,3 +1,21 @@
+# VOICEOVER: talking points (say it your way)
+
+Don't read the lines word for word. Look at the point, then say it like you'd explain it to a friend on Discord. Footage gets cut to fit YOUR voice afterwards, so pauses, "so basically", even laughing are fine. Just hit the must-say bits.
+
+| Section | Must say (in any words) | Optional if it comes naturally |
+|---|---|---|
+| Title card | "LAST SIP" | "streamers compete, chat decides" |
+| What it is | It's like Rob the Nest from PE, for streamers. Grab drinks at the bar, carry them to customers. Most tips wins. | taller tower = more money but it wobbles |
+| Twitch (clip A) | No setup: just type your channel. Chat types a word → a plane flies over with **their message** and bombs whoever's winning. | the game quotes who did it, bottom left / chat can help me too (mayday) |
+| Busy channel (A2) | Works on a big channel: chatters become customers and rivals. | votes |
+| Scoreboard (F) | Most tips wins. | "and you get told who to blame" |
+| Codex | Long ideation with ChatGPT → Codex built the prototypes, Twitch chat, physics and core mechanics → Codex did final touches. Session ID is in the submission. | Claude Code helped with the arena and trailer |
+| Ending | Couldn't get Twitch dev access, so it needs zero setup. Free in the browser. | the exams + being sick, one sentence |
+
+Easiest way to record: watch your clip and talk over it live (like commentating a stream), 2-3 takes, keep the best. Don't worry about length: anything 2:30-2:55 total is fine.
+
+---
+
 # FINAL CUT (use this): timeline + voiceover for trailer v3
 
 | Time | Footage | Voiceover (say this) |
