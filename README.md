@@ -27,6 +27,7 @@ No accounts, keys or Twitch developer app are needed to play or to connect chat.
 | `!care` | a parachute crate of bombs lands next to the streamer |
 | `!swap` / `!chairs` / `!seagull` | swap towers with a rival / swap places / a seagull steals the top of the streamer's tower |
 | `1` `2` `3` | vote on the next event (a ballot opens every ~16 s) |
+| plain words: `kaboom`, `mayday`, `seagull`, `swapsies` | airstrike, care package, seagull, tower swap (no `!` needed) |
 | bits, subs, gift subs, raids, channel-point text rewards | bigger airstrikes (read from chat tags, no API token needed) |
 
 **Testing without going live:** connect the game to your own channel, then open `https://www.twitch.tv/popout/<your_channel>/chat` while signed in and type `!bomb hello`. A plane carrying "YOURNAME: HELLO" crosses the arena a few seconds later.
@@ -38,6 +39,6 @@ No accounts, keys or Twitch developer app are needed to play or to connect chat.
 - `src/game/`: Three.js r180 game. `main.js` (boot, chat routing), `run.js` (round, physics loop), `tray.js` (leaning drink tower), `bean.js` (procedural characters), `bots.js` (rival AI), `bombs.js` (bombs, CO2 gun, care packages), `cars.js` (cars + flyable plane), `planes.js` (banner planes), `twists.js` (blame game, seagull, swaps), `bubbles.js` (speech bubbles), `island.js` (arena), `arena.js` + `src/net.js` (live rooms over Supabase Realtime broadcast).
 - `src/twitch.js`: anonymous Twitch IRC client (tags + commands: PRIVMSG, bits, emotes, colours, first messages, channel-point text rewards, USERNOTICE subs/gifts/raids) and the chat director (commands, ballots, raffle, cooldowns).
 - Assets: Kenney CC0 kits in `public/assets/kenney/` (Pirate, Furniture, Food, Car), see `ASSET_CREDITS.md`. Sounds: Kenney CC0 impacts in `public/assets/sfx/`.
-- Built with OpenAI Codex and Claude Code. Design notes: `GAME_DESIGN.md`. Submission text: `DEVPOST_SUBMISSION.md`.
+- Built with OpenAI Codex (scaffold, Twitch chat client + director, movement/physics, core mechanics) and Claude Code (review, arena redesign, polish). Design notes: `GAME_DESIGN.md`. Submission text: `DEVPOST_SUBMISSION.md`.
 
 Dev helpers: add `?dev` to the URL for `window.lastSip` (`start()`, `inject(rawIrcLine)`, `planes().strike(name, msg)`, `advance(seconds)`...). `?seed=YYYY-MM-DD` plays a specific day.

@@ -22,7 +22,9 @@ Streamers already play party games *with* their chat watching. LAST SIP makes ch
 - **Chat runs the sky (Twitch):**
   - `!bomb` / `!airstrike`: a banner plane tows *that viewer's chat message* across the arena and bombs the leader. Airstrikes home in on whoever is winning, like a blue shell.
   - `!care`: a parachute crate of bombs lands next to the streamer.
-  - `!swap` swaps your tower with a rival's; `!chairs` teleports you into a rival's spot.
+  - `!swap` swaps your tower with a rival's; `!chairs` teleports you into a rival's spot; `!seagull` sends a gull to steal the top of the streamer's tower.
+  - Plain words work too, so anyone can join in without learning commands: **kaboom** (airstrike), **mayday** (care package), **seagull**, **swapsies**.
+  - The real chat is on screen in a Twitch-style STREAM CHAT panel (badges, name colours, emotes), and every message that changes the game gets a highlighted line ("XQCFAN99 called in an AIRSTRIKE"). Votes show as a Twitch-style poll.
   - Every ~16 s chat votes (type `1 2 3`) on the next event, and a winning voter is drawn as its face.
   - Bits, subs, gift subs, raids and channel-point rewards send bigger airstrikes.
   - Every chatter enters the customer raffle; their name appears over the customer in their Twitch name colour. Rival bots take chatters' names.
@@ -37,7 +39,7 @@ Streamers already play party games *with* their chat watching. LAST SIP makes ch
 - **Twitch, zero setup:** the public chat WebSocket with an anonymous login, so a streamer types their channel and plays. No app registration, tokens or bot account. From that one connection we read chat, emotes, name colours, first-time chatters, bits, channel-point text rewards and highlighted messages, plus subs, resubs, gift subs, gift bombs and raids (USERNOTICE). A chat director runs ballots, the raffle, cooldowns and big-chat gating, and skips known chat bots.
 - **Live rooms:** Supabase Realtime broadcast over a raw WebSocket. Each client is authoritative for itself and sends state at 12 Hz; hits are sent to the victim, who applies them. Bombs and CO2 shots are mirrored so everyone sees them.
 - **Tested against live Twitch chat:** connected to a busy live channel, real chatters became the customers and rival bots, chat votes opened, and banner planes towed real chat lines.
-- **Built with OpenAI Codex and Claude Code.**
+- **How we used Codex:** OpenAI Codex did the early heavy lifting. It scaffolded the Three.js + Vite game, built the anonymous Twitch chat client and the chat director (commands, ballots, raffle, cooldowns, sub/raid/bits parsing), the fixed-step movement and physics, and the core mechanics we kept iterating on. Claude Code was used later for review, the arena redesign and polish. The Codex session ID is in the submission form.
 
 ## Challenges
 - Making chaos readable on a compressed stream: chunky glasses, fixed-size name tags and speech bubbles, a hint over the nearest car, telegraphed drops (bombs fall from a visible plane), and no full-screen text.

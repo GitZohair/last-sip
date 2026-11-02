@@ -17,7 +17,7 @@ Judges: Twitch engineering (Aiden Wallis, Danny Chi), Twitch Developer Relations
 | 0:55-1:35 | Gameplay montage: load drinks, the tower wobbling; slam (spinning yeet); bomb throw; CO2 balloon pop; taxi ram; plane nosedive; seagull steals drinks; blame bubble "IT WAS BRAD" → "WHAT?! -$10" | "One job: carry drinks. Everything else wants you to drop them. And when you do, it's always somebody else's fault." |
 | 1:35-1:55 | CREATE ARENA → invite link → second browser joins; two streamers in one arena | "Streamers play together live in one arena. Your chat's airstrikes target the leader." |
 | 1:55-2:10 | Podium "You win the bar"; front page "TODAY · BOMB DAY", best + streak | "Top scorer wins. A new arena rule every day, the same for every streamer." |
-| 2:10-2:45 | Codex: the Codex thread building features (prompts, diffs, a test run). Show `/status` with the session ID | "Built with OpenAI Codex: [what Codex built: scaffolding, Twitch chat client, physics, arena networking...]. Session ID in the submission." |
+| 2:10-2:45 | Codex: the Codex thread building features (prompts, diffs, a test run). Show `/status` with the session ID | "Codex did the heavy lifting from the first commit: it scaffolded the game, wrote the Twitch chat client and the chat director, the movement and physics, and the core mechanics. We kept iterating on top of that. The session ID is in the submission." |
 | 2:45-3:00 | Wide shot with a banner plane; URL on screen | "Banner planes could even carry brand-safe sponsor slots. Play it free in the browser: lastsip-seven.vercel.app" |
 
 ## Must be true on screen
