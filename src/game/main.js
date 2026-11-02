@@ -174,7 +174,11 @@ async function start(asPour) {
     hurry: c => { sfx.beep(true); cues?.pop(`${c.user} IS LEAVING`, '#ffb020'); },
     loaded: n => { if (n % 5 === 0) cues?.pop(`TOWER x${n}`, n >= 15 ? '#ffd166' : '#c9a2ff', n >= 15); },
     served: (c, tip) => { if (twists?.T.happy > 0 && c.mood === 'happy') { run.shift.tips += tip; tip *= 2; } cues?.pop(c.mood === 'happy' ? `+$${tip}  ${c.want > 1 ? `${c.want} DRINKS FROM` : 'FROM'} A x${c.tower} TOWER  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true) },
-    walkout: (c, v) => { cues?.pop(`${c.user} WALKED OUT`, '#ff5c7a', true); if (v) ui.feed(`Walkout blamed on ${v}`, 'muted', 'warning'); },
+    walkout: (c, v) => { // an angry customer doesn't leave quietly: they lob a bomb at you on the way out
+      void v; bubbles?.say(() => ({ x: c.x, y: 0, z: c.z }), pickLine(['NO TIP. ONLY BOMB', 'ONE STAR', 'I WANT THE MANAGER', 'UNSUBSCRIBED']), { bg: '#ff4f6d', fg: '#fff', lift: 3.6 });
+      const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), T = Math.min(2.2, Math.max(.8, d / 12));
+      if (d < 40) bombs?.launch(c.x, 1.6, c.z, dx / T, 9 * T - 1.6 / T, dz / T, c.user, { fuse: T + .3 });
+    },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
     inflated: who => speak(who, 'POP GOES THE STREAMER', { bg: '#5dd6ff' }), popped: (pos, y) => bombs?.pop(pos, y),
     slammed: who => { sfx.say('hit'); speak(who, pickLine(LINES.slam)); },

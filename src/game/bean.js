@@ -13,8 +13,8 @@ const accent = c => { const k = 'a' + c; if (!mats.has(k)) mats.set(k, new THREE
 
 export async function createBean(scene, { color = '#ff7a2f' } = {}) {
   const root = new THREE.Group(), lean = new THREE.Group(), body = new THREE.Group(); root.add(lean); lean.add(body); scene.add(root);
-  const m = (geo, mat, x, y, z, parent = body) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
-  const torso = m(BODY, skin(color), 0, .86, 0);
+  const m = (geo, mat, x, y, z, parent = body, shadow = false) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = shadow; parent.add(o); return o; }; // only body + limbs cast shadows (cheap)
+  const torso = m(BODY, skin(color), 0, .86, 0, body, true);
   // face (forward is -z)
   const eyes = [-1, 1].map(s => { const e = m(EYE, white, s * .15, 1.12, -.33); const p = m(PUPIL, black, 0, 0, -.085, e); return { e, p }; });
   const smile = m(SMILE, black, 0, .9, -.385); smile.rotation.x = -.2;
@@ -23,7 +23,7 @@ export async function createBean(scene, { color = '#ff7a2f' } = {}) {
   for (const s of [-1, 1]) m(CUP, accent(color === '#a970ff' ? '#ff4f6d' : '#a970ff'), s * .42, 1.12, -.02);
   const mic = m(new THREE.CylinderGeometry(.012, .012, .26, 6).rotateX(Math.PI / 2), dark, .36, 1.0, -.16); mic.rotation.y = -.5;
   // limbs (pivot groups so they swing from the shoulder / hip)
-  const limb = (x, y, geo, len) => { const g = new THREE.Group(); g.position.set(x, y, 0); body.add(g); m(geo, skin(color), 0, -len, 0, g); return g; };
+  const limb = (x, y, geo, len) => { const g = new THREE.Group(); g.position.set(x, y, 0); body.add(g); m(geo, skin(color), 0, -len, 0, g, true); return g; };
   const armL = limb(-.43, .95, LIMB, .2), armR = limb(.43, .95, LIMB, .2), legL = limb(-.17, .3, FOOT, .16), legR = limb(.17, .3, FOOT, .16);
   armR.rotation.x = -1.25; // holds the tower out front
   const holder = new THREE.Group(); holder.position.set(.5, .98, -.42); lean.add(holder); holder.scale.setScalar(1.4);

@@ -1,10 +1,33 @@
-# PROGRESS — LAST SIP (Island v4)
+# PROGRESS: LAST SIP (Streamer Arena v5)
 
-Read this first. Update it at the end of every session. **Deadline:** Nov 2, 2026, 2:00 pm PST.
+Read this first. Update it at the end of every session. **Deadline:** Nov 2, 2026, 2:00 pm PST (22:00 UTC). Stop coding ~2 h before; record the demo video.
 **Live:** https://lastsip-seven.vercel.app · **Repo:** github.com/GitZohair/last-sip (private, `main`)
-**Run:** `npm run dev` → http://localhost:5173 (`?dev=1` exposes `window.lastSip`: `start(false)`, `tp(x,z)`, `player()`, `run()`, `simulate(text)`; `?seed=YYYY-MM-DD` picks a day)
-**Deploy:** `npx vercel deploy --prod --yes` · **Tests:** `npm test` · **Build:** `npm run build`
+**Run:** `npm run dev` → http://localhost:5173 (`?dev` exposes `window.lastSip`: `start()`, `run()`, `player()`, `bots()`, `bombs()`, `cars()`, `planes()`, `twists()`, `inject(rawIrcLine)`, `fakeChat()`, `advance(s)`)
+**Deploy (the user runs it):** `npx vercel deploy --prod --yes` · **Build:** `npm run build`
 
+## Current state (2026-11-02, v5 arena): see GAME_DESIGN.md (laws) and DEVPOST_SUBMISSION.md
+| Area | What | Where |
+|---|---|---|
+| Characters | Procedural glossy bean streamers (googly eyes, headset, waddle, frown when hit, balloon mode); old Kenney rig via `?char=` | `bean.js`, `character.js` |
+| Arena | Big plaza (bar in the middle), 4 islets 22 m out on wide drivable bridges, palms; sea = ring-out | `island.js` |
+| Tower | Leaning drink tower (spring lean amplified by height, topples past the tipping point, glasses fly) | `tray.js` |
+| Yeet | Slams / bombs / rams launch beans in spinning arcs; landing off the boards = ring-out | `run.js`, `bots.js` |
+| Bombs | Pickups on the boards (max 3), Q/click throw, 4 m blast, bots pick up and lob back, care-package crates | `bombs.js` |
+| CO2 gun | Canister pickups (3 shots), R/click; victim inflates, floats, POPS (confetti), respawns at the bar without drinks; bots shoot back | `bombs.js`, `bean.js` |
+| Vehicles | Taxi, police, go-kart (F, ram = launch), plane on the west islet (bank/climb/dive, Q bombs, 14 s fuel then nosedive, crash = blast) | `cars.js` |
+| Chat sky | Banner planes tow viewers' chat messages across the view; `!bomb` airstrike homes on the leader; `!care`, `!swap`, `!chairs`, `!seagull`; 1/2/3 votes; bits/subs/raids/redeems = 5-bomb strikes; house planes tow chat lines or joke banners | `planes.js`, `main.js`, `twitch.js` |
+| Humour | Blame game (speech bubbles, $10 blame tax), angry walkout customers lob bombs, seagull steals the top of your tower, slam taunts | `twists.js`, `bubbles.js` |
+| Daily | Seeded rule (Windy, Top Heavy, Calm, Moon Day, Bomb Day, Rush Hour, Big Glass); today's best + streak on the front page | `rules.js`, `main.js` |
+| Win | 90 s round, tips = score, podium (top scorer wins) | `ui.js` |
+| Sound | Silent by default: 4 soft impacts + explosion thud. Voice only from real clips in `public/vo/` + `index.json` (none shipped) | `sfx.js` |
+| Live rooms | Supabase Realtime broadcast; state 12 Hz, victim-side hits, mirrored bombs/CO2 | `arena.js`, `net.js` |
+
+## Open / next
+- The user records the demo video and deploys. Fill Repo / Video / Codex session ID in DEVPOST_SUBMISSION.md.
+- Ideas not built: 2v2 teams, kraken slap, weekly league.
+
+---
+## Older notes (v3/v4 island, kept for history)
 ## The game in one line
 One fixed island, one daily order: collect today's 3 fruits across the boardwalks and carry the drink to your stream hut while your chat shows up as **named snipers and barrel rollers** trying to knock you into the sea.
 
