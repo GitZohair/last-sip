@@ -6,6 +6,10 @@ export const RULES = {
   windy: { label: 'WINDY', tip: 'Gusts push you sideways on the boards' },
   heavy: { label: 'TOP HEAVY', tip: 'The tower sways more' },
   calm: { label: 'CALM SEAS', tip: 'A gentle day. Go tall.' },
+  moon: { label: 'MOON DAY', tip: 'Low gravity. Every slam is a launch.' },
+  bombs: { label: 'BOMB DAY', tip: 'Bombs everywhere. Pockets full.' },
+  rush: { label: 'RUSH HOUR', tip: 'The cars are twice as fast.' },
+  giant: { label: 'BIG GLASS DAY', tip: 'Huge glasses. Huge wobble.' },
 };
 export const todaysRule = seed => rng(seed + ':rule').pick(Object.keys(RULES));
 

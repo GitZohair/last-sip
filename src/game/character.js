@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createBean } from './bean.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
@@ -27,7 +28,8 @@ const SCALE = 1.75;
 let srcPromise = null;
 const NAMES = { ThumbsUp: 'emote-yes', Yes: 'emote-yes', No: 'emote-no', Death: 'die', Dance: 'emote-yes', Wave: 'emote-yes' };
 
-export async function createCharacter(scene) {
+export async function createCharacter(scene, opts) {
+  if (!new URLSearchParams(location.search).has('char')) return createBean(scene, opts); // smooth bean streamers (old blocky rig: ?char=...)
   srcPromise ??= new GLTFLoader().loadAsync(`/assets/kenney/mini-characters/${CHAR}.glb`);
   const gltf = await srcPromise;
   const model = skeletonClone(gltf.scene);

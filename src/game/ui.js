@@ -1,3 +1,4 @@
+import { TWIST_LABEL } from './twists.js';
 import { icon } from './icons.js';
 import { sfx } from './sfx.js';
 export const $ = id => document.getElementById(id);
@@ -8,7 +9,7 @@ const MOD_LABEL = { moon: 'MOON GRAVITY', tilt: 'TILTED', tiny: 'TINY', bigglass
 const MOD_ICON = { soft: 'pillows' };
 const REEL = ['bomb', 'banana', 'ducks', 'fridge', 'moon', 'disco', 'lava', 'cans', 'balls', 'gust'];
 let modsKey = '', trickT = 0, lastRoom = '';
-const LABEL = { sniper: 'SNIPER', barrel: 'BARREL', drop: 'SKY DROP', storm: 'SEA BREEZE', deck: 'MYSTERY', calm: 'LIFEBUOY' };
+const LABEL = { sniper: 'SNIPER', barrel: 'BARREL', drop: 'SKY DROP', storm: 'SEA BREEZE', deck: 'MYSTERY', calm: 'LIFEBUOY', ...TWIST_LABEL };
 
 export const ui = {
   bind({ start, practice, connect, mic, signIn, lock }) {
@@ -28,7 +29,7 @@ export const ui = {
       onOpen(b.dataset.tab);
     });
   },
-  todayOrder(ids, ING, rule) { $('today-order').innerHTML = ids.map(id => `<span style="--c:${ING[id].color}">${ING[id].label}</span>`).join('') + (rule ? `<span class="rule" title="${rule.tip}">${rule.label}</span>` : ''); },
+  todayOrder(_ids, _ING, rule, best = 0, streak = 0) { $('today-order').innerHTML = (rule ? `<span class="rule">TODAY · ${rule.label}</span><span class="tip">${rule.tip}</span>` : '') + (best ? `<span class="best">YOUR BEST TODAY $${best}</span>` : '') + (streak > 1 ? `<span class="best">${streak}-DAY STREAK</span>` : ''); },
   introBoard(board) {
     const rows = board?.pour || [], wanted = board?.wanted || [];
     $('intro-board').innerHTML = rows.length ? rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.channel)}</span><b>${r.score}</b></li>`).join('') : '<li><span>No pours yet today. Be first.</span></li>';

@@ -19,6 +19,9 @@ export const COMMANDS = {
   drop: { kind: 'chaos', event: 'drop', cost: 2 },
   toilet: { kind: 'chaos', event: 'drop', cost: 2 },
   barrel: { kind: 'chaos', event: 'barrel', cost: 1 },
+  airstrike: { kind: 'chaos', event: 'airstrike', cost: 2 }, plane: { kind: 'chaos', event: 'airstrike', cost: 2 }, nuke: { kind: 'chaos', event: 'airstrike', cost: 2 },
+  care: { kind: 'chaos', event: 'care', cost: 1 }, package: { kind: 'chaos', event: 'care', cost: 1 },
+  swap: { kind: 'chaos', event: 'swap', cost: 2 }, chairs: { kind: 'chaos', event: 'chairs', cost: 2 },
   // Help: needs several different viewers inside a short window.
   steady: { kind: 'help', event: 'calm', needed: 3 },
   shelter: { kind: 'help', event: 'calm', needed: 3 },

@@ -25,11 +25,11 @@ export function createPlayer(dom) {
     if (k.has('ArrowLeft')) { p.camYaw -= 2.2 * dt; p.lookIdle = 0; } if (k.has('ArrowRight')) { p.camYaw += 2.2 * dt; p.lookIdle = 0; }
     p.steady = k.has('ShiftLeft') || k.has('ShiftRight') || k.has('Mouse2');
     // move relative to the CAMERA; the body turns toward the movement (third-person, not tank controls)
-    const len = Math.hypot(f, s), speed = (p.steady ? 2.2 : 4.6) * speedMul;
+    const len = Math.hypot(f, s), speed = (p.steady ? 2.6 : 5.4) * speedMul;
     const cy = p.camYaw, mx = len ? (Math.sin(cy) * f + Math.cos(cy) * s) / len : 0, mz = len ? (-Math.cos(cy) * f + Math.sin(cy) * s) / len : 0;
     const tx = mx * speed + push.x, tz = mz * speed + push.z;
     // softer start than stop, much less grip in the air / on slippery stuff
-    const traction = (slip ? 1.4 : len ? 7 : 9) * (p.grounded ? 1 : .25);
+    const traction = (slip ? 1.4 : len ? 10 : 12) * (p.grounded ? 1 : .25);
     const ox = p.vel.x, oz = p.vel.z, oyaw = p.yaw;
     p.vel.x += (tx - p.vel.x) * Math.min(1, traction * dt); p.vel.z += (tz - p.vel.z) * Math.min(1, traction * dt);
     if (len && !slip) { const want = Math.atan2(mx, -mz); let d = want - p.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); p.yaw += d * Math.min(1, (p.steady ? 7 : 11) * dt); }

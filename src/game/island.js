@@ -6,9 +6,12 @@ import { bake } from './bake.js';
 // THE ARENA: one small island you can see all of. The BAR sits in the middle of the plaza (everyone fights over
 // it), four tiny customer islets hang off narrow boardwalks. Off the boards is open sea: RING-OUT.
 // Deliberately few models (sand patches, dock tiles, two palms, the bar) so it loads fast on a laptop iGPU.
-export const PADS = { plaza: [0, 0], north: [0, -12], south: [0, 12], east: [12, 0], west: [-12, 0] };
+export const D = 22, PLAZA_S = 2.4, ISLE_S = 1.4; // big plaza in the middle, four big islets out on wide drivable bridges
+export const PADS = { plaza: [0, 0], north: [0, -D], south: [0, D], east: [D, 0], west: [-D, 0] };
+export const SPOTS = { north: [0, -D - .8], south: [0, D + .8], east: [D + .8, 0], west: [-D - .8, 0] }; // customer stands
 export const TOWERS = [], ISLE = { x: 999, z: 999, r: 0 }, BOAT = {}; // (kept for older imports)
-const RUNS = [[0, -4, 0, -9.6], [0, 4, 0, 9.6], [5.2, 0, 9.4, 0], [-5.2, 0, -9.4, 0]]; // narrow bridges: slam zones
+const PZ = 2.5 * PLAZA_S - .3, PX = 3.2 * PLAZA_S - .3, IZ = D - 2.5 * ISLE_S + .3, IX = D - 3.2 * ISLE_S + .3;
+const RUNS = [[0, -PZ, 0, -IZ], [0, PZ, 0, IZ], [PX, 0, IX, 0], [-PX, 0, -IX, 0]]; // wide bridges: slam zones, car lanes
 
 const moundGeo = new THREE.CylinderGeometry(1, 1.3, 1, 12, 1, true).translate(0, -.5, 0);
 const foamGeo = new THREE.RingGeometry(1, 1.14, 28).rotateX(-Math.PI / 2), foamMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .5, depthWrite: false });
@@ -27,7 +30,7 @@ export async function buildIsland(scene) {
   const colliders = [], jobs = [], statics = new THREE.Group(); scene.add(statics);
   const put = (kit, name, x, y, z, rot = 0, s = 1) => { const p = model(kit, name).then(m => { m.scale.multiplyScalar(s); m.position.set(x, y, z); m.rotation.y = rot; statics.add(m); return m; }); jobs.push(p); return p; };
   for (const [key, [x, z]] of Object.entries(PADS)) {
-    const s = key === 'plaza' ? 1.6 : 1;
+    const s = key === 'plaza' ? PLAZA_S : ISLE_S;
     put('pirate', key === 'plaza' ? 'patch-sand' : 'patch-sand-foliage', x, -.25 * s, z, 0, s).then(m => mound(m, s, statics));
     colliders.push({ minX: x - 3.2 * s, maxX: x + 3.2 * s, minZ: z - 2.5 * s, maxZ: z + 2.5 * s, top: 0, beach: true });
   }
@@ -35,20 +38,21 @@ export async function buildIsland(scene) {
     const alongZ = x0 === x1, len = Math.abs(alongZ ? z1 - z0 : x1 - x0), n = Math.max(1, Math.round(len / 2.2));
     for (let i = 0; i < n; i++) {
       const k = (i + .5) / n, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
-      put('pirate', 'platform', x, -.23, z, alongZ ? 0 : Math.PI / 2).then(m => { m.scale.x *= .7; });
-      for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * .85 : x, -1.1, alongZ ? z : z + side * .85); statics.add(p); }
+      put('pirate', 'platform', x, -.23, z, alongZ ? 0 : Math.PI / 2).then(m => { m.scale.x *= 1.3; });
+      for (const side of [-1, 1]) { const p = new THREE.Mesh(postGeo, postMat); p.position.set(alongZ ? x + side * 1.55 : x, -1.1, alongZ ? z : z + side * 1.55); statics.add(p); }
     }
-    const hw = .85;
+    const hw = 1.55;
     colliders.push(alongZ ? { minX: x0 - hw, maxX: x0 + hw, minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1), top: 0 } : { minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: z0 - hw, maxZ: z0 + hw, top: 0 });
   }
-  put('pirate', 'palm-detailed-bend', 4.2, 0, -3.2, 1, 1); put('pirate', 'palm-bend', -4.4, 0, 3.4, 4, .9);
-  buildSea(scene, 60);
+  put('pirate', 'palm-detailed-bend', 6.2, 0, -4.4, 1, 1.2); put('pirate', 'palm-bend', -6.4, 0, 4.4, 4, 1.1);
+  for (const [k, [x, z]] of Object.entries(PADS)) if (k !== 'plaza') put('pirate', 'palm-straight', x + (x ? Math.sign(x) * 2.6 : 3), 0, z + (z ? Math.sign(z) * 1.6 : -2), x + z, 1);
+  buildSea(scene, 90);
   await Promise.all(jobs);
   bake(statics);
   const rooms = [{ key: 'arena', name: 'THE ARENA', z0: 99, z1: -99, w: 40, len: 60, hazards: [], slots: [] }];
   return {
     rooms, doors: [], walks: [], colliders, exits: [], hazards: [], slots: [], towers: [], boat: null, ground: -12, open: true,
-    finish: { x: 0, z: -99, r: 0 }, spawn: { x: 1.8, z: 2.4, yaw: 0 }, length: 60,
+    finish: { x: 0, z: -99, r: 0 }, spawn: { x: 2.6, z: 3.4, yaw: 0 }, length: 90,
     roomAt: () => rooms[0],
   };
 }

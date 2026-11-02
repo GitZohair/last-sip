@@ -236,3 +236,23 @@ body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opac
 #lobby b { font: 900 1.1rem system-ui; letter-spacing: .08em; } #lobby-code { color: #ff5c39; }
 #lobby-players { display: flex; flex-wrap: wrap; gap: .4rem; } #lobby-players span { background: var(--c); color: #fff; font: 800 .8rem system-ui; padding: .3rem .6rem; border-radius: 99px; }
 #lobby small { opacity: .7; }
+
+/* PLOT TWIST sticker: tilted card that slaps onto the screen */
+#twist { position: absolute; left: 50%; top: 16%; transform: translate(-50%, -30px) rotate(-4deg) scale(.6); opacity: 0; pointer-events: none; z-index: 30;
+  background: #1b1530; color: #fff; border: 4px solid var(--c, #ff4f6d); border-radius: 18px; padding: .55em 1.2em .7em; text-align: center; box-shadow: 0 8px 0 var(--c, #ff4f6d), 0 18px 40px #0007; max-width: min(86vw, 640px); }
+#twist small { display: block; font: 900 .8rem/1 system-ui; letter-spacing: .25em; color: var(--c, #ff4f6d); margin-bottom: .3em; }
+#twist b { display: block; font: 900 clamp(2rem, 5vw, 3.4rem)/1 system-ui; letter-spacing: -.02em; }
+#twist span { display: block; font: 700 1.05rem/1.25 system-ui; opacity: .9; margin-top: .35em; }
+#twist.on { animation: twistIn .45s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+#twist.off { animation: twistOut .3s ease-in forwards; }
+@keyframes twistIn { from { opacity: 0; transform: translate(-50%, -60px) rotate(8deg) scale(1.6); } to { opacity: 1; transform: translate(-50%, 0) rotate(-3deg) scale(1); } }
+@keyframes twistOut { from { opacity: 1; transform: translate(-50%, 0) rotate(-3deg) scale(1); } to { opacity: 0; transform: translate(-50%, -20px) rotate(-3deg) scale(.8); } }
+/* bombs in hand: little round icons bottom-centre */
+#bombs { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; pointer-events: none; }
+#bombs i { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #5a5266, #1b1530 70%); box-shadow: 0 0 0 3px #ffd16688, 0 4px 10px #0007; position: relative; }
+#bombs i::after { content: ''; position: absolute; left: 11px; top: -7px; width: 4px; height: 8px; background: #c58b3e; border-radius: 2px; box-shadow: 0 -4px 6px #ffd166; }
+#bombs span { margin-left: 6px; font: 900 .85rem system-ui; color: #fff; background: #1b1530cc; padding: .2em .5em; border-radius: 6px; }
+#today-order { display: flex; flex-wrap: wrap; gap: .5em; margin-top: 1em; align-items: center; }
+#today-order .rule { background: #18332e; color: #fff6e6; font: 900 .85rem system-ui; padding: .35em .8em; border-radius: 8px; letter-spacing: .06em; }
+#today-order .tip { font: 600 .9rem system-ui; opacity: .8; }
+#today-order .best { font: 800 .8rem system-ui; padding: .3em .7em; border-radius: 8px; background: #ff6a4d22; }

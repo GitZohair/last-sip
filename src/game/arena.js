@@ -13,7 +13,7 @@ export function createArena(scene, { net, me }) {
   const puppet = () => ({ pos: { x: 0, z: 0 }, y: 0, yaw: 0, vel: { x: 0, z: 0 }, vy: 0, grounded: true, steady: false });
   async function add(id, s) {
     const e = { s, p: puppet(), seen: performance.now(), loading: true }; peers.set(id, e);
-    e.avatar = await createCharacter(scene); e.tray = createTray(e.avatar.holder);
+    e.avatar = await createCharacter(scene, { color: s.color }); e.tray = createTray(e.avatar.holder);
     e.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(s.name.slice(0, 16).toUpperCase(), { w: 512, h: 96, bg: s.color || '#a970ff', font: 'bold 56px system-ui' }), depthTest: false }));
     e.tag.scale.set(2.6, .5, 1); e.tag.renderOrder = 11; scene.add(e.tag); e.loading = false;
   }
@@ -24,6 +24,7 @@ export function createArena(scene, { net, me }) {
       if (!d || d.id === me.id) return;
       if (ev === 'state') { const e = peers.get(d.id); if (!e) add(d.id, d); else { e.s = d; e.seen = performance.now(); } return; }
       if (ev === 'leave') return remove(d.id);
+      if (ev === 'bomb') return handlers.bomb?.(d);
       if (d.to !== me.id) return; // hits and attacks are addressed
       if (ev === 'hit') handlers.hit?.(d);
       if (ev === 'attack') handlers.attack?.(d);

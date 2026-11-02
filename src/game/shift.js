@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { model, textTexture } from './assets.js';
-import { PADS, ISLE } from './island.js';
+import { PADS, ISLE, SPOTS } from './island.js';
 import { INGREDIENTS, todaysOrder } from './recipe.js';
 import { rng } from './rng.js';
 import { viewer, preloadCrew } from './actors.js';
@@ -10,7 +10,7 @@ import { viewer, preloadCrew } from './actors.js';
 // chat only supplies the NAMES: `!order` puts a viewer in the raffle, each new slot draws one (subs get 2 tickets).
 export const PATIENCE = 48, MAX_WAITING = 4;
 const TOURISTS = ['SUNBURNT STEVE', 'AUNTIE MO', 'DJ SANDY', 'GRANDPA REEF', 'COCONUT CARL', 'LIFEGUARD LOU', 'TINY TINA', 'CAPTAIN GULL', 'FLIPFLOP FRAN', 'SANDCASTLE SAM'];
-const SPOTS = { north: [0, -12.6], south: [0, 12.6], east: [12.6, 0], west: [-12.6, 0] }, FAR = {}; void ISLE; // one customer per islet
+const FAR = {}; void ISLE; // one customer per islet
 export const BAR = { x: 0, z: 0, r: 1.9 }; // dead centre: everyone fights over the bar
 
 const light = hex => { if (!hex) return false; const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) > 160; }; // readable tag text on any chat colour

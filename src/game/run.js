@@ -34,7 +34,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const props = createProps(scene, level.colliders);
   const deco = { goldenDuck: { visible: false, position: { x: 0, z: 0 }, rotation: { y: 0 } } }; void dress; // arena: no clutter
   personalize(scene, profile);
-  const avatar = await createCharacter(scene);
+  const avatar = await createCharacter(scene, { color: '#a970ff' });
   const glass = createTray(avatar.holder); // the tray of drinks (same interface as one glass)
   const shift = await createShift(scene, seed, glass);
   const mods = createMods();
@@ -74,6 +74,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const conductor = createConductor(); // every threat asks the conductor first (budget, spacing, breathers)
   const worn = lifebuoy(); worn.scale.setScalar(.85); worn.position.y = .62; worn.visible = false; avatar.root.add(worn); // lifeguard's gift
   player.reset(level.spawn);
+  if (rule === 'moon') mods.set('moon', 9999); if (rule === 'giant') mods.set('bigglass', 9999); // all-day rules
   const run = { conductor, drops, shakeT: 0, rule, wind, guide, actors, shift, hazards, style, sprintClean: 0, legendT: -9, level, glass, chaos, gallery, props, mods, ledger, avatar, t: 0, state: 'play', duck: false, lastSip: false, saves: 0, catchWin: 0, lastChat: -9, houseNext: 10, roomLoss: Object.fromEntries(level.rooms.map(r => [r.key, 0])) };
   // Pre-warm: compile every shader chat can spawn later (sniper ball, laser, name tags, puddles, fridge,
   // flashes) during the loading screen, so the first snipe of a run doesn't hitch.
@@ -139,7 +140,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
     // RING-OUT: the tower goes in the sea with you, and you pop back up by the bar. Whoever shoved you gets the credit.
-    run.falls++; shift.streak = 0; const who = run.t - (run.lastHitT ?? -9) < 3 ? run.lastHitBy : null;
+    run.onFall?.(); run.falls++; shift.streak = 0; const who = run.t - (run.lastHitT ?? -9) < 3 ? run.lastHitBy : null;
     glass.collapse(); const a = Math.random() * Math.PI * 2;
     player.reset({ x: Math.cos(a) * 3, z: Math.sin(a) * 2.2, yaw: player.yaw }); player.grounded = true; avatar.knock('flat', .6);
     ledger.blame([who || 'THE SEA'], 'RING-OUT', 3, run.t); hooks.ringout?.(who); if (run.falls === 1) hooks.clip?.('ring out');
@@ -246,6 +247,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
     if (run.slip) { const s = run.slip; s.t -= dt; player.yaw += s.dir * 1.8 * Math.max(0, s.t / .55) * dt; slip = true; if (s.t <= 0) run.slip = null; } // eased spin, low traction
     if (boatStep(dt)) { /* rowing: the boat carries you */ }
+    else if (run.drive?.(dt)) { if (player.y < SWIM_Y) fall(room); } // driving a car (cars.js moves the player)
     else if (run.climb) { // short climb-out tween onto the beach / ramp top
       const c = run.climb; c.t += dt / .45; const k = Math.min(1, c.t);
       player.pos.x = c.from.x + (c.to.x - c.from.x) * k; player.pos.z = c.from.z + (c.to.z - c.from.z) * k; player.y = SWIM_Y + (0 - SWIM_Y) * Math.sin(k * Math.PI / 2) + Math.sin(k * Math.PI) * .3;
@@ -253,6 +255,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (k >= 1) { run.climb = null; player.y = 0; player.grounded = true; sfx.thud(.5); hooks.climbed?.(); }
     } else {
       player.step(dt, { colliders: level.colliders, push: run.swimming ? { x: push.x * .3, z: push.z * .3 } : push, slip, gravity: mods.gravity, speedMul: avatar.down ? 0 : mods.speed * (run.swimming ? .45 : 1), mirror: mods.mirror, base: run.swimming ? SWIM_Y : pit || level.open ? -12 : 0, noJump: run.swimming || avatar.down });
+      if (player.grounded) player.spin = 0;
       if (player.grounded && !pit && !run.swimming && player.y > -.05) { run.safe.x = player.pos.x; run.safe.z = player.pos.z; }
       if (!run.swimming && player.y < SWIM_Y) fall(room);
       if (run.swimming) {
@@ -306,8 +309,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     deco.goldenDuck.rotation.y += dt * 2;
     if (!run.lastSip && glass.count > 0 && glass.state.water < .15) { run.lastSip = true; hooks.lastSip?.(); }
     // THE HOUSE: seeded daily script keeps pressure on when chat is quiet; faster in later rooms.
-    run.houseNext -= dt;
-    if (run.houseNext <= 0) {
+    // (the old auto-spawned barrels/snipers/fridges are gone: PLOT TWISTS in twists.js keep the pressure on now)
+    if (false) {
       const ri = level.rooms.indexOf(room); run.houseNext = 7 + houseRng() * 3 - Math.min(2, run.t / 45); // calm opening, one house event every 7-10 s; void ri
       if (run.falls >= 2 && !run.buoy && !actors.list.some(a => a.kind === 'lifeguard') && houseRng() < .3) actors.spawn('lifeguard', 'LIFEGUARD', player); // mercy
       else if (run.t - run.lastChat > 3 && houseRng() < .2) run.summon('drop', 'THE HOUSE', 'house');
@@ -337,8 +340,10 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // somebody slammed ME (arena): shove, knock down, big kick to the tower, and they get the blame
     run.applyHit = d => {
       if (run.state !== 'play') return;
-      player.vel.x += d.dir.x * d.power; player.vel.z += d.dir.z * d.power; glass.kick(d.dir.x * 3 + (Math.random() - .5), d.dir.z * 3 + (Math.random() - .5));
-      run.lastHitBy = d.by; run.lastHitT = run.t; run.hitStop = .08; run.shakeT = .35; sfx.hit(); avatar.knock('fall', .7); hooks.slammed?.(d.by);
+      // YEET: you get launched in a spinning arc (your tower comes along for the ride)
+      player.vel.x += d.dir.x * d.power; player.vel.z += d.dir.z * d.power; player.vy = 3 + d.power * .3 + (d.up || 0); player.grounded = false; player.spin = (Math.random() > .5 ? 1 : -1) * (8 + d.power);
+      glass.kick(d.dir.x * 3 + (Math.random() - .5), d.dir.z * 3 + (Math.random() - .5));
+      run.lastHitBy = d.by; run.lastHitT = run.t; run.hitStop = .08; run.shakeT = .35; sfx.hit(); hooks.slammed?.(d.by);
     };
     // THE SHIFT: load glasses at the bar, serve the customers on the islets. Tips are the score.
     shift.update(run.t, dt, player, {

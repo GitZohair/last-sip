@@ -15,7 +15,7 @@ function shared(kit, m) {
   }
   return mats.get(key);
 }
-const KITS = { furniture: ['/assets/kenney/furniture-kit/', 2], food: ['/assets/kenney/food-kit/', 1], pirate: ['/assets/kenney/pirate-kit/', 1] };
+const KITS = { furniture: ['/assets/kenney/furniture-kit/', 2], food: ['/assets/kenney/food-kit/', 1], pirate: ['/assets/kenney/pirate-kit/', 1], car: ['/assets/kenney/car-kit/', 1] };
 
 export function preload(list) {
   return Promise.all(list.map(([kit, name]) => load(kit, name)));
