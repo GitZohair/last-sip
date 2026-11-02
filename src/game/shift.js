@@ -10,8 +10,8 @@ import { viewer, preloadCrew } from './actors.js';
 // chat only supplies the NAMES: `!order` puts a viewer in the raffle, each new slot draws one (subs get 2 tickets).
 export const PATIENCE = 48, MAX_WAITING = 4;
 const TOURISTS = ['SUNBURNT STEVE', 'AUNTIE MO', 'DJ SANDY', 'GRANDPA REEF', 'COCONUT CARL', 'LIFEGUARD LOU', 'TINY TINA', 'CAPTAIN GULL', 'FLIPFLOP FRAN', 'SANDCASTLE SAM'];
-const SPOTS = { coconut: [-14, -16], lemon: [14, -16], pineapple: [-14, -48], strawberry: [14, -48], honey: [-14, -64], watermelon: [14, -64], beach: [2.6, -1], hut: [-2.6, -77] }, FAR = { castaway: [ISLE.x, ISLE.z] }; // the castaway islet: boat only
-export const BAR = { x: -2.6, z: -32, r: 2.1 };
+const SPOTS = { north: [0, -12.6], south: [0, 12.6], east: [12.6, 0], west: [-12.6, 0] }, FAR = {}; void ISLE; // one customer per islet
+export const BAR = { x: 0, z: 0, r: 1.9 }; // dead centre: everyone fights over the bar
 
 const light = hex => { if (!hex) return false; const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) > 160; }; // readable tag text on any chat colour
 function bubbleCanvas() { const c = document.createElement('canvas'); c.width = c.height = 128; return c; }
@@ -32,8 +32,8 @@ export async function createShift(scene, seed, tray) {
   const r = rng(seed + ':shift'), flavours = todaysOrder(seed); // today's menu: 3 drinks, same as the intro shows
   // seeded timeline: first customers quickly, then one every 5-8 s
   // seeded timeline: two quick openers, then one every 8-12 s; two of them are castaways on the far islet
-  const names = r.shuffle(TOURISTS), schedule = [], farAt = [3, 6];
-  for (let t = 1.5, i = 0; t < 80; t += i < 2 ? 6 : r.range(8, 12), i++) schedule.push({ at: t, spots: farAt.includes(i) ? ['castaway'] : i === 0 ? ['lemon', 'coconut'] : r.shuffle(Object.keys(SPOTS)), flavour: r.pick(flavours), tourist: names[i % names.length], want: farAt.includes(i) ? 8 + i : i < 2 ? i + 1 : Math.min(7, 2 + Math.floor(r.range(0, 1 + i * .6))) }); // a table wants N drinks; the castaway party wants a LOT
+  const names = r.shuffle(TOURISTS), schedule = [], farAt = [];
+  for (let t = 1.5, i = 0; t < 80; t += i < 2 ? 6 : r.range(8, 12), i++) schedule.push({ at: t, spots: farAt.includes(i) ? ['castaway'] : i === 0 ? ['north', 'east'] : r.shuffle(Object.keys(SPOTS)), flavour: r.pick(flavours), tourist: names[i % names.length], want: farAt.includes(i) ? 8 + i : i < 2 ? i + 1 : Math.min(7, 2 + Math.floor(r.range(0, 1 + i * .6))) }); // a table wants N drinks; the castaway party wants a LOT
   // the bar: Kenney counter + stools + pennant, a purple floor ring and a BAR sign
   const bar = new THREE.Group(); bar.position.set(BAR.x - .9, 0, BAR.z); scene.add(bar);
   for (const [n, z] of [['kitchenBar', -.9], ['kitchenBar', 0], ['kitchenBarEnd', .9]]) { const m = await model('furniture', n); m.position.set(0, 0, z); m.rotation.y = Math.PI / 2; bar.add(m); }

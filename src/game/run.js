@@ -32,7 +32,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const scene = world.reset();
   const level = await buildIsland(scene);
   const props = createProps(scene, level.colliders);
-  const deco = await dress(scene, level, props, rng(seed + ':clutter'));
+  const deco = { goldenDuck: { visible: false, position: { x: 0, z: 0 }, rotation: { y: 0 } } }; void dress; // arena: no clutter
   personalize(scene, profile);
   const avatar = await createCharacter(scene);
   const glass = createTray(avatar.holder); // the tray of drinks (same interface as one glass)
@@ -81,7 +81,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   {
     const temp = new THREE.Group(), geo = new THREE.SphereGeometry(.1, 6, 4); scene.add(temp);
     temp.add(new THREE.Mesh(geo, ballMat), new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true })), new THREE.Mesh(geo, new THREE.MeshStandardMaterial()), await model('furniture', 'kitchenFridge'));
-    await actors.spawn('sniper', 'warm', player); await actors.spawn('barrel', 'warm', player, { spot: { x: 0, z: 0, dir: { x: 0, z: 1 } } });
+    await actors.spawn('barrel', 'warm', player, { spot: { x: 0, z: 0, dir: { x: 0, z: 1 } } });
     for (const a of actors.list) if (a.line) a.line.visible = true;
     chaos.puddle(0, 999, .1, .01);
     hazards.vacuum.mesh.visible = true; // compile its shaders now even though it's hidden until it wakes
@@ -138,10 +138,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (run.buoy) { // a viewer's lifebuoy: free fall, straight back on the boards
       hooks.rescued?.(run.buoy); run.buoy = null; worn.visible = false; player.reset({ x: run.safe.x, z: run.safe.z, yaw: player.yaw }); return;
     }
-    run.falls++; shift.streak = 0; run.swimming = true; run.breath = 1; player.swimming = true; player.vel.x *= .3; player.vel.z *= .3;
-    run.salt = Math.min(1, run.salt + .35); glass.salt(.35); // every drink on the tray is now part seawater avatar.emote('No', .8);
-    ledger.blame(['THE SEA'], 'SALT', 2, run.t); style.combo = 1; hooks.fell?.(run.falls);
-    if (run.falls === 1) hooks.clip?.('fell in');
+    // RING-OUT: the tower goes in the sea with you, and you pop back up by the bar. Whoever shoved you gets the credit.
+    run.falls++; shift.streak = 0; const who = run.t - (run.lastHitT ?? -9) < 3 ? run.lastHitBy : null;
+    glass.collapse(); const a = Math.random() * Math.PI * 2;
+    player.reset({ x: Math.cos(a) * 3, z: Math.sin(a) * 2.2, yaw: player.yaw }); player.grounded = true; avatar.knock('flat', .6);
+    ledger.blame([who || 'THE SEA'], 'RING-OUT', 3, run.t); hooks.ringout?.(who); if (run.falls === 1) hooks.clip?.('ring out');
   };
   // DROWNING: you only have ~8 s of breath in the water. Run out and the sea takes the whole tray;
   // you wash up at the bar (and the boat drifts back to its dock).
@@ -154,8 +155,9 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   };
   // THE ROWBOAT: walk to the end of the plaza dock (or the islet shore) and it rows you across. The tray rocks on the waves.
   const boat = level.boat; run.ride = null; let boatArmed = true;
-  function sendBoat(at) { boat.at = at; const s = BOAT[at]; boat.mesh.position.set(s.x, -1.55, s.z); boat.mesh.rotation.y = s.yaw; }
+  function sendBoat(at) { if (!boat) return; boat.at = at; const s = BOAT[at]; boat.mesh.position.set(s.x, -1.55, s.z); boat.mesh.rotation.y = s.yaw; }
   function boatStep(dt) {
+    if (!boat) return false;
     if (run.ride) {
       const r = run.ride; r.t += dt / 3.4; const k = Math.min(1, r.t), e = k * k * (3 - 2 * k), A = BOAT[r.from], B = BOAT[r.to];
       const x = A.x + (B.x - A.x) * e, z = A.z + (B.z - A.z) * e + Math.sin(k * Math.PI) * 2.5, bob = Math.sin(run.t * 2.6) * .06;
@@ -325,6 +327,19 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (hazards.vacuum.distance < 4.5 && !hazards.vacuum.stunned) { sfx.scare(); hazards.vacuum.stun(2.5); trick('scare'); hooks.scream?.('scare'); }
       else { player.vel.x += Math.sin(player.yaw) * 6; player.vel.z -= Math.cos(player.yaw) * 6; glass.kick((Math.random() - .5) * 2, 2); hooks.scream?.('dash'); }
     }
+    // SLAM (E): a short body-slam dash. In the arena it shoves rivals (their tower takes the hit); the sudden
+    // lunge also whips YOUR tower backwards, so slamming with a tall stack is a gamble.
+    run.slamCd = Math.max(0, (run.slamCd || 0) - dt); run.slamT = Math.max(0, (run.slamT || 0) - dt);
+    if (player.keys.has('KeyE') && run.slamCd <= 0 && player.grounded && !run.swimming && !run.ride && !avatar.down) {
+      run.slamCd = 1.1; run.slamT = .3; run.slamHit = new Set(); const fx = Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+      player.vel.x += fx * 9; player.vel.z += fz * 9; sfx.slam?.(); hooks.slam?.();
+    }
+    // somebody slammed ME (arena): shove, knock down, big kick to the tower, and they get the blame
+    run.applyHit = d => {
+      if (run.state !== 'play') return;
+      player.vel.x += d.dir.x * d.power; player.vel.z += d.dir.z * d.power; glass.kick(d.dir.x * 3 + (Math.random() - .5), d.dir.z * 3 + (Math.random() - .5));
+      run.lastHitBy = d.by; run.lastHitT = run.t; run.hitStop = .08; run.shakeT = .35; sfx.hit(); avatar.knock('fall', .7); hooks.slammed?.(d.by);
+    };
     // THE SHIFT: load glasses at the bar, serve the customers on the islets. Tips are the score.
     shift.update(run.t, dt, player, {
       loaded: n => { run.salt = 0; sfx.stack(n); hooks.loaded?.(n); },

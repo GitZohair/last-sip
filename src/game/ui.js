@@ -110,6 +110,11 @@ export const ui = {
   },
   catchPrompt(on) { $('catch').classList.toggle('on', on); },
   lastSip() { document.body.classList.add('lastsip'); setTimeout(() => document.body.classList.remove('lastsip'), 2500); },
+  standings(rows) { // arena: live table, top right
+    let el = $('standings'); if (!el) { el = document.createElement('div'); el.id = 'standings'; $('hud').appendChild(el); }
+    const key = rows.map(r => r.name + r.tips + r.n).join('|'); if (el.dataset.k === key) return; el.dataset.k = key;
+    el.innerHTML = rows.slice(0, 6).map((r, i) => `<div class="${r.me ? 'me' : ''}"><b>${i + 1}</b><i style="background:${r.color}"></i><span>${esc(r.name).slice(0, 14)}</span><em>$${r.tips}</em><small>${r.n ? '▮'.repeat(Math.min(10, r.n)) : ''}</small></div>`).join('');
+  },
   hud({ water, danger, time, room, hazard, steady, calm, mods, progress, vacuum = 99, style, voice, salt = 0, tips = 0, tray = 0, served = 0, streak = 0 }) {
     const now = performance.now(); if (now - hudLast < 80) return; hudLast = now;
     set('water', Math.round(water * 100)); const sl = Math.round(salt * 100); if ($('salt').dataset.v !== String(sl)) { $('salt').dataset.v = sl; $('salt').textContent = sl ? `SALT ${sl}%` : ''; } $('water-fill').style.transform = `scaleY(${water})`;

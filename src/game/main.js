@@ -14,6 +14,8 @@ import { todaysOrder, INGREDIENTS } from './recipe.js';
 import { buildIsland } from './island.js';
 import { RULES, todaysRule } from './rules.js';
 import { createHudCues } from './hudcues.js';
+import { createArena } from './arena.js';
+import { joinRoom, newRoomCode } from '../net.js';
 
 const params = new URLSearchParams(location.search);
 // Pointer lock can be refused (embedded browsers, no user gesture): ignore, drag-free play still works with arrows.
@@ -25,10 +27,24 @@ const chase = createChaseCam(world.camera);
 const director = new ChatDirector();
 const voice = createVoice();
 const lastEmote = new Map(); // viewer -> their last emote url (for MOST WANTED posters)
+// ---------- STREAMER ARENA: ?room=CODE puts everyone with that link on the same island
+const ME = { id: Math.random().toString(36).slice(2, 10), name: localStorage.getItem('lastsip:channel') || 'GUEST' + Math.floor(100 + Math.random() * 900), color: ['#ff4f6d', '#5dd39e', '#ffb020', '#4fc3ff', '#c77dff', '#ff8c42'][Math.floor(Math.random() * 6)] };
+let room = (params.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8), net = null, arena = null;
+function openRoom(code) {
+  room = code; net?.close(); window.history.replaceState(null, '', `?room=${code}${params.has('dev') ? '&dev' : ''}`);
+  net = joinRoom(code, { onStatus: st => ui.roomStatus?.(code, st), onMessage: (ev, d) => {
+    if (ev === 'start' && (!run || run.state !== 'play')) { if (d.id !== ME.id) { asRemote = true; start(false).finally(() => { asRemote = false; }); } return; } // somebody started the round: everyone in the room goes
+    arena?.onMessage(ev, d, {
+      hit: d => run?.applyHit?.(d),
+      attack: d => { if (run?.summon(d.kind, `${d.from} CHAT: ${d.user}`, 'paid')) ui.feed(`${d.from.toUpperCase()}'S CHAT sent ${d.kind.toUpperCase()} (${d.user})`, 'legend', 'twitch'); },
+    });
+  } });
+}
+if (room) openRoom(room);
 let cues = null, run = null, chat = null, session = null, profile = null, official = false, slowmo = 0;
 
 // ---------- Twitch: anonymous chat (zero setup) + optional sign-in for EventSub, rewards, clips
-function connect(name) { chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
+function connect(name) { ME.name = name; chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
 const BOTS = /^(nightbot|streamelements|streamlabs|moobot|fossabot|wizebot|sery_bot|soundalerts|kofistreambot|botrixoficial|pokemoncommunitygame|commanderroot)$/;
 // chat's emotes float up the right edge while you play (rate-limited), so the stream's reactions are in the game
 const reacts = document.createElement('div'); reacts.id = 'reacts'; document.body.appendChild(reacts); let reactT = 0;
@@ -69,6 +85,8 @@ function onEventSub(e) {
   const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
 }
 function play(event, users, opts) {
+  if (event === 'sniper') event = 'drop'; // no towers in the arena: snipes arrive as sky drops
+  if (arena?.peers.size && ['drop', 'sniper', 'barrel'].includes(event) && opts?.src !== 'house') { const target = arena.attack(event, users[0], ME.name); if (target) { ui.feed(`YOUR CHAT sent ${event.toUpperCase()} to ${target}`, 'legend', 'twitch'); return; } }
   if (event === 'drop') { if (run?.summon('drop', users[0], opts?.src)) ui.feed(`${users[0]}: SKY DROP`, 'legend', 'fridge'); return; }
   if (event === 'sniper' || event === 'barrel') { if (run?.summon(event, users[0], opts?.src)) { ui.feed(`${users[0]}: ${event === 'sniper' ? 'SNIPER' : 'BARREL'}`, 'legend', event === 'sniper' ? 'cannon' : 'barrel'); } return; }
   if (event === 'calm' && users[0]) run?.summon('lifeguard', users[0]);
@@ -81,12 +99,13 @@ async function clipIt(why) { const url = await tw.clip(session); if (url) ui.fee
 let simN = 0, ballotT = 6;
 const BALLOT_LABEL = { sniper: 'SNIPER', barrel: 'BARREL', drop: 'SKY DROP', storm: 'SEA BREEZE', deck: 'MYSTERY CARD', calm: 'LIFEBUOY', bomb: 'BOMB', fridge: 'FRIDGE' };
 function pickBallot() { // two sabotage options, sometimes one helpful
-  const bad = ['sniper', 'barrel', 'drop', 'storm', 'deck'].sort(() => Math.random() - .5);
+  const bad = ['barrel', 'drop', 'storm', 'deck'].sort(() => Math.random() - .5);
   return Math.random() < .35 ? [bad[0], bad[1], 'calm'] : bad.slice(0, 3);
 }
 const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `test_viewer_${simN % 6}`, text, bits: 0, mod: true, emotes: [] });
 
 // ---------- runs
+let asRemote = false;
 async function start(asPour) {
   const d = today(seed); official = asPour && !d.poured;
   sfx.unlock(); // no mic prompt: nothing in the game needs it
@@ -109,6 +128,8 @@ async function start(asPour) {
   const v = JSON.parse(localStorage.getItem('lastsip:villain') || 'null');
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
   cues?.remove(); cues = createHudCues($('hud'));
+  arena = net ? createArena(world.scene, { net, me: ME }) : null; run.onSlamLanded = name => ui.feed(`SLAMMED ${name}`, 'legend', 'cannon');
+  if (net && !asRemote) net.send('start', { id: ME.id });
   ui.loading(false); ui.show('hud'); run.state = 'ready'; ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
   lockPointer();
   const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
@@ -119,8 +140,8 @@ let preview = null;
 async function backdrop() { const scene = world.reset(); await buildIsland(scene); if (!run) preview = { t: 0 }; }
 function orbit(dt) {
   preview.t += dt; const a = preview.t * .045, cam = world.camera;
-  cam.position.set(14 + Math.sin(a) * 34, 15 + Math.sin(a * .7) * 2, -42 + Math.cos(a) * 34); cam.lookAt(6, 0, -42);
-  world.light({ pos: { x: 0, z: -40 } }, dt, {}); world.scene.userData.sea?.userData.update(preview.t); world.render();
+  cam.position.set(Math.sin(a) * 24, 11 + Math.sin(a * .7) * 1.5, Math.cos(a) * 24); cam.lookAt(0, 0, 0);
+  world.light({ pos: { x: 0, z: 0 } }, dt, {}); world.scene.userData.sea?.userData.update(preview.t); world.render();
 }
 async function finish(r) {
   document.exitPointerLock?.(); if (r.won) ui.confetti();
@@ -155,7 +176,7 @@ ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: 
 })();
 
 // ---------- loop: fixed 120 Hz simulation, render every frame
-let last = performance.now(), acc = 0, t = 0;
+let last = performance.now(), acc = 0, t = 0, standT = 0;
 const STEP = 1 / 120, prev = { x: 0, y: 0, z: 0 }, real = { x: 0, y: 0, z: 0 };
 function loop(now) {
   requestAnimationFrame(loop);
@@ -181,6 +202,7 @@ function loop(now) {
   const a = run.state === 'play' ? acc / STEP : 1;
   if (a < 1 && Math.hypot(real.x - prev.x, real.z - prev.z) < 1) { player.pos.x = prev.x + (real.x - prev.x) * a; player.y = prev.y + (real.y - prev.y) * a; player.pos.z = prev.z + (real.z - prev.z) * a; }
   run.render(dt, t);
+  if (arena) { arena.update(dt, t, player, run.glass, run); if ((standT -= dt) <= 0) { standT = .25; ui.standings?.(arena.standings(run)); } }
   const m = run.mods;
   run.shakeT = Math.max(0, (run.shakeT || 0) - dt);
   chase(dt, player, run.level.colliders, m.eye, m.roll, run.chaos.active.quake > 0 ? .04 : run.shakeT * .3);

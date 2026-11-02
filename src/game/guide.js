@@ -9,7 +9,7 @@ import { ISLE, BOAT } from './island.js';
 //   target ring red ring that tightens on your feet while a sniper is aiming
 //   barrel lane red strip down the boards in front of a rolling barrel
 //   pour ring   progress ring over the fruit while you hold E
-export const GAPS = [[0, -20, 'z'], [0, -55.2, 'z'], [6.7, -64, 'x']];
+export const GAPS = []; // the arena has no gaps
 
 function gradientTex() {
   const c = document.createElement('canvas'); c.width = 4; c.height = 128; const g = c.getContext('2d');
@@ -57,20 +57,11 @@ export function createGuide(scene, { shift, actors, level }) {
   };
 
   // next goal with fishbone routing: get to the spine, walk it to the target's row, then go across
-  function goal(p) {
-    const onIsle = Math.hypot(p.x - ISLE.x, p.z - ISLE.z) < 7;
-    const T0 = shift.targets().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
-    if (!T0) return null;
-    const farT = Math.hypot(T0.x - ISLE.x, T0.z - ISLE.z) < 5;
-    if (onIsle) return farT ? { ...T0, final: T0 } : { ...BOAT.isle.land, color: T0.color, final: { ...BOAT.isle.land }, boat: true }; // islet: serve, then back to the boat
-    const T = farT ? { ...BOAT.dock.land, color: T0.color, boat: true } : T0; // far customer: route to the boat dock first
-    const rowOf = z => [-16, -32, -48, -64].find(r => Math.abs(z - r) < 3.2);
-    const onBranch = Math.abs(p.x) > 2.6 && rowOf(p.z) !== undefined;
-    if (onBranch) return rowOf(p.z) === rowOf(T.z) && Math.sign(p.x) === Math.sign(T.x || p.x) ? { ...T, final: T } : { x: 0, z: rowOf(p.z) ?? p.z, color: T.color, final: T };
-    if (Math.abs(p.x) > .6 && Math.abs(p.z - T.z) > .5) return { x: 0, z: p.z + Math.sign(T.z - p.z) * 1.5, color: T.color, final: T }; // recentre on the spine
-    if (Math.abs(p.z - T.z) > .5 && T.x !== 0) return { x: 0, z: T.z, color: T.color, final: T }; // walk the spine to the row first
-    return { ...T, final: T };
+  function goal(p) { // the arena is small: straight at the nearest target
+    const T = shift.targets().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+    return T ? { ...T, final: T } : null;
   }
+  void ISLE; void BOAT;
 
   return {
     goal,
