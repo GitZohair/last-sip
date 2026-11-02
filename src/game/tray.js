@@ -4,15 +4,16 @@ import * as THREE from 'three';
 // (one lean spring, amplified by height) and topples when the top leans too far: everything flies off.
 // Same interface as the old tray (state.water/danger, step, kick, lip, render, add, clear, count).
 const H = .27, R = .12, MAX = 30; // chunky glasses: the tower has to read on a compressed stream
-const shellGeo = new THREE.CylinderGeometry(R, R * .82, H * .96, 10, 1, true), liquidGeo = new THREE.CylinderGeometry(R * .9, R * .75, H * .7, 10);
-const rimGeo = new THREE.TorusGeometry(R, .018, 4, 14).rotateX(Math.PI / 2);
-const shellMat = new THREE.MeshLambertMaterial({ color: '#e8fbff', emissive: '#6fb7d0', emissiveIntensity: .35, transparent: true, opacity: .55, depthWrite: false, side: THREE.DoubleSide });
-const rimMat = new THREE.MeshBasicMaterial({ color: '#ffffff' });
-const liquidMats = new Map(); const liquid = c => { const k = new THREE.Color(c).getHexString(); if (!liquidMats.has(k)) liquidMats.set(k, new THREE.MeshLambertMaterial({ color: c, emissive: c, emissiveIntensity: .45 })); return liquidMats.get(k); };
+const shellGeo = new THREE.CylinderGeometry(R, R * .82, H * .96, 20, 1, true), liquidGeo = new THREE.CylinderGeometry(R * .88, R * .73, H * .7, 20);
+const rimGeo = new THREE.TorusGeometry(R, .009, 6, 24).rotateX(Math.PI / 2);
+const shellMat = new THREE.MeshPhongMaterial({ color: '#e4f8ff', shininess: 100, specular: '#ffffff', transparent: true, opacity: .28, depthWrite: false, side: THREE.DoubleSide });
+const rimMat = new THREE.MeshPhongMaterial({ color: '#edfaff', shininess: 90 });
+const iceGeo = new THREE.BoxGeometry(.065, .055, .065), iceMat = new THREE.MeshPhongMaterial({ color: '#dbf6ff', shininess: 95 });
+const liquidMats = new Map(); const liquid = c => { const k = new THREE.Color(c).getHexString(); if (!liquidMats.has(k)) liquidMats.set(k, new THREE.MeshPhongMaterial({ color: c, shininess: 65, specular: '#b0d9df' })); return liquidMats.get(k); };
 
 export function createTray(parent) {
   const g = new THREE.Group(); parent.add(g);
-  const wood = new THREE.MeshLambertMaterial({ color: '#c58b3e' });
+  const wood = new THREE.MeshPhongMaterial({ color: '#85583e', shininess: 25 });
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(.27, .25, .025, 20), wood); disc.position.y = -.145; g.add(disc);
   const stack = new THREE.Group(); stack.position.y = -.13; g.add(stack);
   const deco = new THREE.Group(); // umbrella + straw ride on the top glass
@@ -38,6 +39,7 @@ export function createTray(parent) {
       if (glasses.length >= MAX) return false;
       const m = new THREE.Group(); m.add(new THREE.Mesh(shellGeo, shellMat)); const lq = new THREE.Mesh(liquidGeo, liquid(color)); lq.position.y = -H * .1; m.add(lq);
       const rim = new THREE.Mesh(rimGeo, rimMat); rim.position.y = H * .48; m.add(rim);
+      const ice = new THREE.Mesh(iceGeo, iceMat); ice.position.set(.025, .055, -.018); ice.rotation.set(.15, .6, .2); m.add(ice);
       stack.add(m); glasses.push({ m, color: new THREE.Color(color), water: 1, salt: 0 });
       m.add(deco); s.vx += (Math.random() - .5) * .25; s.vz += (Math.random() - .5) * .25; // every new glass rattles the tower
       return true;
@@ -91,6 +93,10 @@ export function createTray(parent) {
         const f = n > 1 ? i / (n - 1) : 0, bend = f * f * tall, sway = Math.sin(wob * 3 + i * .4) * .004 * i;
         x.m.position.set(-s.tx * bend * .9 * n * H + sway, i * H + H / 2, s.tz * bend * .9 * n * H);
         x.m.rotation.set(s.tz * f * 1.6 * tall, 0, s.tx * f * 1.6 * tall);
+        const fill = Math.max(.08, x.water);
+        x.m.children[1].scale.y = fill;
+        x.m.children[1].position.y = -H * .45 + H * .35 * fill;
+        x.m.children[3].position.y = -H * .45 + H * .7 * fill;
       });
       for (let i = flying.length - 1; i >= 0; i--) { // shattered glasses tumble, then sink away
         const f = flying[i]; f.t += dt; f.v.y -= 14 * dt; f.m.position.addScaledVector(f.v, dt);

@@ -13,8 +13,8 @@ export function createWorld(canvas) {
   const maxRatio = Math.min(devicePixelRatio, 1.5);
   let ratio = Math.min(devicePixelRatio, 1.25);
   renderer.setPixelRatio(ratio); renderer.setSize(innerWidth, innerHeight);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 90); camera.rotation.order = 'YXZ';
   let composer = null;
   if (wantFx) import('./postfx.js').then(m => { composer = m.createPostFx(renderer, camera); composer.setScene(scene); });
@@ -29,8 +29,8 @@ export function createWorld(canvas) {
       renderer.renderLists.dispose();
     }
     scene = new THREE.Scene(); const bg = new THREE.Color('#bfe6ee'); scene.background = bg; scene.fog = new THREE.Fog(bg, 30, 110);
-    hemi = new THREE.HemisphereLight('#e4f6ff', '#f1d9a8', 1.8); scene.add(hemi);
-    sun = new THREE.DirectionalLight('#fff1d6', 3.4); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    hemi = new THREE.HemisphereLight('#e4f6ff', '#e7cba9', 1.65); scene.add(hemi);
+    sun = new THREE.DirectionalLight('#fff1df', 2.5); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
     Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 34 }); sun.shadow.normalBias = .03; scene.add(sun, sun.target);
     scene.add(camera); composer?.setScene(scene);
     w.scene = scene; return scene;
@@ -48,7 +48,7 @@ export function createWorld(canvas) {
   function light(player, dt, { dark, discoOn, fogOn }) {
     sun.position.set(player.pos.x + 5, 12, player.pos.z + 4); sun.target.position.set(player.pos.x, 0, player.pos.z - 3);
     const k = Math.min(1, dt * 6), lit = dark ? .12 : 1;
-    hemi.intensity += (1.8 * lit - hemi.intensity) * k; sun.intensity += (3.4 * lit - sun.intensity) * k;
+    hemi.intensity += (1.65 * lit - hemi.intensity) * k; sun.intensity += (2.5 * lit - sun.intensity) * k;
     if (discoOn) { disco.setHSL((performance.now() / 600) % 1, .9, .6); hemi.color.copy(disco); } else hemi.color.set('#e4f6ff');
     scene.fog.far += ((fogOn ? 9 : scene.userData.fogFar || 110) - scene.fog.far) * k; scene.fog.near = Math.min(30, scene.fog.far * .3);
   }

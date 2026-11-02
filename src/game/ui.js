@@ -23,8 +23,8 @@ export const ui = {
     addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) practice(); });
   },
   tabs(onOpen) {
-    document.querySelectorAll('#intro nav button').forEach(b => b.onclick = () => {
-      document.querySelectorAll('#intro nav button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('#intro nav button[data-tab]').forEach(b => b.onclick = () => {
+      document.querySelectorAll('#intro nav button[data-tab]').forEach(x => x.classList.toggle('on', x === b));
       document.querySelectorAll('#intro .panel').forEach(p => p.hidden = p.id !== 'tab-' + b.dataset.tab);
       onOpen(b.dataset.tab);
     });

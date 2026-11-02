@@ -61,11 +61,11 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
     shoot(by) {
       if (!ammo || run.state !== 'play') return false; ammo--; drawHud();
       const yaw = player.camYaw ?? player.yaw, dx = Math.sin(yaw), dz = -Math.cos(yaw);
-      fire(player.pos.x + dx * .7, player.y + 1.1, player.pos.z + dz * .7, dx, dz, by, true); sfx.thud(.4);
+      fire(player.pos.x + dx * .7, player.y + 1.1, player.pos.z + dz * .7, dx, dz, by, true); sfx.shot();
       return { x: player.pos.x, y: player.y + 1.1, z: player.pos.z, dx, dz };
     },
     fire: (...a) => fire(...a),
-    pop(pos, y) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(confGeo, CONF[i % 5]); m.position.set(pos.x, y + 1.2, pos.z); scene.add(m); fx.push({ m, t: 0, kind: 'conf', v: new THREE.Vector3((Math.random() - .5) * 9, 3 + Math.random() * 6, (Math.random() - .5) * 9), spin: Math.random() * 20 }); } sfx.boom(); },
+    pop(pos, y) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(confGeo, CONF[i % 5]); m.position.set(pos.x, y + 1.2, pos.z); scene.add(m); fx.push({ m, t: 0, kind: 'conf', v: new THREE.Vector3((Math.random() - .5) * 9, 3 + Math.random() * 6, (Math.random() - .5) * 9), spin: Math.random() * 20 }); } sfx.pop(); },
     // CARE PACKAGE: a crate floats down on a parachute and bursts into 3 bomb pickups
     care(x, z) {
       const g = new THREE.Group(), box = new THREE.Mesh(crateGeo, crateMat); box.castShadow = true; g.add(box);

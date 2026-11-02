@@ -3,25 +3,28 @@ import * as THREE from 'three';
 // THE STREAMER BEAN: a smooth, glossy jelly-bean body with big googly eyes, a gaming headset and stubby limbs.
 // No skeleton, no GLB: a handful of shared smooth meshes animated in code (waddle, flail, spin, squash).
 // Same API as the old character (root / holder / update / emote / play / knock / down / dispose).
-const BODY = new THREE.CapsuleGeometry(.4, .62, 6, 16), LIMB = new THREE.CapsuleGeometry(.11, .22, 3, 8), FOOT = new THREE.CapsuleGeometry(.13, .14, 3, 8);
-const EYE = new THREE.SphereGeometry(.12, 12, 8), PUPIL = new THREE.SphereGeometry(.058, 8, 6), BAND = new THREE.TorusGeometry(.43, .035, 5, 16, Math.PI), CUP = new THREE.CylinderGeometry(.12, .12, .08, 20).rotateZ(Math.PI / 2);
+const BODY = new THREE.CapsuleGeometry(.4, .62, 8, 24), LIMB = new THREE.CapsuleGeometry(.11, .22, 4, 12), FOOT = new THREE.CapsuleGeometry(.13, .14, 4, 12);
+const EYE = new THREE.SphereGeometry(.14, 16, 12), PUPIL = new THREE.SphereGeometry(.065, 12, 8), BAND = new THREE.TorusGeometry(.43, .045, 8, 24, Math.PI), CUP = new THREE.CylinderGeometry(.15, .15, .1, 24).rotateZ(Math.PI / 2);
 const MIC = new THREE.CylinderGeometry(.012, .012, .26, 6).rotateX(Math.PI / 2);
 const SMILE = new THREE.TorusGeometry(.09, .02, 6, 16, Math.PI).rotateZ(Math.PI);
 const white = new THREE.MeshPhongMaterial({ color: '#ffffff', shininess: 80 }), black = new THREE.MeshPhongMaterial({ color: '#1b1530', shininess: 100 });
 const dark = new THREE.MeshLambertMaterial({ color: '#2b2838' }), mats = new Map();
-const skin = c => { if (!mats.has(c)) mats.set(c, new THREE.MeshPhongMaterial({ color: c, shininess: 55, specular: '#666666' })); return mats.get(c); };
-const accent = c => { const k = 'a' + c; if (!mats.has(k)) mats.set(k, new THREE.MeshLambertMaterial({ color: new THREE.Color(c).offsetHSL(0, 0, -.25) })); return mats.get(k); };
+const skin = c => { if (!mats.has(c)) mats.set(c, new THREE.MeshPhongMaterial({ color: c, shininess: 75, specular: '#858095' })); return mats.get(c); };
+const accent = c => { const k = 'a' + c; if (!mats.has(k)) mats.set(k, new THREE.MeshPhongMaterial({ color: c, shininess: 45, specular: '#655b78' })); return mats.get(k); };
 
 export async function createBean(scene, { color = '#ff7a2f' } = {}) {
   const root = new THREE.Group(), lean = new THREE.Group(), body = new THREE.Group(); root.add(lean); lean.add(body); scene.add(root);
   const m = (geo, mat, x, y, z, parent = body, shadow = false) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = shadow; parent.add(o); return o; }; // only body + limbs cast shadows (cheap)
   const torso = m(BODY, skin(color), 0, .86, 0, body, true);
   // face (forward is -z)
-  const eyes = [-1, 1].map(s => { const e = m(EYE, white, s * .15, 1.12, -.33); const p = m(PUPIL, black, 0, 0, -.085, e); return { e, p }; });
+  const eyes = [-1, 1].map(s => { const e = m(EYE, white, s * .15, 1.12, -.35); const p = m(PUPIL, black, 0, 0, -.105, e); return { e, p }; });
   const smile = m(SMILE, black, 0, .9, -.385); smile.rotation.x = -.2;
   // headset
-  const band = m(BAND, dark, 0, 1.18, -.02); band.rotation.y = Math.PI / 2;
-  for (const s of [-1, 1]) m(CUP, accent(color === '#a970ff' ? '#ff4f6d' : '#a970ff'), s * .42, 1.12, -.02);
+  m(BAND, dark, 0, 1.18, -.02); // arch across both ears, in the face plane
+  for (const s of [-1, 1]) {
+    m(CUP, dark, s * .42, 1.12, -.02);
+    m(CUP, accent(color === '#a970ff' ? (s < 0 ? '#4fc3ff' : '#ff4f6d') : '#a970ff'), s * .47, 1.12, -.02).scale.set(1, .82, .82);
+  }
   const mic = m(MIC, dark, .36, 1.0, -.16); mic.rotation.y = -.5;
   // limbs (pivot groups so they swing from the shoulder / hip)
   const limb = (x, y, geo, len) => { const g = new THREE.Group(); g.position.set(x, y, 0); body.add(g); m(geo, skin(color), 0, -len, 0, g, true); return g; };
@@ -61,9 +64,9 @@ export async function createBean(scene, { color = '#ff7a2f' } = {}) {
     if (puff > 0) { // BALLOON MODE: body swells round, limbs flap uselessly, eyes huge
       torso.scale.set(1 + puff * 1.5, 1 + puff * .8, 1 + puff * 1.5); torso.position.y = .86 + puff * .3;
       for (const [i, l] of [armL, armR, legL, legR].entries()) l.rotation.z = Math.sin(performance.now() / 60 + i) * .8 * puff;
-      for (const { e } of eyes) { e.position.z = -.33 - puff * .55; e.scale.setScalar(1 + puff * .6); }
+      for (const { e } of eyes) { e.position.z = -.35 - puff * .55; e.scale.setScalar(1 + puff * .6); }
       body.rotation.z = Math.sin(performance.now() / 300) * .25 * puff;
-    } else if (torso.scale.x !== 1) { torso.scale.set(1, 1, 1); torso.position.y = .86; for (const { e } of eyes) { e.position.z = -.33; e.scale.setScalar(1); } }
+    } else if (torso.scale.x !== 1) { torso.scale.set(1, 1, 1); torso.position.y = .86; for (const { e } of eyes) { e.position.z = -.35; e.scale.setScalar(1); } }
   }
   return { root, holder, HAND: new THREE.Vector3(), inflate: k => { puff = k; }, update, emote, play: () => {}, knock, get down() { return knockT > 0; }, dispose: () => scene.remove(root), torso };
 }

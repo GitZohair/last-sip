@@ -133,7 +133,7 @@ function play(event, users, opts) {
     const who = users[0] || 'CHAT', msg = said.get(who);
     const kind = AIR.has(event) || opts?.src === 'paid' ? 'airstrike' : CARE.has(event) ? 'care' : event === 'ice' ? 'mop' : event;
     if (EVT_TEXT[kind] && chat) chatPanel.event(opts?.src === 'vote' ? `CHAT VOTED (${who})` : who, EVT_TEXT[kind], opts?.color || '#bf94ff');
-    if (AIR.has(event) || opts?.src === 'paid') { planes.strike(who, msg, opts?.count || (opts?.src === 'paid' ? 5 : 3)); sfx.say('plane'); return; }
+    if (AIR.has(event) || opts?.src === 'paid') { planes.strike(who, msg, opts?.count || (opts?.src === 'paid' ? 5 : 3)); sfx.reveal(); sfx.say('plane'); return; }
     if (CARE.has(event)) { planes.care(who, msg); return; }
     if (TWIST_LABEL[event]) { twists.fire(event, who); speak(ME.name, `${who.slice(0, 14)}?!`); return; }
     if (event === 'ice') return twists.fire('mop', who); if (event === 'quake') return twists.fire('quake', who);
@@ -261,6 +261,14 @@ async function finish(r) {
 }
 
 // ---------- boot
+const soundToggle = $('sound-toggle');
+function updateSoundToggle() {
+  soundToggle.textContent = sfx.muted ? 'SOUND OFF' : 'SOUND ON';
+  soundToggle.setAttribute('aria-pressed', String(sfx.muted));
+  soundToggle.setAttribute('aria-label', sfx.muted ? 'Unmute game sound' : 'Mute game sound');
+}
+soundToggle.onclick = () => { sfx.setMuted(!sfx.muted); updateSoundToggle(); };
+updateSoundToggle();
 $('join').onclick = () => { const c = $('room-code').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c) { openRoom(c); lobbyTick(); } };
 ui.bind({ start: () => { if (!room) { openRoom(newRoomCode()); lobbyTick(); } else start(false); }, practice: () => { if (room) { net?.close(); net = null; room = ''; ui.lobby('', []); window.history.replaceState(null, '', params.has('dev') ? '?dev' : '/'); } start(false); }, connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
 (async () => {

@@ -6,6 +6,16 @@ Read this first. Update it at the end of every session. **Deadline:** Nov 2, 202
 **Deploy (the user runs it):** `npx vercel deploy --prod --yes` · **Build:** `npm run build`
 
 ## Current state (2026-11-02, v5 arena): see GAME_DESIGN.md (laws) and DEVPOST_SUBMISSION.md
+
+### Submission polish pass (Codex, 2 November)
+- Preserved Claude's outstanding arena/capture work and trailer in checkpoint commit `f1611e4`.
+- Reworked README with cover artwork, an actual gameplay screenshot, a one-minute judge path, Twitch demonstration steps, accurate controls and implementation limits.
+- Smoothed bean geometry, corrected the headset arch, added coloured earcup faces and more readable eyes. Refined glass rims/materials, visible liquid levels and a small ice detail. Rebalanced sun/exposure and smoothed sea normals; kept the existing Twitch standings/chat framing.
+- Rebalanced sampled sound, restored quiet stacking/serving cues, differentiated gas/pop/impact sounds, bounded overlapping effects, and added a persistent sound toggle. No looping music or fabricated voice clips.
+- Validation: all 16 existing tests passed; changed JavaScript syntax checks passed; final production build passed (existing large-chunk warnings). Browser checked movement, stacking and tower collapse, mute persistence, and console/asset errors (none observed).
+- Local source and build are updated; this pass did not push or deploy. Video recordings must use the matching deployed release or explicitly use the local version.
+- `VIDEO_FINISH_PLAN.md` is the current recording/editing handoff. Only Claude's ~11-second trailer is available; real Twitch, core delivery, multiplayer, Codex footage and voiceover still need recording. Freeze gameplay changes and prioritise that evidence.
+
 | Area | What | Where |
 |---|---|---|
 | Characters | Procedural glossy bean streamers (googly eyes, headset, waddle, frown when hit, balloon mode); old Kenney rig via `?char=` | `bean.js`, `character.js` |

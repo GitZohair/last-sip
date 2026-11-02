@@ -14,7 +14,7 @@
 3. **It is always somebody else's fault.** Topple → your bean shouts "IT WAS <NAME>" and they pay you $10. The blamed one shouts back.
 4. **Chat lives in the world.** Banner planes tow viewers' messages; viewers are the customers and the rivals. No overlays, no cards.
 5. **Physical comedy, no words needed.** Spinning launch arcs, balloon pops, nosediving planes. Speech bubbles are the only text, and they're short.
-6. **Quiet by default.** Four soft impact sounds. Voice only from real clips dropped in `public/vo/` (listed in `index.json`).
+6. **Leave room for the streamer.** Quiet sampled collection, serving and impact cues; no looping music or repeated warning beeps. Filter and compress the mix, limit overlapping impacts, and remember the sound toggle. Voice only from real clips dropped in `public/vo/` (listed in `index.json`).
 7. **Come back tomorrow.** One seeded arena rule per day, the same for every streamer; best score and streak on the front page.
 
 ## Round (90 s)
