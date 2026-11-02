@@ -306,3 +306,4 @@ body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opac
 #keyhint.off { opacity: 0; }
 #keyhint span { display: inline-flex; align-items: center; gap: .3rem; }
 #keyhint kbd { font: 800 .62rem/1 Inter, Arial, sans-serif; background: #efeff1; color: #18181b; border-radius: 3px; padding: .2rem .3rem; }
+body.film #hud, body.film .vignette { display: none !important; }

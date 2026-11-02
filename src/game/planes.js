@@ -35,7 +35,8 @@ export function createPlanes({ scene, bombs, target, view = () => null }) {
   let houseT = 14;
   function fly(text, kind, by, count = 3) {
     const tint = TINTS[Math.floor(Math.random() * TINTS.length)], g = planeMesh(tint); scene.add(g);
-    const tex = bannerTex(text.toUpperCase().slice(0, 44)), banner = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.4, 12, 1), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, fog: false }));
+    const tex = bannerTex(text.toUpperCase().slice(0, 44)), banner = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.4, 12, 1), new THREE.MeshBasicMaterial({ map: tex, fog: false }));
+    { const back = new THREE.Mesh(banner.geometry, banner.material); back.rotation.y = Math.PI; banner.add(back); } // two-sided: the text reads correctly from either side
     scene.add(banner); const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), rope); scene.add(line);
     // fly ACROSS the streamer's view, ~11 m in front of them, broadside so the banner reads; bombs are lobbed onto the target
     const T = target(), v = view(), L = 55, side = Math.random() < .5 ? 1 : -1;
@@ -48,6 +49,8 @@ export function createPlanes({ scene, bombs, target, view = () => null }) {
   return {
     strike(by, msg, count = 3) { fly(msg ? `${by}: ${msg}` : `${by} SENT AN AIRSTRIKE`, 'strike', by, count); },
     care(by, msg) { fly(msg ? `${by}: ${msg}` : `CARE PACKAGE FROM ${by}`, 'care', by); },
+    flyby(text) { fly(text, 'strike', 'THE HOUSE', 0); return live.at(-1); }, // banner only, no bombs (film)
+    get live() { return live; },
     update(dt, t, { auto = true, chatLine = null } = {}) {
       if (auto && (houseT -= dt) <= 0) { houseT = 18 + Math.random() * 8; const h = chatLine?.() || HOUSE[Math.floor(Math.random() * HOUSE.length)]; Math.random() < .5 ? fly(h, 'strike', 'THE HOUSE', 2) : fly(h, 'care', 'THE HOUSE'); }
       for (let i = live.length - 1; i >= 0; i--) {

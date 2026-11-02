@@ -12,7 +12,8 @@ function bombMesh() {
   const g = new THREE.Group(); const b = new THREE.Mesh(ballGeo, ballMat); b.castShadow = true; g.add(b);
   const f = new THREE.Mesh(fuseGeo, fuseMat); f.position.y = .3; g.add(f); const s = new THREE.Mesh(sparkGeo, sparkMat); s.position.y = .4; g.add(s); g.userData.spark = s; return g;
 }
-const canGeo = new THREE.CapsuleGeometry(.16, .5, 6, 14), canMat = new THREE.MeshPhongMaterial({ color: '#5dd6ff', shininess: 110, specular: '#ffffff' }), puffMat = new THREE.MeshBasicMaterial({ color: '#d8f6ff', transparent: true, depthWrite: false });
+const canGeo = new THREE.CapsuleGeometry(.16, .5, 6, 14), canMat = new THREE.MeshPhongMaterial({ color: '#5dd6ff', shininess: 110, specular: '#ffffff' }), puffMat = new THREE.MeshBasicMaterial({ color: '#8fe6ff', transparent: true, depthWrite: false });
+const gasGeo = new THREE.SphereGeometry(.3, 16, 12), gasMat = new THREE.MeshBasicMaterial({ color: '#29c6ff' }); // the CO2 shot: a bold cyan ball, readable against sky and sand
 const confGeo = new THREE.PlaneGeometry(.14, .09), CONF = ['#ff4f6d', '#ffd166', '#5dd39e', '#4fc3ff', '#c77dff'].map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
 function gunMesh() { const g = new THREE.Group(); const c = new THREE.Mesh(canGeo, canMat); c.rotation.z = Math.PI / 2; c.castShadow = true; g.add(c); const n = new THREE.Mesh(new THREE.CylinderGeometry(.05, .08, .3, 8).rotateZ(Math.PI / 2), darkGun); n.position.x = .5; g.add(n); return g; }
 const darkGun = new THREE.MeshLambertMaterial({ color: '#2b2838' });
@@ -35,7 +36,8 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
   function launch(x, y, z, vx, vy, vz, by, { fuse = 1.5, sky = false, mine = false, ghost = false } = {}) {
     const m = bombMesh(); m.position.set(x, y, z); scene.add(m); live.push({ m, v: new THREE.Vector3(vx, vy, vz), by, fuse, sky, mine, ghost, spin: Math.random() * 10 });
   }
-  function fire(x, y, z, dx, dz, by, mine, ghost = false) { shots.push({ x, y, z, dx, dz, by, mine, ghost, life: .55 }); }
+  const burst = (x, y, z, big) => { const m = new THREE.Mesh(sparkGeo, puffMat.clone()); m.position.set(x, y, z); scene.add(m); fx.push({ m, t: 0, kind: big ? 'gashit' : 'muzzle' }); };
+  function fire(x, y, z, dx, dz, by, mine, ghost = false) { const m = new THREE.Mesh(gasGeo, gasMat); m.position.set(x, y, z); scene.add(m); burst(x, y, z, false); shots.push({ x, y, z, dx, dz, by, mine, ghost, life: .8, m }); }
   function boom(p, by, ghost = false) {
     run.shakeT = Math.max(run.shakeT || 0, .45); sfx.boom();
     const f = new THREE.Mesh(sparkGeo, flashMat.clone()); f.position.copy(p); scene.add(f); fx.push({ m: f, t: 0, kind: 'flash' });
@@ -47,7 +49,8 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
     onHitPeers?.(p, R, by);
   }
   const api = {
-    get held() { return held; }, launch, boom, addPickup,
+    get held() { return held; }, get ammo() { return ammo; }, launch, boom, addPickup,
+    give(kind, n = 1) { if (kind === 'gun') ammo = Math.min(6, ammo + n); else held = Math.min(3, held + n); drawHud(); }, // film autopilot
     throw(by) {
       if (!held || run.state !== 'play') return false; held--; drawHud();
       const yaw = player.camYaw ?? player.yaw, fx2 = Math.sin(yaw), fz = -Math.cos(yaw);
@@ -98,14 +101,15 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
         if (b.fuse <= 0 || touching) { boom(p.clone(), b.by, b.ghost); scene.remove(b.m); live.splice(i, 1); }
       }
       for (let i = shots.length - 1; i >= 0; i--) { // gas puffs fly straight, leave a little cloud trail
-        const sh = shots[i]; sh.life -= dt; sh.x += sh.dx * 30 * dt; sh.z += sh.dz * 30 * dt;
-        if ((sh.n = (sh.n || 0) + 1) % 3 === 0) { const puff = new THREE.Mesh(sparkGeo, puffMat.clone()); puff.position.set(sh.x, sh.y, sh.z); puff.scale.setScalar(2); scene.add(puff); fx.push({ m: puff, t: 0, kind: 'puff' }); } // a puff every 3rd frame
+        const sh = shots[i]; sh.life -= dt; sh.x += sh.dx * 20 * dt; sh.z += sh.dz * 20 * dt; sh.m.position.set(sh.x, sh.y, sh.z); sh.m.scale.setScalar(1 + Math.sin(sh.life * 40) * .12);
+        if ((sh.n = (sh.n || 0) + 1) % 2 === 0) { const puff = new THREE.Mesh(sparkGeo, puffMat.clone()); puff.position.set(sh.x, sh.y, sh.z); puff.scale.setScalar(2); scene.add(puff); fx.push({ m: puff, t: 0, kind: 'puff' }); } // a puff every 3rd frame
         let hit = false;
         if (!sh.ghost) {
           if (sh.mine) { for (const b of bots?.bots || []) if (!(b.inflateT > 0) && b.fall <= 0 && Math.hypot(b.p.pos.x - sh.x, b.p.pos.z - sh.z) < .9) { b.inflateT = 2.4; run.onSlamLanded?.(b.name); hit = true; break; } if (!hit) hit = onInflatePeers?.(sh); }
           else if (Math.hypot(player.pos.x - sh.x, player.pos.z - sh.z) < .9 && Math.abs(player.y + 1 - sh.y) < 1.3) { run.applyHit?.({ by: sh.by, kind: 'inflate', dir: { x: sh.dx, z: sh.dz }, power: 0 }); hit = true; }
         }
-        if (hit || sh.life <= 0) shots.splice(i, 1);
+        if (hit) burst(sh.x, sh.y, sh.z, true);
+        if (hit || sh.life <= 0) { scene.remove(sh.m); shots.splice(i, 1); }
       }
       for (const b of bots?.bots || []) { // bots with a CO2 gun take potshots at you
         if (!(b.gun > 0) || b.fall > 0 || b.inflateT > 0 || run.state !== 'play') continue; b.gunCd = (b.gunCd ?? 2) - dt;
@@ -119,14 +123,16 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
       for (let i = fx.length - 1; i >= 0; i--) {
         const f = fx[i]; f.t += dt; const k = f.t / .45;
         if (f.kind === 'flash') { f.m.scale.setScalar(1 + k * 30); f.m.material.opacity = 1 - k; }
-        else if (f.kind === 'puff') { f.m.scale.setScalar(1.6 + k * 3); f.m.material.opacity = (1 - k) * .6; }
+        else if (f.kind === 'puff') { f.m.scale.setScalar(3 + k * 5); f.m.material.opacity = (1 - k) * .7; }
+        else if (f.kind === 'muzzle') { f.m.scale.setScalar(4 + k * 8); f.m.material.opacity = (1 - k) * .85; }
+        else if (f.kind === 'gashit') { f.m.scale.setScalar(6 + k * 26); f.m.material.opacity = (1 - k) * .8; }
         else if (f.kind === 'conf') { f.v.y -= 9 * dt; f.m.position.addScaledVector(f.v, dt); f.m.rotation.x += f.spin * dt; f.m.rotation.y += f.spin * .7 * dt; if (f.t < 1.6) continue; }
         else { f.m.scale.setScalar(1 + k * 4); f.m.material.opacity = (1 - k) * .8; }
         if (k >= 1 || (f.kind === 'conf' && f.t >= 1.6)) { scene.remove(f.m); if (f.kind !== 'conf') f.m.material.dispose(); fx.splice(i, 1); }
       }
       void t;
     },
-    dispose() { hud.remove(); for (const x of [...crates.map(c => c.g), ...pickups.map(p => p.m), ...live.map(b => b.m), ...fx.map(f => f.m)]) scene.remove(x); },
+    dispose() { hud.remove(); for (const x of [...crates.map(c => c.g), ...pickups.map(p => p.m), ...live.map(b => b.m), ...fx.map(f => f.m), ...shots.map(s => s.m)]) scene.remove(x); },
   };
   drawHud();
   return api;

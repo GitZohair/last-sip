@@ -22,6 +22,7 @@ import { createBombs } from './bombs.js';
 import { createCars } from './cars.js';
 import { createPlanes } from './planes.js';
 import { createChatPanel } from './chatpanel.js';
+import { createFilm } from './film.js';
 const chatPanel = createChatPanel(document.getElementById('hud'));
 // the old text feed is gone: only things chat paid for or caused (subs, raids, channel points, chat attacks) reach the proof strip
 ui.feed = (text, kind) => { if (chat && kind === 'legend') chatPanel.event('', text, '#ffd166'); };
@@ -273,15 +274,16 @@ ui.bind({ start: () => { if (!room) { openRoom(newRoomCode()); lobbyTick(); } el
     profile = await tw.profile(session).catch(() => null);
     tw.eventsub(session, onEventSub, s => ui.feed(`EventSub connected`, 'help', 'twitch'));
     tw.ensureRewards(session);
-  } else if (localStorage.getItem('lastsip:channel')) connect(localStorage.getItem('lastsip:channel'));
+  } else if (localStorage.getItem('lastsip:channel') && !params.has('film')) connect(localStorage.getItem('lastsip:channel'));
   ui.ready();
 })();
 
 // ---------- loop: fixed 120 Hz simulation, render every frame
 let last = performance.now(), acc = 0, t = 0, standT = 0;
 const STEP = 1 / 120, prev = { x: 0, y: 0, z: 0 }, real = { x: 0, y: 0, z: 0 };
+let filming = false; // while recording, frames are driven by record(), not by rAF
+function raf(now) { requestAnimationFrame(raf); if (!filming) loop(now); }
 function loop(now) {
-  requestAnimationFrame(loop);
   let dt = Math.min(.1, (now - last) / 1000); last = now; world.adapt(dt);
   if (!run) { if (preview) orbit(dt); return; }
   if (run.hitStop > 0) { run.hitStop -= dt; dt = 0; } // hit-stop: a few frames of freeze sells the impact
@@ -289,6 +291,7 @@ function loop(now) {
   t += dt;
   let info = null;
   if (run.state === 'play') {
+    film?.update(dt);
     acc += dt; let n = 0;
     while (acc >= STEP && n++ < 12) { prev.x = player.pos.x; prev.y = player.y; prev.z = player.pos.z; info = run.step(STEP); acc -= STEP; }
     if (n > 12) acc = 0; // after a long stall, don't try to catch up
@@ -315,10 +318,11 @@ function loop(now) {
   document.body.classList.toggle('dark', run.chaos.active.lights > 0);
   world.light(player, dt, { dark: run.chaos.active.lights > 0, discoOn: m.disco, fogOn: m.fog });
   if (info) ui.hud({ water: run.glass.state.water, danger: run.glass.state.danger, time: LIMIT - run.t, room: info.room.name, hazard: info.hazard, steady: player.steady, calm: info.calm, mods: m.active(), progress: Math.min(1, -player.pos.z / run.level.length), vacuum: info.vacuum, style: info.style, voice: info.voice, salt: run.salt, tips: run.shift.tips, tray: run.glass.count, served: run.shift.served, streak: run.shift.streak });
+  film?.camera(dt);
   world.render();
   player.pos.x = real.x; player.y = real.y; player.pos.z = real.z;
 }
-requestAnimationFrame(loop);
+requestAnimationFrame(raf);
 // dev: render a still from any camera into an overlay image (works while the tab is in the background)
 function devShot(pos, look, fov = 50) {
   if (!pos) { document.getElementById('dev-shot')?.remove(); return; }
@@ -330,6 +334,22 @@ function devShot(pos, look, fov = 50) {
   let img = document.getElementById('dev-shot'); if (!img) { img = document.createElement('img'); img.id = 'dev-shot'; img.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;background:#000;z-index:99999;pointer-events:none'; document.body.appendChild(img); }
   img.src = cv.toDataURL();
 }
+// ---------- FILM (?film or ?film=play): autopilot + camera director; record() saves 1080p frames via the dev server
+const film = params.has('film') ? createFilm({ world, player, cine: params.get('film') !== 'play', get: () => ({ run, bots, bombs, cars, planes, twists, throwBomb, shootGas }) }) : null;
+if (film?.cine) document.body.classList.add('film');
+if (film) ME.name = 'STREAMER'; // film: house names only, no real chatters on screen
+async function record(name = 'take', fps = 60, maxSec = 110) {
+  while (run?.state !== 'play') await new Promise(r => setTimeout(r, 100));
+  filming = true; world.fixed(1920, 1080); const cv = world.renderer.domElement; let tt = last, i = 0;
+  for (; i < maxSec * fps && !film.done; i++) {
+    film.frame = i; tt += 1000 / fps; loop(tt);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92));
+    await fetch(`/__film/${name}/f${String(i).padStart(5, '0')}.jpg`, { method: 'POST', body: blob });
+  }
+  await fetch(`/__film/${name}/log.json`, { method: 'POST', body: JSON.stringify({ fps, frames: i, shots: film.shots, sfx: film.sfx }) });
+  world.fixed(0); filming = false; last = performance.now(); return { frames: i, shots: film.shots.map(s => s.name) };
+}
+if (film) { window.lastSip = window.lastSip || {}; window.film = { film, record, start }; }
 if (params.has('dev')) window.lastSip = { run: () => run, bots: () => bots, twists: () => twists, bombs: () => bombs, cars: () => cars, planes: () => planes, world, shot: devShot, frame: (n = 1) => { for (let i = 0; i < n; i++) { run.render(1 / 60, i / 60); } },
   advance: (sec = 1) => { for (let i = 0; i < sec * 60; i++) loop(last + 1000 / 60); }, // run the REAL loop (sim + camera + render) while rAF is paused
   simulate, play, start, director, inject: raw => { const m = parseLine(raw); if (m) onChat(m); return m; }, connect, fakeChat: () => { chat = { channel: 'dev', close() {} }; },

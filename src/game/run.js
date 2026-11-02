@@ -344,7 +344,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     }
     // somebody slammed ME (arena): shove, knock down, big kick to the tower, and they get the blame
     run.applyHit = d => {
-      if (run.state !== 'play') return;
+      if (run.state !== 'play' || run.shield) return; // shield: film autopilot shots that must not be derailed
       if (d.kind === 'inflate') { if (!(run.inflateT > 0)) { run.inflateT = 2.4; run.lastHitBy = d.by; run.lastHitT = run.t; hooks.inflated?.(d.by); } return; }
       // YEET: you get launched in a spinning arc (your tower comes along for the ride)
       player.vel.x += d.dir.x * d.power; player.vel.z += d.dir.z * d.power; player.vy = 3 + d.power * .3 + (d.up || 0); player.grounded = false; player.spin = (Math.random() > .5 ? 1 : -1) * (8 + d.power);

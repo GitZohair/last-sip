@@ -18,7 +18,8 @@ export function createWorld(canvas) {
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 90); camera.rotation.order = 'YXZ';
   let composer = null;
   if (wantFx) import('./postfx.js').then(m => { composer = m.createPostFx(renderer, camera); composer.setScene(scene); });
-  const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight, ratio); };
+  let fixedSize = null; // film capture: render at an exact size (e.g. 1920x1080) whatever the window is
+  const resize = () => { const [W, H] = fixedSize || [innerWidth, innerHeight]; camera.aspect = W / H; camera.updateProjectionMatrix(); renderer.setSize(W, H, !fixedSize); composer?.setSize(W, H, ratio); };
   addEventListener('resize', resize);
 
   let scene, hemi, sun;
@@ -36,7 +37,7 @@ export function createWorld(canvas) {
   }
   let acc = 0, frames = 0, calm = 0;
   function adapt(dt) { // every ~1s, compare average frame time
-    acc += dt; frames++; if (acc < 1) return;
+    if (fixedSize) return; acc += dt; frames++; if (acc < 1) return;
     const avg = acc / frames; acc = 0; frames = 0;
     if (avg > 1 / 40 && ratio <= 1.01 && composer) composer = null; // slow GPU: drop bloom
     calm = avg < 1 / 57 ? calm + 1 : 0;
@@ -52,6 +53,8 @@ export function createWorld(canvas) {
     scene.fog.far += ((fogOn ? 9 : scene.userData.fogFar || 110) - scene.fog.far) * k; scene.fog.near = Math.min(30, scene.fog.far * .3);
   }
   const render = () => composer ? composer.render() : renderer.render(scene, camera);
-  const w = { renderer, camera, scene: null, adapt, light, reset, render };
+  const w = { renderer, camera, scene: null, adapt, light, reset, render,
+    fixed(W, H) { fixedSize = W ? [W, H] : null; ratio = W ? 1 : Math.min(devicePixelRatio, 1.25); renderer.setPixelRatio(ratio); resize(); },
+    shadowSpan(n = 10) { Object.assign(sun.shadow.camera, { left: -n, right: n, top: n, bottom: -n, far: 34 + n }); sun.shadow.camera.updateProjectionMatrix(); } };
   return w;
 }
