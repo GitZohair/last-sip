@@ -121,6 +121,12 @@ function onEventSub(e) {
   if (e.type === 'redeem') return play(/fridge/i.test(e.title) ? 'fridge' : /lid/i.test(e.title) ? 'lid' : 'deck', [e.user]);
   const [card, bias] = map[e.type] || []; if (card) play(card, [e.type === 'raid' ? `RAID ${e.user} (+${e.amount})` : e.user], { bias });
 }
+// controls strip for the first seconds of a round (fades out by itself)
+function showKeys() {
+  let el = $('keyhint'); if (!el) { el = document.createElement('div'); el.id = 'keyhint'; $('hud').appendChild(el); }
+  el.innerHTML = [['WASD', 'move'], ['E', 'slam'], ['Q', 'bomb'], ['R', 'CO2'], ['F', 'drive'], ['SPACE', 'hop']].map(([k, t]) => `<span><kbd>${k}</kbd>${t}</span>`).join('');
+  el.classList.remove('off'); clearTimeout(showKeys.t); showKeys.t = setTimeout(() => el.classList.add('off'), 11000);
+}
 function play(event, users, opts) {
   if (planes && run?.state === 'play') { // chat's power: banner planes (with their message on the banner) and arena twists
     const who = users[0] || 'CHAT', msg = said.get(who);
@@ -225,7 +231,7 @@ async function start(asPour) {
   if (net && !asRemote) net.send('start', { id: ME.id });
   ui.loading(false); ui.show('hud'); run.state = 'ready'; ui.mode(official ? `THE POUR · #${dayNumber(seed)}` : 'PRACTICE');
   lockPointer();
-  const me = run; await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
+  const me = run; showKeys(); await ui.countdown(); if (me === run && run.state === 'ready') run.state = 'play';
 }
 function showOrder_unused() { const rc = run.recipe; ui.order(rc.order, Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.label])), Object.fromEntries(Object.entries(INGREDIENTS).map(([k, v]) => [k, v.color])), rc.got, RULES[run.rule]); }
 // Front page backdrop: the real island, slowly orbiting behind the editorial panel.

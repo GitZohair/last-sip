@@ -16,6 +16,7 @@ Read this first. Update it at the end of every session. **Deadline:** Nov 2, 202
 | CO2 gun | Canister pickups (3 shots), R/click; victim inflates, floats, POPS (confetti), respawns at the bar without drinks; bots shoot back | `bombs.js`, `bean.js` |
 | Vehicles | Taxi, police, go-kart (F, ram = launch), plane on the west islet (bank/climb/dive, Q bombs, 14 s fuel then nosedive, crash = blast) | `cars.js` |
 | Chat sky | Banner planes tow viewers' chat messages across the view; `!bomb` airstrike homes on the leader; `!care`, `!swap`, `!chairs`, `!seagull`; 1/2/3 votes; bits/subs/raids/redeems = 5-bomb strikes; house planes tow chat lines or joke banners | `planes.js`, `main.js`, `twitch.js` |
+| Chat proof | Bottom-left LIVE badge (#channel, message count) + the exact chat line that changed the game, quoted with what it did; `C` opens the full chat. Streamers already show chat, so no second chat overlay | `chatpanel.js` |
 | Humour | Blame game (speech bubbles, $10 blame tax), angry walkout customers lob bombs, seagull steals the top of your tower, slam taunts | `twists.js`, `bubbles.js` |
 | Daily | Seeded rule (Windy, Top Heavy, Calm, Moon Day, Bomb Day, Rush Hour, Big Glass); today's best + streak on the front page | `rules.js`, `main.js` |
 | Win | 90 s round, tips = score, podium (top scorer wins) | `ui.js` |
