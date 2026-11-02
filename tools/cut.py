@@ -79,8 +79,9 @@ def concat(parts, out, music=None):
 # trailer: (shot, start s into the shot, length s, speed)
 # trailer: (shot, start s into the shot (negative = from its end), length s, speed, caption). ~2.5-4 s per idea.
 TRAILER = [('establish', 1.0, 3.2, 1, 'A STREAMER ARENA'), ('tower', .4, 3.0, 1, 'STACK DRINKS. CARRY THEM OUT.'),
-           ('airstrike', .6, 4.0, 1, 'YOUR CHAT CAN RUIN YOU'), ('slam', 0, 2.6, 1, 'SLAM YOUR RIVALS'), ('bombs', .5, 2.8, 1, 'BOMB THE BAR'),
-           ('co2', 0, 3.2, 1, 'CO2 THEM UNTIL THEY POP'), ('taxi', .8, 2.6, 1, 'STEAL A TAXI'), ('offedge', .3, 2.2, 1, None),
+           ('airstrike', 3.6, 4.0, 1, 'YOUR CHAT CAN RUIN YOU'), ('airstrike', 8.6, 3.0, 1, 'OR SAVE YOU'),
+           ('slam', 0, 2.6, 1, 'SLAM YOUR RIVALS'), ('bombs', .5, 2.8, 1, 'BOMB THE BAR'),
+           ('co2', 0, 3.2, 1, 'CO2 THEM UNTIL THEY POP'), ('taxi', .8, 2.6, 1, 'STEAL A TAXI'),
            ('plane', .5, 2.8, 1, 'OR A PLANE'), ('plane', -3.4, 3.0, 1, None)]
 
 if __name__ == '__main__':
@@ -91,10 +92,10 @@ if __name__ == '__main__':
         for name, s in S.items():
             clip(d, fps, s['from'], s['to'] - s['from'], os.path.join(out_dir, f'{name}.mp4'), events(log, s['from'], s['to'], fps)); print('broll', name)
     else:
-        parts = []; tmpd = os.path.join(ROOT, 'video', 'parts'); os.makedirs(tmpd, exist_ok=True)
+        parts = []; tmpd = os.path.join(ROOT, 'video', 'cut_v2'); os.makedirs(tmpd, exist_ok=True)
         for i, (name, st, ln, sp, cap) in enumerate(TRAILER):
             s = S[name]; f0 = (s['to'] + int(st * fps)) if st < 0 else s['from'] + int(st * fps); n = int(ln * fps)
             f0 = max(s['from'], min(f0, s['to'] - n)); p = os.path.join(tmpd, f'p{i:02d}.mp4')
             clip(d, fps, f0, n, p, events(log, f0, f0 + n, fps), sp, cap); parts.append(p)
-        tp = os.path.join(tmpd, 'title.mp4'); title(d, S['finale']['from'] + int(2 * fps), tp, 3.2); parts.append(tp)
-        concat(parts, os.path.join(ROOT, 'video', 'trailer.mp4'), sys.argv[3] if len(sys.argv) > 3 else None); print('trailer done')
+        tp = os.path.join(tmpd, 'title.mp4'); title(d, S.get('finale', S['establish'])['from'] + int(2 * fps), tp, 3.2); parts.append(tp)
+        concat(parts, os.path.join(ROOT, 'video', 'trailer_v2.mp4'), sys.argv[3] if len(sys.argv) > 3 else None); print('trailer done')
