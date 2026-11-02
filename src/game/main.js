@@ -23,7 +23,7 @@ import { createCars } from './cars.js';
 import { createPlanes } from './planes.js';
 let bubbles = null, bombs = null, cars = null, planes = null;
 const said = new Map(), chatLines = []; // viewer -> their last chat line; recent lines for the house banner planes
-const AIR = new Set(['bomb', 'drop', 'sniper', 'barrel', 'deck', 'crate', 'airstrike', 'storm', 'lights']), CARE = new Set(['calm', 'care']);
+const AIR = new Set(['bomb', 'drop', 'sniper', 'barrel', 'deck', 'crate', 'airstrike', 'storm', 'lights', 'nuke', 'fridge']), CARE = new Set(['calm', 'care']);
 function throwBomb() { const th = bombs?.throw(ME.name); if (th && arena) net?.send('bomb', { id: ME.id, by: ME.name, ...th }); }
 function shootGas() { const sh = bombs?.shoot(ME.name); if (sh && arena) net?.send('co2', { id: ME.id, by: ME.name, ...sh }); return !!sh; }
 addEventListener('keydown', e => { if (e.repeat) return; if (e.code === 'KeyQ') throwBomb(); if (e.code === 'KeyR') shootGas(); });
@@ -194,7 +194,7 @@ async function start(asPour) {
   cars?.dispose(); cars = createCars({ scene: world.scene, level: run.level, player, run, bots, bombs, avatar: run.avatar, onRam: (c, vx, vz) => {
     for (const [id, e] of arena?.peers || []) { const dx = e.p.pos.x - c.x, dz = e.p.pos.z - c.z, d = Math.hypot(dx, dz); if (d < 1.7 && !(e.rammed > performance.now())) { e.rammed = performance.now() + 800; net.send('hit', { id: ME.id, to: id, by: ME.name, dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: Math.abs(c.speed), up: 5 }); } }
   } });
-  planes?.dispose(); planes = createPlanes({ scene: world.scene, bombs, target: () => { // airstrikes home in on the leader (blue-shell rules); solo = your own chat bombs you
+  planes?.dispose(); planes = createPlanes({ scene: world.scene, bombs, view: () => ({ x: player.pos.x, z: player.pos.z, yaw: player.camYaw }), target: () => { // airstrikes home in on the leader (blue-shell rules); solo = your own chat bombs you
     const L = arena?.leader(); if (L && L.s.tips > run.shift.tips) { const e = arena.peers.get(L.id); return { x: e.p.pos.x, z: e.p.pos.z }; }
     return { x: player.pos.x, z: player.pos.z }; } });
   bubbles = createBubbles(world.scene);

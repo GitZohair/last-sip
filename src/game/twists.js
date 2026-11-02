@@ -21,7 +21,7 @@ export function createTwists({ hud, run, player, bots, me, speak, say = sfx.say 
   function show(title, sub, color = '#ff4f6d', key = 'twist', spoken = `${title}. ${sub}`) {
     el.querySelector('small').textContent = label; label = 'PLOT TWIST';
     el.querySelector('b').textContent = title; el.querySelector('span').textContent = sub; el.style.setProperty('--c', color);
-    void hideT; void spoken; say(key, '', { force: true });
+    void hideT; void spoken; void sub; void color; if (key === 'twist') speak?.(me.name, `${title}?!`, { bg: '#c77dff', fg: '#fff' }); say(key, '', { force: true });
   }
   const TWISTS = {
     swap: () => { // your tower and the tallest rival tower trade places

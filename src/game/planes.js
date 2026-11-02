@@ -30,16 +30,20 @@ function bannerTex(text) {
 const TINTS = ['#a970ff', '#4fc3ff', '#5dd39e', '#ffb020'];
 const HOUSE = ['THIS STREAM IS SPONSORED BY NOBODY', 'TYPE !BOMB IN CHAT', 'LAST SIP: NO REFUNDS', 'TIPS ARE NOT GUARANTEED', 'HYDRATE (WITH SOMETHING)', 'YOUR BOSS IS WATCHING', 'CHAT IS ALWAYS RIGHT'];
 
-export function createPlanes({ scene, bombs, target }) {
+export function createPlanes({ scene, bombs, target, view = () => null }) {
   const live = [];
   let houseT = 14;
   function fly(text, kind, by, count = 3) {
     const tint = TINTS[Math.floor(Math.random() * TINTS.length)], g = planeMesh(tint); scene.add(g);
     const tex = bannerTex(text.toUpperCase().slice(0, 44)), banner = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.4, 12, 1), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, fog: false }));
     scene.add(banner); const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), rope); scene.add(line);
-    const T = target(), a = Math.random() * Math.PI * 2, dir = { x: Math.cos(a), z: Math.sin(a) }, L = 70;
-    const from = { x: T.x - dir.x * L, z: T.z - dir.z * L };
-    live.push({ g, banner, line, tex, dir, from, s: 0, L: L * 2, speed: 17, kind, by, count, dropped: 0, T, y: 8 + Math.random() * 2, base: banner.geometry.attributes.position.array.slice() });
+    // fly ACROSS the streamer's view, ~11 m in front of them, broadside so the banner reads; bombs are lobbed onto the target
+    const T = target(), v = view(), L = 55, side = Math.random() < .5 ? 1 : -1;
+    let dir, mid;
+    if (v) { const fx = Math.sin(v.yaw), fz = -Math.cos(v.yaw); dir = { x: -fz * side, z: fx * side }; mid = { x: v.x + fx * 13, z: v.z + fz * 13 }; }
+    else { const a = Math.random() * Math.PI * 2; dir = { x: Math.cos(a), z: Math.sin(a) }; mid = { x: T.x, z: T.z }; }
+    const from = { x: mid.x - dir.x * L, z: mid.z - dir.z * L };
+    live.push({ g, banner, line, tex, dir, from, s: 0, L: L * 2, speed: 17, kind, by, count, dropped: 0, T, y: 4.2 + Math.random(), base: banner.geometry.attributes.position.array.slice() });
   }
   return {
     strike(by, msg, count = 3) { fly(msg ? `${by}: ${msg}` : `${by} SENT AN AIRSTRIKE`, 'strike', by, count); },
@@ -58,7 +62,7 @@ export function createPlanes({ scene, bombs, target }) {
         const near = p.s > p.L / 2 - 4;
         if (near && p.dropped < (p.kind === 'care' ? 1 : p.count) && p.s > p.L / 2 - 4 + p.dropped * 1.6) {
           const T = target(); p.dropped++;
-          if (p.kind === 'strike') bombs.drop(T.x + (Math.random() - .5) * 3, T.z + (Math.random() - .5) * 3, p.by);
+          if (p.kind === 'strike') { const tx = T.x + (Math.random() - .5) * 3, tz = T.z + (Math.random() - .5) * 3, ft = Math.sqrt(2 * y / 18) + .15; bombs.launch(x, y - .5, z, (tx - x) / ft, 0, (tz - z) / ft, p.by, { fuse: ft + .1, sky: true }); }
           else bombs.care?.(T.x + 2, T.z + 1.5);
         }
         if (p.s > p.L) { for (const o of [p.g, p.banner, p.line]) scene.remove(o); p.tex.dispose(); p.banner.geometry.dispose(); live.splice(i, 1); }

@@ -1,40 +1,53 @@
 # LAST SIP
 
-**Your chat orders drinks. You're the waiter. Chat also has a sniper.** A 90-second beach shift for streamers: carry a wobbly tray of drinks across a boardwalk island to the viewers who ordered them, while the same chat votes on how to knock you into the sea.
+**Stack drinks. Slam streamers.** A beach-bar brawl for streamers: carry a wobbly tower of drinks to your customers while rival streamers body-slam you, bomb you, run you over with a taxi and pump you full of CO2 until you float away and pop. Your Twitch chat flies planes over the arena, towing their own messages on banners and bombing whoever is winning. Top scorer after 90 seconds wins the bar.
 
-## Inspiration
-Chat-interaction tools mostly turn viewers into a stream of anonymous effects, and the streamer has nothing to give back. We wanted chat on **both sides of the counter**: the people you serve and the people sabotaging you, with names on them, in one short segment that works in a 20-viewer chat and a 20,000-viewer chat. The daily ritual comes from Wordle (one shift a day, the same for everyone) and the physics comedy from REPO and Peak.
+## The idea (one line)
+Streamers already play party games *with* their chat watching. LAST SIP makes chat a physical part of the arena: their names are the customers and the rivals, their messages fly across the sky on banner planes, and their votes decide what falls on the leader next.
+
+## Philosophy
+1. **One job anyone gets in five seconds.** Load drinks at the bar, run them to a customer. Taller tower = bigger tips = a wobblier walk. No tutorial needed on stream.
+2. **Everything else is trying to make you drop it.** Rivals, bombs, cars, a plane, the sea, your own chat. The tower falls a lot, and that's the content.
+3. **It is always somebody else's fault.** When your tower falls, your bean points at the nearest rival ("IT WAS BRAD") and they pay you a $10 blame tax. Streamers blaming each other is the clip.
+4. **Chat is in the world, not in an overlay.** No pop-up cards. A viewer's message is a banner behind a real plane; a raffle-drawn viewer is the customer you're serving; chatters' names are on the rival bots.
+5. **Slapstick over spreadsheets.** Smooth jelly-bean streamers that launch in spinning arcs, inflate into balloons, and nosedive planes into the bar. No synth beeps, no text-to-speech: just a few soft impacts (and slots for real voice clips).
+6. **A reason to come back.** One new arena rule a day (Moon Day, Bomb Day, Rush Hour, Big Glass Day...), the same for every streamer, with your best score and streak on the front page.
 
 ## What it does
-- **One clear job.** Customers appear on the islets with a drink bubble and a patience ring. Walk into the **bar** to load a fresh glass for everyone waiting, then walk into each customer to hand it over. Fuller drink = bigger tip. Tips are the score.
-- **The tray is the risk.** Every extra glass makes the stack taller and wobblier (one shared slosh spring, and the top tier spills first). Do you serve one at a time or load five and pray?
-- **Viewers are the customers.** Anyone chatting can be drawn as a customer, with their name in their own Twitch chat colour. `!order` adds tickets, subs get more, first-time chatters jump the queue, gifted viewers get a drink on the gifter, and a raiding streamer arrives as the double-tip castaway. An empty chat gets tourists.
-- **Viewers are also the saboteurs, at any chat size.** Free viewers **vote** (type 1, 2 or 3) on the next sabotage every ~12 s. The winner fires, and **one winning voter is drawn as its face**: their name is on the watchtower gunner, the barrel or the falling fridge. Bits, subs, raids and channel points skip the vote. Small chats fire commands directly.
-- **Readable, telegraphed chaos.** A named gunner on a watchtower paints you with a laser before firing. A fridge that lands on you squashes you flat for a second. Barrels land on the planks ahead and roll straight down them. Sofas, toilets, fridges and viewers' emote frames fall from the sky with a growing shadow. Sea breezes start with white streaks first. On LOOSE CANNON days, a runaway cannon chases your trail.
-- **The sea matters.** Fall off the boards and you have about 8 seconds of breath to swim to a beach or ladder ramp. Every drink goes salty (smaller tips), and if you run out of air the sea takes the whole tray. A lifeguard voted in by chat (`!steady`) throws you a buoy.
-- **The castaway.** Twice a shift a customer appears on a far islet that only the rowboat reaches. They pay double, and the waves rock your tray on the way.
-- **Blame and gratitude.** Every hit and walkout is credited to a viewer: Spill Credits, a Most Wanted poster on tomorrow's island, and a cross-channel Most Wanted board. Every served viewer is listed too.
-- **A fair daily Pour.** Customer slots, timing, menu and house rule come from the daily seed, so tips compare across Twitch. Chat changes the spectacle and the names, and payments never buy score.
-- **Built to clip and share.** Hit-stop, shake and a directional flash on hits, chat's emotes floating up the screen as they react, and a plain-text receipt (stars per customer).
+- **Arena:** a big central plaza with the bar, four islets on wide drivable bridges, palms, cars and a parked plane. Off the boards is the sea: ring-out.
+- **Moves:** `E` body-slam (yeets people in a spinning arc), `Q` / click throws a bomb, `R` fires the CO2 gun, `F` gets in a vehicle, `SPACE` hop, `SHIFT` careful walk.
+- **Pickups on the boards:** bombs (up to 3) and CO2 canisters. A CO2 hit makes the victim swell into a balloon, float off helplessly and POP in confetti. They respawn at the bar without their drinks.
+- **Vehicles:** a taxi, a police car and a go-kart (ram anyone at speed and they fly), plus a plane on the west islet. The plane takes off by itself; bank, climb, dive, and drop bombs on the bar. After ~14 s the fuel runs out and it nosedives. Your drink tower rides along and sways with every turn and brake.
+- **Rivals:** solo mode fills the arena with three rival bots named after your chatters. They stack drinks, serve, slam you, and pick up bombs and CO2 to use on you. Live mode (`CREATE ARENA` → invite link) puts real streamers in one arena, synced over Supabase Realtime.
+- **Chat runs the sky (Twitch):**
+  - `!bomb` / `!airstrike`: a banner plane tows *that viewer's chat message* across the arena and bombs the leader. Airstrikes home in on whoever is winning, like a blue shell.
+  - `!care`: a parachute crate of bombs lands next to the streamer.
+  - `!swap` swaps your tower with a rival's; `!chairs` teleports you into a rival's spot.
+  - Every ~16 s chat votes (type `1 2 3`) on the next event, and a winning voter is drawn as its face.
+  - Bits, subs, gift subs, raids and channel-point rewards send bigger airstrikes.
+  - Every chatter enters the customer raffle; their name appears over the customer in their Twitch name colour. Rival bots take chatters' names.
+  - With no chat connected, house planes tow joke banners so the sky is never empty.
+- **Winning:** 90-second rounds, tips are the score, and a podium shows the top scorer.
+- **Daily:** today's rule and your best score and streak on the front page; the rule is seeded, so every streamer plays the same day.
 
 ## How we built it
-- **Three.js r180 + Vite**: a 120 Hz fixed-step sim with render interpolation, a spring-damper slosh model shared by a multi-glass tray, circle-vs-box collision with sea "pits", a chase camera, and Kenney Mini Characters for the streamer, customers and gunners.
-- **Runs on a laptop iGPU** (tested on Intel UHD 620): static island merged into batched meshes, two lights, GPU-animated sea, shaders pre-compiled during loading.
-- **Twitch, zero setup:** everything runs on the public chat WebSocket with an anonymous login, so a streamer types their channel and plays. No app registration, no tokens, no bot account. From that one connection we read chat, emotes, name colours, badges, first-time chatters, bits, channel-point text rewards and highlighted messages, plus subs, resubs, gift subs, gift bombs and raids (USERNOTICE). A chat director runs ballots, the customer raffle, big-chat gating and per-viewer cooldowns, and drops chat bots. Verified against live channels (a real sub arrived and fired). An OAuth/Helix/EventSub path (clips, profile, auto-created rewards) is written but turned off in the demo build.
-- **Supabase** (Postgres + RLS, an Edge Function validating Twitch tokens) for the daily Pour and Most Wanted boards.
-- **Safety:** `!frame` images pass an in-browser nsfwjs classifier and fail closed.
-- **Kenney CC0 assets** (Pirate, Furniture, Food, Mini Characters, Impact and Interface sounds).
-- **OpenAI Codex** for the build, with Claude used for review and fixes. The design loop is documented in the repo.
+- **Three.js r180 + Vite:** a 120 Hz fixed-step sim with render interpolation, circle-vs-box collision, and a leaning-tower spring model (the lean is amplified by height and past the tipping point gravity takes over).
+- **Procedural characters and effects:** the streamer beans, planes, banners (cloth-flap in the vertex buffer), bombs, CO2 puffs and confetti are all built in code from smooth primitives. No skinned meshes, so it stays fast on a laptop iGPU.
+- **Kenney CC0 assets** for the island (Pirate Kit), the bar (Furniture Kit) and the vehicles (Car Kit).
+- **Twitch, zero setup:** the public chat WebSocket with an anonymous login, so a streamer types their channel and plays. No app registration, tokens or bot account. From that one connection we read chat, emotes, name colours, first-time chatters, bits, channel-point text rewards and highlighted messages, plus subs, resubs, gift subs, gift bombs and raids (USERNOTICE). A chat director runs ballots, the raffle, cooldowns and big-chat gating, and skips known chat bots.
+- **Live rooms:** Supabase Realtime broadcast over a raw WebSocket. Each client is authoritative for itself and sends state at 12 Hz; hits are sent to the victim, who applies them. Bombs and CO2 shots are mirrored so everyone sees them.
+- **Built with OpenAI Codex and Claude Code.**
 
 ## Challenges
-- Making chaos readable on a compressed stream: every viewer action has a telegraph (laser ring, shadow, plank lane, red tower flag) and a name tag, so a hit feels fair and the streamer knows exactly whom to blame.
-- Scaling chat participation without flooding the island: ballots for everyone, a face drawn from the winners, and a direct lane for supporters.
+- Making chaos readable on a compressed stream: chunky glasses, fixed-size name tags and speech bubbles, a hint over the nearest car, telegraphed drops (bombs fall from a visible plane), and no full-screen text.
+- Making it funny without words: the jokes are physical (launch arcs, balloon pops, planes crashing into the bar) or one-liners in speech bubbles.
+- Making Twitch matter without a developer app: everything a viewer can do arrives through anonymous chat.
 
 ## What's next
-Streamer-vs-streamer shifts on the same seed, a Twitch Extension panel showing viewers their Most Wanted rank and "drinks received", and more house rules (low tide, rush hour).
+2v2 team rounds (pass drinks to your teammate mid-air), a Twitch Extension panel ("your banner flew over 40 streams today"), weekly leagues on top of the daily rule, and real voice clips from the streamers who play.
 
 ## Built with
-JavaScript · Three.js · Vite · Twitch chat (IRC over WebSocket) · Supabase · TensorFlow.js · nsfwjs · Web Audio · Kenney CC0 assets · OpenAI Codex
+JavaScript · Three.js · Vite · Twitch chat (IRC over WebSocket) · Supabase Realtime + Postgres · Web Audio · Kenney CC0 assets · OpenAI Codex · Claude Code
 
 ## Links
 Live demo: https://lastsip-seven.vercel.app · Repo: [add] · Video: [add] · Codex session ID: [add]
