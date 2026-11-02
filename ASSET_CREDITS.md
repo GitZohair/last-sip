@@ -20,3 +20,7 @@ Three.js and cannon-es are installed through npm; dependency licenses remain in 
 - **Kenney Pirate Kit** (CC0) — island patches, palms, rocks, platforms, watchtowers, shipwreck, boats, crates, barrels, cannon. https://kenney.nl/assets/pirate-kit
 - **Kenney Impact Sounds** and **Interface Sounds** (CC0) — footsteps, impacts, UI cues in `public/assets/sfx`. https://kenney.nl/assets/impact-sounds · https://kenney.nl/assets/interface-sounds
 - **Kenney Mini Characters** (CC0) — the streamer character and its animations (idle, walk, sprint, jump, fall, die, emotes, holding-right). https://kenney.nl/assets/mini-characters
+- **Kenney Car Kit** (CC0), downloaded 2 November 2026: `taxi.glb`, `police.glb`, `kart-oobi.glb` (+ `kart-oodi`, `kart-oopi`, `Textures/colormap.png`, licence). https://kenney.nl/assets/car-kit
+- **Kenney Mini Characters** (CC0): the old streamer rig, still available with `?char=`.
+- Bean streamers, banner planes, the flyable plane, bombs, CO2 canisters, seagull and confetti are procedural geometry made for this project.
+- Fonts: Bricolage Grotesque and Inter (Google Fonts, OFL).

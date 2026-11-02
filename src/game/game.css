@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&display=swap');
 :root { --ink: #fff7ee; --purple: #a970ff; --pink: #ff4f7b; --water: #3fb6ff; --bg: #1b1530; font-family: 'Bricolage Grotesque', system-ui, sans-serif; color: var(--ink); }
 * { box-sizing: border-box; }
@@ -223,12 +224,14 @@ body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opac
 
 .glass-meter { display: none !important; } /* the tower itself is the meter now */
 
-#standings { position: absolute; right: 1.2rem; top: 4.2rem; display: grid; gap: .3rem; font: 800 .8rem/1 system-ui; color: #fff; pointer-events: none; }
-#standings div { display: grid; grid-template-columns: 1.1rem .7rem 7.5rem 3rem auto; align-items: center; gap: .35rem; background: #1b1530cc; padding: .35rem .55rem; border-radius: .5rem; }
-#standings div.me { outline: 2px solid #ffd166; }
-#standings i { width: .7rem; height: .7rem; border-radius: 50%; }
-#standings em { font-style: normal; color: #5dff9b; text-align: right; }
-#standings small { color: #ffd166; letter-spacing: -1px; font-size: .6rem; }
+#standings { position: absolute; left: .8rem; top: .8rem; width: max-content; max-width: min(14rem, 30vw); padding: .4rem .5rem; background: #18181bd0; border-radius: 6px; font: 400 .78rem/1.45 Inter, 'Roobert', 'Helvetica Neue', Arial, sans-serif; color: #efeff1; pointer-events: none; }
+#standings p { margin: 0; padding: .12rem .2rem; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#standings p.me { background: #9147ff33; }
+#standings .rk { display: inline-grid; place-items: center; width: 1.05rem; height: 1.05rem; margin-right: .35rem; border-radius: 3px; background: #53535f; color: #fff; font: 700 .68rem/1 Inter, Arial, sans-serif; vertical-align: -.12rem; }
+#standings .rk.r1 { background: #ffd166; color: #18181b; } #standings .rk.r2 { background: #9147ff; } #standings .rk.r3 { background: #ff8280; }
+#standings span { font-weight: 700; }
+#standings em { font-style: normal; font-weight: 600; color: #efeff1; }
+#standings small { color: #adadb8; font-size: .75rem; }
 
 .actions .join { display: inline-flex; gap: .3rem; }
 .actions .join input { width: 5.5rem; text-transform: uppercase; text-align: center; font: 800 1rem system-ui; letter-spacing: .1em; border-radius: .7rem; border: 2px solid #1b153022; padding: 0 .5rem; }
