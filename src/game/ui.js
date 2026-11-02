@@ -42,12 +42,17 @@ export const ui = {
   },
   intro({ number, daily, canSignIn }) {
     set('day-no', `#${number}`);
-    $('start').textContent = daily.poured ? 'POURED TODAY' : 'THE POUR';
-    $('start').disabled = true; $('start').dataset.done = daily.poured ? '1' : '';
+    $('start').disabled = true; void daily;
     set('streak', daily.streak > 0 ? `${daily.streak}-DAY STREAK` : new Date().toDateString().slice(4).toUpperCase());
     $('signin').hidden = !canSignIn;
   },
-  ready() { $('loading').hidden = true; $('start').disabled = !!$('start').dataset.done; $('practice').disabled = false; },
+  ready() { $('loading').hidden = true; $('start').disabled = false; $('practice').disabled = false; },
+  lobby(code, names) { // arena lobby: code, invite link, who's here; the big button becomes START ROUND
+    $('lobby').hidden = !code; if (!code) return;
+    $('lobby-code').textContent = code; $('start').textContent = 'START ROUND';
+    $('lobby-players').innerHTML = names.map(n => `<span style="--c:${n.color}">${esc(n.name)}${n.me ? ' (you)' : ''}</span>`).join('');
+    $('copy-link').onclick = () => { navigator.clipboard?.writeText(location.origin + '/?room=' + code); $('copy-link').textContent = 'LINK COPIED'; };
+  },
   loading(on) { $('loading').hidden = !on; },
   signedIn(login) { $('signin').textContent = `Signed in as ${login}`; $('signin').disabled = true; },
   show(id) { for (const x of ['intro', 'hud', 'results']) $(x).hidden = x !== id; },

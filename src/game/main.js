@@ -33,6 +33,7 @@ let room = (params.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').sl
 function openRoom(code) {
   room = code; net?.close(); window.history.replaceState(null, '', `?room=${code}${params.has('dev') ? '&dev' : ''}`);
   net = joinRoom(code, { onStatus: st => ui.roomStatus?.(code, st), onMessage: (ev, d) => {
+    if (ev === 'lobby' || ev === 'state') { lobbyPeers.set(d.id, { name: d.name, color: d.color, seen: performance.now() }); }
     if (ev === 'start' && (!run || run.state !== 'play')) { if (d.id !== ME.id) { asRemote = true; start(false).finally(() => { asRemote = false; }); } return; } // somebody started the round: everyone in the room goes
     arena?.onMessage(ev, d, {
       hit: d => run?.applyHit?.(d),
@@ -40,6 +41,13 @@ function openRoom(code) {
     });
   } });
 }
+const lobbyPeers = new Map();
+function lobbyTick() { // who's in the arena (pre-round presence ping), shown on the front page
+  if (!net) return; if (!run || run.state !== 'play') net.send('lobby', { id: ME.id, name: ME.name, color: ME.color });
+  const now = performance.now(); for (const [id, p] of lobbyPeers) if (now - p.seen > 4000) lobbyPeers.delete(id);
+  ui.lobby(room, [{ name: ME.name, color: ME.color, me: true }, ...[...lobbyPeers.values()]]);
+}
+setInterval(lobbyTick, 1000);
 if (room) openRoom(room);
 let cues = null, run = null, chat = null, session = null, profile = null, official = false, slowmo = 0;
 
@@ -159,7 +167,8 @@ async function finish(r) {
 }
 
 // ---------- boot
-ui.bind({ start: () => start(true), practice: () => start(false), connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
+$('join').onclick = () => { const c = $('room-code').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c) { openRoom(c); lobbyTick(); } };
+ui.bind({ start: () => { if (!room) { openRoom(newRoomCode()); lobbyTick(); } else start(false); }, practice: () => { if (room) { net?.close(); net = null; room = ''; ui.lobby('', []); window.history.replaceState(null, '', params.has('dev') ? '?dev' : '/'); } start(false); }, connect, mic: () => voice.enable(), signIn: tw.signIn, lock: () => run?.state === 'play' && lockPointer() });
 (async () => {
   ui.intro({ seed, number: dayNumber(seed), daily: today(seed), canSignIn: !!tw.CLIENT_ID });
   ui.todayOrder(todaysOrder(seed), INGREDIENTS, RULES[todaysRule(seed)]);

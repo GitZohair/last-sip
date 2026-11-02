@@ -229,3 +229,10 @@ body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opac
 #standings i { width: .7rem; height: .7rem; border-radius: 50%; }
 #standings em { font-style: normal; color: #5dff9b; text-align: right; }
 #standings small { color: #ffd166; letter-spacing: -1px; font-size: .6rem; }
+
+.actions .join { display: inline-flex; gap: .3rem; }
+.actions .join input { width: 5.5rem; text-transform: uppercase; text-align: center; font: 800 1rem system-ui; letter-spacing: .1em; border-radius: .7rem; border: 2px solid #1b153022; padding: 0 .5rem; }
+#lobby { margin-top: 1rem; padding: .9rem 1rem; border-radius: 1rem; background: #1b153010; display: grid; gap: .5rem; max-width: 34rem; }
+#lobby b { font: 900 1.1rem system-ui; letter-spacing: .08em; } #lobby-code { color: #ff5c39; }
+#lobby-players { display: flex; flex-wrap: wrap; gap: .4rem; } #lobby-players span { background: var(--c); color: #fff; font: 800 .8rem system-ui; padding: .3rem .6rem; border-radius: 99px; }
+#lobby small { opacity: .7; }

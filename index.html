@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LAST SIP — a daily island run where your chat snipes you</title>
-  <meta name="description" content="A daily Twitch game: collect today's three fruits and carry the drink to your stream hut while your viewers show up as named snipers and barrel rollers. Every spilled drop is blamed on a viewer." />
+  <title>LAST SIP — streamer arena</title>
+  <meta name="description" content="A 90-second streamer arena: stack a ridiculous drink tower, body-slam other streamers into the sea, and let your Twitch chat drop fridges on whoever is winning. Browser, no install, no Twitch app." />
   <link rel="stylesheet" href="/src/game/game.css" />
 </head>
 <body>
@@ -13,14 +13,15 @@
   <div id="loading">Filling the glass…</div>
 
   <section id="intro">
-    <header class="nav"><b class="logo">LAST<em>SIP</em></b><nav><button data-tab="play" class="on">PLAY</button><button data-tab="board">LEADERBOARD</button><button data-tab="stats">STATS</button><button data-tab="how">HOW TO PLAY</button></nav></header>
+    <header class="nav"><b class="logo">LAST<em>SIP</em></b><nav><button data-tab="play" class="on">PLAY</button><button data-tab="how">HOW TO PLAY</button></nav></header>
     <div class="panel" id="tab-play">
-      <span class="kicker">DAILY ISLAND <span id="day-no">#1</span> · <span id="streak"></span></span>
-      <h1>Chat ordered drinks.<br>You're the waiter.<br><em>Chat has a sniper.</em></h1>
-      <p class="tag">A 90-second beach shift. Viewers show up as customers wanting drinks <em>and</em> as snipers trying to knock your tray into the sea. Tips are the score.</p>
-      <div class="today"><small>TODAY'S MENU</small><div id="today-order"></div></div>
-      <div class="actions"><button id="start" class="big" disabled>THE POUR</button><button id="practice" disabled>PRACTICE</button></div>
-      <div class="connect"><button id="signin" class="twitch">Sign in with Twitch</button><input id="channel" placeholder="or type a channel" autocomplete="off" /><button id="connect">CONNECT CHAT</button><span id="chat-status">not connected</span></div>
+      <span class="kicker">STREAMER ARENA · 90-SECOND ROUNDS · <span id="streak"></span><span id="day-no" hidden></span></span>
+      <h1>Stack drinks.<br><em>Slam streamers.</em></h1>
+      <p class="tag">Carry the tallest drink tower on a tiny beach while other streamers body-slam you into the sea. Your chat drops fridges on whoever's winning.</p>
+      <div class="connect"><input id="channel" placeholder="your Twitch channel" autocomplete="off" /><button id="connect">CONNECT CHAT</button><span id="chat-status">optional</span><button id="signin" class="twitch" hidden>Sign in</button></div>
+      <div class="actions"><button id="start" class="big" disabled>CREATE ARENA</button><span class="join"><input id="room-code" placeholder="CODE" maxlength="8" autocomplete="off" /><button id="join">JOIN</button></span><button id="practice" disabled>SOLO</button></div>
+      <div id="lobby" hidden><b>ARENA <span id="lobby-code"></span></b><button id="copy-link" class="ghost">COPY INVITE LINK</button><div id="lobby-players"></div><small>Send the link to streamer friends. Anyone can start the round; everyone in the arena drops in together.</small></div>
+      <div id="today-order" hidden></div>
     </div>
     <div class="panel" id="tab-board" hidden><h2>Today's pours</h2><ol id="intro-board"></ol><h2>Most wanted</h2><ol id="intro-wanted"></ol></div>
     <div class="panel" id="tab-stats" hidden><h2>Your stats</h2><div id="stats-grid"></div><h3>WATER DELIVERED</h3><div id="stats-hist"></div></div>
