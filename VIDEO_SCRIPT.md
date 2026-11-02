@@ -1,3 +1,21 @@
+# FINAL CUT (use this): timeline + voiceover for trailer v3
+
+| Time | Footage | Voiceover (say this) |
+|---|---|---|
+| 0:00-0:36 | `video/trailer_v3.mp4` (captions + music, no voice needed) | *(silent; at the title card only:)* "LAST SIP. Streamers compete. Chat decides." |
+| 0:36-0:55 | your delivery clip or `broll/tower.mp4` | "Remember Rob the Nest from PE? Everyone races to the same pile in the middle and grabs what they can. This is that, for streamers. The bar is the nest: stack as many drinks as you dare and run them to customers. Most tips after 90 seconds wins." |
+| 0:55-1:40 | **clip A** (your Twitch chat + game side by side) | "Here's the Twitch part. No app, no keys: I type my channel name and chat is connected. Now when my chat types bomb, a plane flies over towing their actual message, and bombs whoever is winning. The game even quotes the message that did it, bottom left." *(pause on the plane)* "Chat can also help: mayday drops me a crate of bombs. Or ruin me: seagull steals my drinks. And every few seconds, chat votes on what happens next." |
+| 1:40-1:55 | **clip A2** (busy live channel) | "On a big channel it just keeps up: every chatter becomes a customer, a rival or a vote." |
+| 1:55-2:05 | **clip F** (scoreboard + podium) | "Top scorer wins the bar, and the loser gets told exactly who to blame." |
+| 2:05-2:35 | **clips D + E** (ChatGPT ideation, Codex thread, session ID) | "I ideated this for a long time with ChatGPT. Then Codex did the heavy lifting: the first prototypes, the Twitch chat client, the physics and the core mechanics. Claude Code helped with the arena, review and this trailer, and Codex came back for the final touches. The Codex session ID is in the submission." |
+| 2:35-2:50 | `broll/finale.mp4` + URL on screen | "I couldn't get Twitch developer access in time, so I made it work with zero setup instead. Built through seven exams in three days, while sick. LAST SIP: free in your browser. Let your chat decide your fate." |
+
+**Clip F (scoreboard, 15 s raw):** play a SOLO round on the live site with chat connected. Record the last ~10 seconds (the Twitch-style scoreboard top left, rivals' tips ticking) and the results podium that follows ("YOU PLACED #2 OF 4 ... wins. Blame them."). Then 3 seconds of the front page showing TODAY's rule + your best/streak.
+
+Recording tips for the voice: one line per file (`vo1.wav`...), quiet room, phone 15 cm from your mouth, say each line twice, smile while you talk (it's audible). Speak a little slower than feels natural.
+
+---
+
 # LAST SIP: video script (target 2:50, hard limit 3:00)
 
 Who we're talking to: Twitch engineers, Twitch DevRel, Twitch creative/content leads, influencer relations, the Amazon Ads brand studio, and a developer streamer. They've watched hundreds of demos. Hook them in 5 seconds with something they can't skip: **chat's message on a banner plane, then a bomb.** Then prove it's real Twitch, then show Codex, then get out.
