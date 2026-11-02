@@ -12,7 +12,7 @@ The game reads real Twitch chat even when the channel is offline. Its green **LI
 
 OBS Studio **33.0.0** is installed. The recording wizard selected **Intel QSV H.264**, **1920 × 1080**, **30 fps**, and **High Quality, Medium File Size**. The format is hybrid MP4 and the current destination is `C:\Users\zohai\Videos`.
 
-The scene uses the primary display with **Capture Cursor off**. Mic/Aux is muted; desktop audio remains enabled. A top crop of 230 pixels and bottom crop of 78 pixels removes the browser toolbars and taskbar for the prepared side-by-side window arrangement. Keep those windows at the prepared size during the take. The retained picture is fitted within the 1080p canvas, with black space above and below.
+The scene uses the primary display with **Capture Cursor off**. Mic/Aux is muted; desktop audio remains enabled. **Record the full frame without an OBS crop.** The first take revealed that the earlier fixed crop clipped the timer and upper standings after the browser chrome changed. That crop has been reset to zero on every edge. Browser controls and taskbar will be removed from a separate copy during editing, after inspecting the actual footage.
 
 Click **Start Recording**, then minimise OBS so the recording sees the game and chat rather than the OBS preview. After the take, return to OBS and click **Stop Recording**. The first take should be reviewed before recording the remaining clips. No stream has been started and no Twitch account has been linked to OBS.
 

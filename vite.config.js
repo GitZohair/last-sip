@@ -15,4 +15,4 @@ const filmSink = () => ({
   },
 });
 // index.html = LAST SIP (new game). legacy.html + lab/ = Codex's first prototypes, kept for reference only.
-export default defineConfig({ plugins: [filmSink()], build: { rollupOptions: { input: { main: resolve('index.html'), legacy: resolve('legacy.html'), lab: resolve('lab/index.html') } } } });
+export default defineConfig({ plugins: [filmSink()], server: { watch: { ignored: ['**/film/**', '**/video/**', '**/screenshots/**', '**/.asset-sources/**', '**/output/**'] } }, build: { rollupOptions: { input: { main: resolve('index.html'), legacy: resolve('legacy.html'), lab: resolve('lab/index.html') } } } });

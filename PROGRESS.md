@@ -16,6 +16,13 @@ Read this first. Update it at the end of every session. **Deadline:** Nov 2, 202
 - Local source and build are updated; this pass did not push or deploy. Video recordings must use the matching deployed release or explicitly use the local version.
 - `VIDEO_FINISH_PLAN.md` is the current recording/editing handoff. Only Claude's ~11-second trailer is available; real Twitch, core delivery, multiplayer, Codex footage and voiceover still need recording. Freeze gameplay changes and prioritise that evidence.
 
+### Recording review and bot correction (Codex, 3 November)
+- `VIDEO_SCRIPT.md` has been re-read; Claude added A2 busy-channel footage and updated the trailer. Preserve Claude's rendered files and capture pipeline.
+- Builder's 00:04 recording (`video/raw/A_twitch_take02.mp4`, 118 seconds) is approved for real Twitch proof. It shows the command, matching airstrike, a vote with a visible resolved event, and driving. Cropped selects are in `video/edits/take02-*.mp4`; `video/review/TAKE_02_REVIEW.md` records exact source intervals. No further full Twitch take is needed.
+- Builder's stationary-bot report revealed an actual bug: the stack-to-delivery transition reused distance to the bar and immediately awarded delivery tips. Also, destination x/z were chosen from different random islands. Both checks are corrected in `bots.js`.
+- The before/after diagnostic exercises actual bot code with real Three.js objects and only a canvas stub. The navigation regression isolates tower instability, verifies no tips at pickup, valid island targets, physical arrival before tips, and all three bots completing deliveries within 40 simulated seconds.
+- All 17 tests and the production build passed. These changes are local; deployment is still a separate step. Existing footage still proves real Twitch interactions, and future gameplay captures should use the repaired version.
+
 | Area | What | Where |
 |---|---|---|
 | Characters | Procedural glossy bean streamers (googly eyes, headset, waddle, frown when hit, balloon mode); old Kenney rig via `?char=` | `bean.js`, `character.js` |

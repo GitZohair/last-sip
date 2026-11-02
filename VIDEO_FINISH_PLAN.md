@@ -1,6 +1,23 @@
 # LAST SIP — finish the submission video
 
-Current inventory: Claude's `video/trailer.mp4` is approximately 11 seconds. Its source frames, shot log, editing script and component clips are preserved. No real Twitch, multiplayer or Codex capture and no voiceover have been supplied yet.
+Use `VIDEO_SCRIPT.md` as the shared shot list and filename reference. Re-read it before giving the builder the next recording instruction, since Claude may update it. This file tracks the builder/Codex capture work; leave Claude's trailer, source frames and editing pipeline untouched.
+
+Current inventory: Claude updated `video/trailer.mp4` and its component clips at approximately 23:44 on 2 November; do not overwrite them. The first 69-second Twitch take is preserved as `video/raw/A_twitch_take01.mp4`. The corrected 118-second take, recorded at 00:04 on 3 November, is preserved as `video/raw/A_twitch_take02.mp4` and is approved for the real Twitch section: it includes a visible command/airstrike, a real vote and its result, and driving. Separate cropped selects are `video/edits/take02-airstrike.mp4`, `take02-vote.mp4`, and `take02-driving.mp4`. No further full Twitch retake is needed. No multiplayer, Codex or ideation capture, front-page connection take, or voiceover has been supplied yet.
+
+## Clip ownership and capture status
+
+The shared script now also includes **A2, busy-channel proof**. That makes six planned screen-recording groups: A, A2, B, C, D and E, with C optional. A2 is supporting evidence of live chat flow, not proof of thousands of simultaneous interactive users. Voiceover is separate. The Twitch commands and vote can be parts of a single raw recording; they do not each need their own file.
+
+| File | Owner | Content | Status |
+|---|---|---|---|
+| `A_twitch.mp4` | Builder records; Codex reviews/trims | Real airstrike, one ballot vote and result; other chat effects if cleanly captured | Take 02 approved; airstrike/vote/driving selects prepared |
+| `A2_busy_channel.mp4` | Builder records; Codex reviews/trims | Busy public channel's actual messages entering the game | Added by Claude to shared script; pending |
+| `B_front.mp4` | Builder records; Codex reviews/trims | Type channel, connect, show connected status; ~10 seconds | Pending |
+| `C_arena.mp4` | Builder records; Codex helps set up/reviews | Two browser clients in one live arena; ~15–25 seconds | Optional; pending |
+| `D_codex.mp4` | Builder records; Codex reviews | Actual build thread, feature diff, verified session identifier; ~30–40 seconds | Pending |
+| `E_chatgpt.mp4` | Builder records; Codex reviews | Short actual ideation-thread scroll; ~5–8 seconds | Pending |
+
+Claude's shared script plans ten staged trailer shots: nine gameplay shots and the title card. These support the trailer, game explanation, chaos montage and outro. An existing trailer and component clips are present; this does not establish that Claude's newer work is finished. The builder records the eight short narration sections in the shared script, with VO5 optional when the multiplayer segment is omitted. Codex handles review and separate cleaned copies of the builder's recordings.
 
 ## Approach
 
@@ -21,12 +38,13 @@ These are editing allocations, not mandatory shot lengths. Keep the final upload
 
 ## Record these first
 
-1. **Twitch proof, 60–90 seconds raw.** Use an ordinary game URL, without `?dev` or `?film`. Put the game beside your signed-in Twitch pop-out chat. Connect the same channel, start SOLO, and carry a visible drink tower. Type `!bomb hello from chat`; keep the actual message, its corresponding plane banner and the consequence in frame. Give cooldowns time to clear, then capture `mayday` or `seagull`. A second account is useful but not necessary. Do not represent house planes or injected commands as live chat.
-2. **One core-loop success, 30–45 seconds raw.** Load at the BAR, leave with a modest tower, follow the order marker, serve and show tips increasing. Capture this before experimenting with more attacks.
-3. **Codex evidence, 30–45 seconds raw.** Show the actual build thread, a feature diff and validation. Verify the principal build session identifier in the app or CLI UI; do not substitute an unrelated chat identifier. Avoid credentials and environment files in frame.
-4. **Two-player proof, 20–30 seconds raw.** Create a room, join its invite in another browser, show both players, then land one visible interaction. Two local browser clients are a valid demonstration of the network feature; label them accurately.
+1. **A — Twitch proof, 45–90 seconds raw.** Use an ordinary game URL, without `?dev` or `?film`. Put the game beside your signed-in Twitch pop-out chat. Connect the same channel, start SOLO, and carry a visible drink tower. Type `!bomb CHAT DID THIS`; keep the actual message, its corresponding plane banner and the consequence in frame. Stand clear of the palm. Afterward, when a ballot opens, send the number of one visible option and hold through the ballot closing and its consequence. Prefer the care package if offered, since its result is easy to see. Additional `mayday` or `seagull` proof is useful if captured cleanly, but do not prolong an otherwise good take indefinitely. A second account is useful but not necessary. Do not represent house planes or injected commands as live chat.
+2. **B — Front-page connection, ~10 seconds raw.** Type the channel, press CONNECT CHAT and hold on the connected status. Do not use `?dev`. A separate delivery recording is not required by the shared script: Claude supplies the core-loop explanation footage, and take 01 already contains a delivery that may be reused.
+3. **C — Optional two-player proof, 15–25 seconds raw.** Create a room, join its invite in another browser, show both players, then land one visible interaction. Two local browser clients are a valid demonstration of the network feature; label them accurately.
+4. **D — Codex evidence, 30–40 seconds raw.** Show the actual build thread, a feature diff and validation. Verify the principal build session identifier in the app or CLI UI; do not substitute an unrelated chat identifier. Avoid credentials and environment files in frame.
+5. **E — Ideation, 5–8 seconds raw.** Scroll the actual ChatGPT ideation thread briefly. This is supporting context, not a substitute for Codex build evidence.
 
-Save recordings in `video/raw/` as `A_twitch.mp4`, `B_delivery.mp4`, `C_codex.mp4`, and `D_arena.mp4`. Keep raw recordings so the strongest continuous sections can be selected. Do not commit raw personal recordings by accident.
+Save recordings in `video/raw/` as `A_twitch.mp4`, `B_front.mp4`, `C_arena.mp4`, `D_codex.mp4`, and `E_chatgpt.mp4`, matching `VIDEO_SCRIPT.md`. Keep numbered takes rather than overwriting originals. Do not commit raw personal recordings by accident. Leave the OBS capture uncropped; crop separate edited copies after reviewing the actual window layout.
 
 ## Suggested narration
 
