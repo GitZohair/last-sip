@@ -1,3 +1,5 @@
+> **Record from [VOICEOVER.md](VOICEOVER.md)** (latest draft, ~2:50 with rant + outro). The sections below are older.
+
 # VOICEOVER: talking points (say it your way)
 
 Don't read the lines word for word. Look at the point, then say it like you'd explain it to a friend on Discord. Footage gets cut to fit YOUR voice afterwards, so pauses, "so basically", even laughing are fine. Just hit the must-say bits.
@@ -25,7 +27,7 @@ Easiest way to record: watch your clip and talk over it live (like commentating 
 | 0:55-1:40 | **clip A** (your Twitch chat + game side by side) | "Here's the Twitch part. No app, no keys: I type my channel name and chat is connected. Now when my chat types bomb, a plane flies over towing their actual message, and bombs whoever is winning. The game even quotes the message that did it, bottom left." *(pause on the plane)* "Chat can also help: mayday drops me a crate of bombs. Or ruin me: seagull steals my drinks. And every few seconds, chat votes on what happens next." |
 | 1:40-1:55 | **clip A2** (busy live channel) | "On a big channel it just keeps up: every chatter becomes a customer, a rival or a vote." |
 | 1:55-2:05 | **clip F** (scoreboard + podium) | "Top scorer wins the bar, and the loser gets told exactly who to blame." |
-| 2:05-2:35 | **clips D + E** (ChatGPT ideation, Codex thread, session ID) | "I ideated this for a long time with ChatGPT. Then Codex did the heavy lifting: the first prototypes, the Twitch chat client, the physics and the core mechanics. Claude Code helped with the arena, review and this trailer, and Codex came back for the final touches. The Codex session ID is in the submission." |
+| 2:05-2:35 | **clip D** (Codex selects + the 35 s raw Codex recording, session ID). No E: the ChatGPT chat was anonymous and is gone, so the ideation is voice-only | "I ideated this for a long time with ChatGPT. Then Codex did the heavy lifting: the first prototypes, the Twitch chat client, the physics and the core mechanics. Claude Code helped with the arena, review and this trailer, and Codex came back for the final touches. The Codex session ID is in the submission." |
 | 2:35-2:50 | `broll/finale.mp4` + URL on screen | "I couldn't get Twitch developer access in time, so I made it work with zero setup instead. Built through seven exams in three days, while sick. LAST SIP: free in your browser. Let your chat decide your fate." |
 
 **Clip F (scoreboard, 15 s raw):** play a SOLO round on the live site with chat connected. Record the last ~10 seconds (the Twitch-style scoreboard top left, rivals' tips ticking) and the results podium that follows ("YOU PLACED #2 OF 4 ... wins. Blame them."). Then 3 seconds of the front page showing TODAY's rule + your best/streak.
@@ -35,6 +37,8 @@ Recording tips for the voice: one line per file (`vo1.wav`...), quiet room, phon
 ---
 
 # LAST SIP: video script (target 2:50, hard limit 3:00)
+
+**Recording status / handoff for Claude:** Read [VIDEO_CLIP_HANDOFF.md](VIDEO_CLIP_HANDOFF.md) before requesting more captures. A (real bomb + vote), B (connection), D (Codex) and round-results footage are already reviewed; approved selections are in `video/edits/`.
 
 Who we're talking to: Twitch engineers, Twitch DevRel, Twitch creative/content leads, influencer relations, the Amazon Ads brand studio, and a developer streamer. They've watched hundreds of demos. Hook them in 5 seconds with something they can't skip: **chat's message on a banner plane, then a bomb.** Then prove it's real Twitch, then show Codex, then get out.
 
@@ -86,7 +90,7 @@ Rules for the edit (no slop):
 2. Run `/status` (or open thread details) so the **session ID** is readable for 2-3 s.
 3. GitHub repo → Commits page, scroll through.
 
-**E. ChatGPT ideation (5-8 s):** scroll your long ideation chat with ChatGPT (just the scroll, no need to read).
+**E. ChatGPT ideation: DROPPED** (it was an anonymous chat, no longer available). Mention it in the voiceover only.
 
 Name the files `A_twitch.mp4`, `B_front.mp4`, `C_arena.mp4`, `D_codex.mp4`, `E_chatgpt.mp4` and put them in `video/raw/` in the project folder.
 

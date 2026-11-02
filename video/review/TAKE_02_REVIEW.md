@@ -6,6 +6,8 @@ Technical: 118 seconds, 1920 × 1080, H.264, 30 fps, AAC audio.
 
 ## Usable footage
 
+- Source approximately 4.5–12 seconds: front page with `ligmazer`, a visible not-connected state followed by `LIVE · #ligmazer`, and a hold on the connection status. This covers clip B; no additional front-page recording is needed. The channel is already filled in, so describe this as connecting the channel, not a fresh account-login demonstration. Extract: `video/edits/B_front.mp4`.
+
 - Source 32–48 seconds: real `!bomb CHAT DID THIS` submission, matching in-world banner and credited airstrike. The full standings, timer and channel badge are retained this time.
 - Source 84–102 seconds: the builder types `1` during a visible AIRSTRIKE / WET FLOOR / TOWER SWAP ballot. The resulting feed says `CHAT VOTED (LIGMAZER): CALLED IN AN AIRSTRIKE`, and a plane carries the message. This is actual voting evidence, not a static ballot.
 - Source 104–118 seconds: actual vehicle gameplay, useful as supporting footage. It is not presented as proof of live multiplayer.

@@ -9,3 +9,6 @@ screenshots/
 film/
 video/raw/
 video/vo/
+
+# final render + voice sections (personal recording)
+video/final/

@@ -1,8 +1,10 @@
 # LAST SIP — finish the submission video
 
+**Current editor handoff:** [VIDEO_CLIP_HANDOFF.md](VIDEO_CLIP_HANDOFF.md) lists every approved recording, exact selected filenames, framing/claim notes, the ignored take, and remaining work for Claude.
+
 Use `VIDEO_SCRIPT.md` as the shared shot list and filename reference. Re-read it before giving the builder the next recording instruction, since Claude may update it. This file tracks the builder/Codex capture work; leave Claude's trailer, source frames and editing pipeline untouched.
 
-Current inventory: Claude updated `video/trailer.mp4` and its component clips at approximately 23:44 on 2 November; do not overwrite them. The first 69-second Twitch take is preserved as `video/raw/A_twitch_take01.mp4`. The corrected 118-second take, recorded at 00:04 on 3 November, is preserved as `video/raw/A_twitch_take02.mp4` and is approved for the real Twitch section: it includes a visible command/airstrike, a real vote and its result, and driving. Separate cropped selects are `video/edits/take02-airstrike.mp4`, `take02-vote.mp4`, and `take02-driving.mp4`. No further full Twitch retake is needed. No multiplayer, Codex or ideation capture, front-page connection take, or voiceover has been supplied yet.
+Current inventory: Claude updated `video/trailer.mp4` and its component clips at approximately 23:44 on 2 November; do not overwrite them. The first 69-second Twitch take is preserved as `video/raw/A_twitch_take01.mp4`. The corrected 118-second take, recorded at 00:04 on 3 November, is preserved as `video/raw/A_twitch_take02.mp4` and is approved for the real Twitch section: it includes a visible command/airstrike, a real vote and its result, and driving. Separate cropped selects are `video/edits/take02-airstrike.mp4`, `take02-vote.mp4`, and `take02-driving.mp4`. Its opening also covers B: `video/edits/B_front.mp4` contains the visible not-connected to LIVE transition. A and B need no further retake. The 00:48:29 recording supplies approved Codex evidence D (prototype, cover and genuine file diffs); cleaned selects and readable diff stills are in `video/edits/`. The 00:45:53 recording supplies round results, selected as `video/edits/F_round-results.mp4`. The intervening 00:47:33 recording is intentionally ignored at the builder's request. A2 is now approved from the 01:03:32 recording: `video/edits/A2_busy-channel.mp4`, source 60–72 s, 12 seconds. No multiplayer or voiceover has been supplied yet. E is omitted per Claude's latest script because the anonymous ideation conversation is unavailable. See `video/review/TAKE_03_REVIEW.md` for the new review.
 
 ## Clip ownership and capture status
 
@@ -11,11 +13,11 @@ The shared script now also includes **A2, busy-channel proof**. That makes six p
 | File | Owner | Content | Status |
 |---|---|---|---|
 | `A_twitch.mp4` | Builder records; Codex reviews/trims | Real airstrike, one ballot vote and result; other chat effects if cleanly captured | Take 02 approved; airstrike/vote/driving selects prepared |
-| `A2_busy_channel.mp4` | Builder records; Codex reviews/trims | Busy public channel's actual messages entering the game | Added by Claude to shared script; pending |
-| `B_front.mp4` | Builder records; Codex reviews/trims | Type channel, connect, show connected status; ~10 seconds | Pending |
+| `A2_busy_channel.mp4` | Builder records; Codex reviews/trims | Busy public channel's actual messages entering the game | Approved: `video/edits/A2_busy-channel.mp4`, 12 s; live messages/customer names, no vote proof |
+| `B_front.mp4` | Builder records; Codex reviews/trims | Channel, connect, show connected status | Already in take 02 opening; extract at `video/edits/B_front.mp4` |
 | `C_arena.mp4` | Builder records; Codex helps set up/reviews | Two browser clients in one live arena; ~15–25 seconds | Optional; pending |
-| `D_codex.mp4` | Builder records; Codex reviews | Actual build thread, feature diff, verified session identifier; ~30–40 seconds | Pending |
-| `E_chatgpt.mp4` | Builder records; Codex reviews | Short actual ideation-thread scroll; ~5–8 seconds | Pending |
+| `D_codex.mp4` | Builder records; Codex reviews | Actual prototype/build thread and genuine file diffs; session ID verified separately | Approved: `video/raw/D_codex_take01.mp4`; cropped MP4 selects and diff stills in `video/edits/` |
+| `E_chatgpt.mp4` | Builder records; Codex reviews | Short actual ideation-thread scroll | Omitted: anonymous ChatGPT conversation unavailable, per latest shared script |
 
 Claude's shared script plans ten staged trailer shots: nine gameplay shots and the title card. These support the trailer, game explanation, chaos montage and outro. An existing trailer and component clips are present; this does not establish that Claude's newer work is finished. The builder records the eight short narration sections in the shared script, with VO5 optional when the multiplayer segment is omitted. Codex handles review and separate cleaned copies of the builder's recordings.
 
