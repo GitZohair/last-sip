@@ -64,8 +64,8 @@ export function createBots(scene, level, { names = [], count = 3 } = {}) {
         p.vel.x = vx; p.vel.z = vz; if (speed > 0) p.yaw = Math.atan2(dx, -dz);
         // the bot's own tower: stacks at the bar, rides its movement
         b.tray.step(dt, { ax: -vx * .3, az: -vz * .3 });
-        if (b.mode === 'stack' && d < 1.4 && (b.wait -= dt) <= 0) { b.wait = .45; b.tray.add(null, COLORS[(b.tray.count + 2) % 5]); if (b.tray.count >= b.want) { b.mode = 'serve-run'; b.goal = { x: DROP[Math.floor(Math.random() * 4)][0], z: DROP[Math.floor(Math.random() * 4)][1] }; } }
-        if (b.mode === 'serve-run') { if (!b.goal.x && !b.goal.z) b.goal = { x: DROP[0][0], z: DROP[0][1] }; if (d < 1.5) { const n = b.tray.count; b.tips += Math.round(5 * n * (1 + n * .1)); b.tray.takeTop(n); b.mode = 'stack'; b.want = 3 + Math.floor(Math.random() * 8); } }
+        if (b.mode === 'stack' && d < 1.4 && (b.wait -= dt) <= 0) { b.wait = .9; b.tray.add(null, COLORS[(b.tray.count + 2) % 5]); if (b.tray.count >= b.want) { b.mode = 'serve-run'; b.goal = { x: DROP[Math.floor(Math.random() * 4)][0], z: DROP[Math.floor(Math.random() * 4)][1] }; } }
+        if (b.mode === 'serve-run') { if (!b.goal.x && !b.goal.z) b.goal = { x: DROP[0][0], z: DROP[0][1] }; if (d < 1.5) { const n = b.tray.count; b.tips += Math.round(2.5 * n * (1 + n * .1)); b.tray.takeTop(n); b.mode = 'stack'; b.want = 3 + Math.floor(Math.random() * 8); } }
         if (b.mode !== 'stack' && b.mode !== 'hunt' && b.mode !== 'serve-run') b.mode = 'stack';
         if (b.tray.count === 0 && b.mode === 'serve-run') b.mode = 'stack';
         // HUNT: lunge when close, shove the player on contact

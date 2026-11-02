@@ -21,6 +21,13 @@ import { createBubbles } from './bubbles.js';
 import { createBombs } from './bombs.js';
 import { createCars } from './cars.js';
 import { createPlanes } from './planes.js';
+import { createChatPanel } from './chatpanel.js';
+const chatPanel = createChatPanel(document.getElementById('hud'));
+{ const _feed = ui.feed; ui.feed = (text, kind, ico, key) => { if (key) return; if (chat) chatPanel.event('', text, kind === 'legend' ? '#ffd166' : kind === 'help' ? '#5dd39e' : '#bf94ff'); else _feed(text, kind, ico, key); }; }
+// plain words anyone can type (no "!"), rare enough not to fire by accident
+const TRIGGERS = [[/\bkaboom\b/i, 'airstrike'], [/\bmayday\b/i, 'care'], [/\bseagull\b/i, 'gull'], [/\bswapsies\b/i, 'swap']];
+const trigAt = new Map(); let trigLast = 0;
+const EVT_TEXT = { airstrike: 'called in an AIRSTRIKE', care: 'dropped a CARE PACKAGE', gull: 'sent the SEAGULL', swap: 'swapped the towers', chairs: 'shuffled everyone', quake: 'hit the BASS', mop: 'mopped the floor' };
 let bubbles = null, bombs = null, cars = null, planes = null;
 const said = new Map(), chatLines = []; // viewer -> their last chat line; recent lines for the house banner planes
 const AIR = new Set(['bomb', 'drop', 'sniper', 'barrel', 'deck', 'crate', 'airstrike', 'storm', 'lights', 'nuke', 'fridge']), CARE = new Set(['calm', 'care']);
@@ -68,7 +75,7 @@ if (room) openRoom(room);
 let cues = null, run = null, chat = null, session = null, profile = null, official = false, slowmo = 0;
 
 // ---------- Twitch: anonymous chat (zero setup) + optional sign-in for EventSub, rewards, clips
-function connect(name) { ME.name = name; chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
+function connect(name) { chatPanel.channel(name); ME.name = name; chat?.close(); chat = connectChat(name, { onMessage: onChat, onStatus: ui.chatStatus }); localStorage.setItem('lastsip:channel', name); }
 const BOTS = /^(nightbot|streamelements|streamlabs|moobot|fossabot|wizebot|sery_bot|soundalerts|kofistreambot|botrixoficial|pokemoncommunitygame|commanderroot)$/;
 // chat's emotes float up the right edge while you play (rate-limited), so the stream's reactions are in the game
 const reacts = document.createElement('div'); reacts.id = 'reacts'; document.body.appendChild(reacts); let reactT = 0;
@@ -80,6 +87,9 @@ function react(url) {
 function onChat(msg) {
   if (msg.emotes?.[0]) { lastEmote.set(msg.user, emoteUrl(msg.emotes[0].id)); react(emoteUrl(msg.emotes[0].id, '2.0')); }
   if (BOTS.test(msg.login || '')) return; // chat bots never order drinks or vote
+  chatPanel.line(msg);
+  if (msg.user && msg.text && run?.state === 'play') { const tg = TRIGGERS.find(([re]) => re.test(msg.text)); const now = performance.now();
+    if (tg && now - trigLast > 4000 && now - (trigAt.get(msg.user) || 0) > 15000) { trigLast = now; trigAt.set(msg.user, now); play(tg[1], [msg.user], { src: 'word', color: msg.color }); } }
   if (msg.user && msg.text && !msg.notice) { const tx = msg.text.replace(/^!\w+\s*/, '').trim(); if (tx) { said.set(msg.user, tx); chatLines.push(`${msg.user}: ${tx}`); if (chatLines.length > 20) chatLines.shift(); } }
   if (msg.user && !msg.notice && !recentChat.includes(msg.user)) { recentChat.unshift(msg.user); recentChat.length = Math.min(recentChat.length, 12); }
   if (!msg.notice && msg.user) run?.shift?.enter(msg.user, 1, msg.color); // anyone chatting can be drawn as a customer; !order = 2 tickets, subs 3
@@ -113,6 +123,8 @@ function onEventSub(e) {
 function play(event, users, opts) {
   if (planes && run?.state === 'play') { // chat's power: banner planes (with their message on the banner) and arena twists
     const who = users[0] || 'CHAT', msg = said.get(who);
+    const kind = AIR.has(event) || opts?.src === 'paid' ? 'airstrike' : CARE.has(event) ? 'care' : event === 'ice' ? 'mop' : event;
+    if (EVT_TEXT[kind] && chat) chatPanel.event(opts?.src === 'vote' ? `CHAT VOTED (${who})` : who, EVT_TEXT[kind], opts?.color || '#bf94ff');
     if (AIR.has(event) || opts?.src === 'paid') { planes.strike(who, msg, opts?.count || (opts?.src === 'paid' ? 5 : 3)); sfx.say('plane'); return; }
     if (CARE.has(event)) { planes.care(who, msg); return; }
     if (TWIST_LABEL[event]) { twists.fire(event, who); speak(ME.name, `${who.slice(0, 14)}?!`); return; }

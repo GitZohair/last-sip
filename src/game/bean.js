@@ -3,8 +3,9 @@ import * as THREE from 'three';
 // THE STREAMER BEAN: a smooth, glossy jelly-bean body with big googly eyes, a gaming headset and stubby limbs.
 // No skeleton, no GLB: a handful of shared smooth meshes animated in code (waddle, flail, spin, squash).
 // Same API as the old character (root / holder / update / emote / play / knock / down / dispose).
-const BODY = new THREE.CapsuleGeometry(.4, .62, 10, 24), LIMB = new THREE.CapsuleGeometry(.11, .22, 6, 12), FOOT = new THREE.CapsuleGeometry(.13, .14, 6, 12);
-const EYE = new THREE.SphereGeometry(.12, 20, 14), PUPIL = new THREE.SphereGeometry(.058, 14, 10), BAND = new THREE.TorusGeometry(.43, .035, 8, 28, Math.PI), CUP = new THREE.CylinderGeometry(.12, .12, .08, 20).rotateZ(Math.PI / 2);
+const BODY = new THREE.CapsuleGeometry(.4, .62, 6, 16), LIMB = new THREE.CapsuleGeometry(.11, .22, 3, 8), FOOT = new THREE.CapsuleGeometry(.13, .14, 3, 8);
+const EYE = new THREE.SphereGeometry(.12, 12, 8), PUPIL = new THREE.SphereGeometry(.058, 8, 6), BAND = new THREE.TorusGeometry(.43, .035, 5, 16, Math.PI), CUP = new THREE.CylinderGeometry(.12, .12, .08, 20).rotateZ(Math.PI / 2);
+const MIC = new THREE.CylinderGeometry(.012, .012, .26, 6).rotateX(Math.PI / 2);
 const SMILE = new THREE.TorusGeometry(.09, .02, 6, 16, Math.PI).rotateZ(Math.PI);
 const white = new THREE.MeshPhongMaterial({ color: '#ffffff', shininess: 80 }), black = new THREE.MeshPhongMaterial({ color: '#1b1530', shininess: 100 });
 const dark = new THREE.MeshLambertMaterial({ color: '#2b2838' }), mats = new Map();
@@ -21,7 +22,7 @@ export async function createBean(scene, { color = '#ff7a2f' } = {}) {
   // headset
   const band = m(BAND, dark, 0, 1.18, -.02); band.rotation.y = Math.PI / 2;
   for (const s of [-1, 1]) m(CUP, accent(color === '#a970ff' ? '#ff4f6d' : '#a970ff'), s * .42, 1.12, -.02);
-  const mic = m(new THREE.CylinderGeometry(.012, .012, .26, 6).rotateX(Math.PI / 2), dark, .36, 1.0, -.16); mic.rotation.y = -.5;
+  const mic = m(MIC, dark, .36, 1.0, -.16); mic.rotation.y = -.5;
   // limbs (pivot groups so they swing from the shoulder / hip)
   const limb = (x, y, geo, len) => { const g = new THREE.Group(); g.position.set(x, y, 0); body.add(g); m(geo, skin(color), 0, -len, 0, g, true); return g; };
   const armL = limb(-.43, .95, LIMB, .2), armR = limb(.43, .95, LIMB, .2), legL = limb(-.17, .3, FOOT, .16), legR = limb(.17, .3, FOOT, .16);

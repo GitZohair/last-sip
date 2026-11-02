@@ -99,7 +99,7 @@ export function createBombs({ scene, level, player, run, bots, onHitPeers, onInf
       }
       for (let i = shots.length - 1; i >= 0; i--) { // gas puffs fly straight, leave a little cloud trail
         const sh = shots[i]; sh.life -= dt; sh.x += sh.dx * 30 * dt; sh.z += sh.dz * 30 * dt;
-        const puff = new THREE.Mesh(sparkGeo, puffMat.clone()); puff.position.set(sh.x, sh.y, sh.z); puff.scale.setScalar(1.6); scene.add(puff); fx.push({ m: puff, t: 0, kind: 'puff' });
+        if ((sh.n = (sh.n || 0) + 1) % 3 === 0) { const puff = new THREE.Mesh(sparkGeo, puffMat.clone()); puff.position.set(sh.x, sh.y, sh.z); puff.scale.setScalar(2); scene.add(puff); fx.push({ m: puff, t: 0, kind: 'puff' }); } // a puff every 3rd frame
         let hit = false;
         if (!sh.ghost) {
           if (sh.mine) { for (const b of bots?.bots || []) if (!(b.inflateT > 0) && b.fall <= 0 && Math.hypot(b.p.pos.x - sh.x, b.p.pos.z - sh.z) < .9) { b.inflateT = 2.4; run.onSlamLanded?.(b.name); hit = true; break; } if (!hit) hit = onInflatePeers?.(sh); }
