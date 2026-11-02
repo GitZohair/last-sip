@@ -35,6 +35,12 @@ Rules for the edit (no slop):
 4. Keep the bottom-left chat quote in frame each time ("NAME: kaboom get him ↳ CALLED IN AN AIRSTRIKE"). That's the proof.
 5. No second account? Connect to a busy live channel instead: chatters' names show up on customers and rival bots, and chat votes run. Say so honestly in the voiceover.
 
+**A2. Busy live channel (30-40 s raw, shows "lots of chat" flow):**
+1. Left: the Twitch page of a big streamer who is live right now (stream + chat moving fast). Right: the game.
+2. In the game type that channel, CONNECT CHAT, press SOLO.
+3. Show: the bottom-left LIVE badge counting messages, rival bots and customers named after real chatters, the vote box top right filling with real 1/2/3 votes.
+4. Voiceover: "Even on a huge channel, it just works: thousands of chatters become customers, rivals and votes." Don't claim that channel's chat sent an airstrike unless it actually happens on screen.
+
 **B. Front page (10 s):** load the site, type the channel, CONNECT CHAT, point at "LIVE". No `?dev` in the URL bar.
 
 **C. Two streamers (optional, 15 s):** CREATE ARENA, open the invite link in a second browser window, show both beans in one arena.
@@ -57,12 +63,12 @@ Save as `video/vo/vo1.wav` ... `vo8.wav` (Windows Voice Recorder / Sound Recorde
 > "This is LAST SIP."
 
 **VO2, what it is (0:15-0:35)**
-> "It's a beach-bar brawl for streamers. You stack drinks at the bar and carry the tower to customers. Taller tower, bigger tips, and a lot wobblier. Everyone else is trying to knock it over."
+> "Remember Rob the Nest from PE? Everyone sprints to the same pile in the middle, grabs what they can and runs. This is that, as a streamer arena. The bar is the nest: stack as many drinks as you dare and run them out to customers. Taller tower, bigger tips, and a lot wobblier. And your viewers decide whether to help you or ruin you."
 
 **VO3, Twitch (0:35-1:20)**
 > "Here's the Twitch part. No app, no tokens, no setup. I type my channel name, and chat is connected."
 > "When my chat types 'kaboom', a plane flies over, towing their actual message on a banner, and bombs whoever's winning."
-> "'Mayday' drops a crate of bombs. 'Seagull' steals my drinks. Chat votes on what happens next, and every chatter can show up as a customer or a rival."
+> "Chat can help: 'mayday' drops me a crate of bombs. Or ruin me: 'Seagull' steals my drinks. Chat votes on what happens next, and every chatter can show up as a customer or a rival."
 > "Bits, subs and raids hit even harder."
 
 **VO4, chaos (1:20-1:50)**
@@ -80,6 +86,13 @@ Save as `video/vo/vo1.wav` ... `vo8.wav` (Windows Voice Recorder / Sound Recorde
 
 **VO8, outro (2:45-2:50)**
 > "LAST SIP. Free in your browser. Let your chat ruin your day."
+
+## Music
+Trailer bed: "Pixel Peeker Polka - faster" by Kevin MacLeod (incompetech.com), CC BY 4.0. Put this in the YouTube description:
+> Music: "Pixel Peeker Polka - faster" Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/
+
+## One-line pitch (layman)
+Rob the Nest from PE, as a streamer arena: everyone fights over the drinks at the bar, and the viewers in Twitch chat decide whether to help or ruin you.
 
 ## Trailer shot list (Claude renders these from `?film`)
 1. Wide orbit of the island, banner plane "STACK DRINKS. SLAM STREAMERS." (1.5 s)

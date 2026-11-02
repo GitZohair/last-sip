@@ -6,7 +6,7 @@ import { planeMesh } from './planes.js';
 // CARS: a taxi, a police car and a go-kart parked around the arena. F to get in / out. W/S gas & brake, A/D steer.
 // Ram anyone at speed and they get YEETED. Your drink tower rides along and sways with every turn and brake,
 // so driving fast with a tall stack is a gamble. Drive off the boards = you, the car and the drinks go swimming.
-const KINDS = [{ name: 'taxi', s: 1.35, max: 15, seat: .55 }, { name: 'police', s: 1.35, max: 17, seat: .55 }, { name: 'kart-oobi', s: 1.7, max: 19, seat: .35 }, { name: 'plane', s: .8, max: 15, seat: .2, fly: true }];
+const KINDS = [{ name: 'taxi', s: 1.35, max: 15, seat: .55 }, { name: 'police', s: 1.35, max: 17, seat: .55 }, { name: 'kart-oobi', s: 1.7, max: 19, seat: .35 }, { name: 'plane', s: .8, max: 15, seat: -.55, fly: true }];
 const SPAWNS = [[5.5, 3.6, -1.2], [-5.6, -3.6, 2], [0, 15, Math.PI], [-21, 0, Math.PI / 2]]; // x, z, yaw (the plane waits on the west islet)
 
 export function createCars({ scene, level, player, run, bots, avatar, onRam, bombs }) {

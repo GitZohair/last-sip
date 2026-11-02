@@ -32,7 +32,7 @@ def events(log, f0, f1, fps):
             last[e['k']] = e['f']; out.append(((e['f'] - f0) / fps, e['k']))
     return out
 
-def clip(d, fps, f0, n, out, sounds=(), speed=1.0):
+def clip(d, fps, f0, n, out, sounds=(), speed=1.0, caption=None):
     """encode frames f0..f0+n to out.mp4 at 60 fps (speed>1 = sped up), with impact sounds mixed in."""
     args = ['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(fps * speed), '-start_number', str(f0), '-i', os.path.join(d, 'f%05d.jpg')]
     flt, mix = [], []
@@ -44,7 +44,11 @@ def clip(d, fps, f0, n, out, sounds=(), speed=1.0):
     dur = n / (fps * speed)
     if mix: flt.append(f'{"".join(mix)}amix=inputs={len(mix)}:normalize=0,alimiter=limit=0.9,apad,atrim=0:{dur:.3f}[a]')
     else: args += ['-f', 'lavfi', '-i', f'anullsrc=r=44100:cl=stereo']; flt.append(f'[1:a]atrim=0:{dur:.3f}[a]')
-    args += ['-filter_complex', ';'.join(flt), '-map', '0:v', '-map', '[a]', '-frames:v', str(n), '-r', '60',
+    vmap = '0:v'
+    if caption:  # one caption style: heavy white text on a dark pill, lower third, quick fade in
+        txt = caption.replace("'", "’").replace(':', '\:')
+        flt.insert(0, f"[0:v]drawtext=fontfile='{FONT}':text='{txt}':fontsize=76:fontcolor=white:box=1:boxcolor=0x18181bD9:boxborderw=26:x=(w-tw)/2:y=h-210:alpha='min(1,t*6)'[v]"); vmap = '[v]'
+    args += ['-filter_complex', ';'.join(flt), '-map', vmap, '-map', '[a]', '-frames:v', str(n), '-r', '60',
              '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-ac', '2', out]
     run(args)
 
@@ -58,20 +62,26 @@ def title(d, frame, out, secs=2.2):
     run(['ffmpeg', '-y', '-loglevel', 'error', '-loop', '1', '-i', img, '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', str(secs), '-vf', vf, '-r', '60',
          '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-ar', '44100', '-ac', '2', out])
 
+def dur(f): return float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f], capture_output=True, text=True).stdout)
+MUSIC_AT = 0.0
+
 def concat(parts, out, music=None):
     lst = out + '.txt'; open(lst, 'w').write(''.join(f"file '{p}'\n" for p in parts))
     tmp = out + '.tmp.mp4'; run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', lst, '-c', 'copy', tmp])
     if music:
         run(['ffmpeg', '-y', '-loglevel', 'error', '-i', tmp, '-i', music, '-filter_complex',
-             '[1:a]volume=0.55,afade=in:d=0.3[m];[0:a][m]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]',
+             f'[1:a]atrim=start={MUSIC_AT},asetpts=PTS-STARTPTS,volume=0.7,afade=in:d=0.2,afade=out:st={dur(tmp) - 1.6:.2f}:d=1.6[m];[0:a]volume=0.55[g];[g][m]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]',
              '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', out])
         os.remove(tmp)
     else: os.replace(tmp, out)
     os.remove(lst)
 
 # trailer: (shot, start s into the shot, length s, speed)
-TRAILER = [('establish', 1.5, 1.6, 1.3), ('tower', .6, 1.3, 1), ('airstrike', .8, 2.6, 1), ('slam', 0, 1.4, 1), ('bombs', .5, 1.6, 1.2),
-           ('co2', 0, 2.2, 1.2), ('taxi', 1.2, 1.6, 1), ('offedge', .4, 1.6, 1), ('plane', 0, 1.4, 1.3), ('plane', -3.2, 2.6, 1)]
+# trailer: (shot, start s into the shot (negative = from its end), length s, speed, caption). ~2.5-4 s per idea.
+TRAILER = [('establish', 1.0, 3.2, 1, 'A STREAMER ARENA'), ('tower', .4, 3.0, 1, 'STACK DRINKS. CARRY THEM OUT.'),
+           ('airstrike', .6, 4.0, 1, 'YOUR CHAT CAN RUIN YOU'), ('slam', 0, 2.6, 1, 'SLAM YOUR RIVALS'), ('bombs', .5, 2.8, 1, 'BOMB THE BAR'),
+           ('co2', 0, 3.2, 1, 'CO2 THEM UNTIL THEY POP'), ('taxi', .8, 2.6, 1, 'STEAL A TAXI'), ('offedge', .3, 2.2, 1, None),
+           ('plane', .5, 2.8, 1, 'OR A PLANE'), ('plane', -3.4, 3.0, 1, None)]
 
 if __name__ == '__main__':
     take, mode = sys.argv[1], sys.argv[2]
@@ -82,9 +92,9 @@ if __name__ == '__main__':
             clip(d, fps, s['from'], s['to'] - s['from'], os.path.join(out_dir, f'{name}.mp4'), events(log, s['from'], s['to'], fps)); print('broll', name)
     else:
         parts = []; tmpd = os.path.join(ROOT, 'video', 'parts'); os.makedirs(tmpd, exist_ok=True)
-        for i, (name, st, ln, sp) in enumerate(TRAILER):
+        for i, (name, st, ln, sp, cap) in enumerate(TRAILER):
             s = S[name]; f0 = (s['to'] + int(st * fps)) if st < 0 else s['from'] + int(st * fps); n = int(ln * fps)
             f0 = max(s['from'], min(f0, s['to'] - n)); p = os.path.join(tmpd, f'p{i:02d}.mp4')
-            clip(d, fps, f0, n, p, events(log, f0, f0 + n, fps), sp); parts.append(p)
-        tp = os.path.join(tmpd, 'title.mp4'); title(d, S['finale']['from'] + int(2 * fps), tp); parts.append(tp)
+            clip(d, fps, f0, n, p, events(log, f0, f0 + n, fps), sp, cap); parts.append(p)
+        tp = os.path.join(tmpd, 'title.mp4'); title(d, S['finale']['from'] + int(2 * fps), tp, 3.2); parts.append(tp)
         concat(parts, os.path.join(ROOT, 'video', 'trailer.mp4'), sys.argv[3] if len(sys.argv) > 3 else None); print('trailer done')

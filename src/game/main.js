@@ -208,7 +208,7 @@ async function start(asPour) {
   if (v?.image) run.gallery.hang({ ...v, trusted: true, mostWanted: true });
   cues?.remove(); cues = createHudCues($('hud'));
   arena = net ? createArena(world.scene, { net, me: ME }) : null;
-  bots = net ? null : createBots(world.scene, run.level, { names: recentChat.slice(0, 3) }); if (bots) await bots.ready;
+  bots = net ? null : createBots(world.scene, run.level, { names: film ? ['CASEOH_FAN_420', 'JYNXZI_DROPS', 'XQC_JUICER'] : recentChat.slice(0, 3) }); if (bots) await bots.ready;
   document.getElementById('twist')?.remove(); bombs?.dispose(); bombs = createBombs({ scene: world.scene, level: run.level, player, run, bots, onInflatePeers: sh => {
     for (const [id, e] of arena?.peers || []) if (Math.hypot(e.p.pos.x - sh.x, e.p.pos.z - sh.z) < .9 && !(e.puffed > performance.now())) { e.puffed = performance.now() + 3000; net.send('hit', { id: ME.id, to: id, by: ME.name, kind: 'inflate', dir: { x: sh.dx, z: sh.dz }, power: 0 }); run.onSlamLanded?.(e.s.name); return true; }
     return false;
