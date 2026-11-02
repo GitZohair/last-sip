@@ -15,7 +15,7 @@ export const BAR = { x: -2.6, z: -32, r: 2.1 };
 
 const light = hex => { if (!hex) return false; const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) > 160; }; // readable tag text on any chat colour
 function bubbleCanvas() { const c = document.createElement('canvas'); c.width = c.height = 128; return c; }
-function drawBubble(c, color, k, mood) { // order bubble: drink icon + a patience arc that drains green → red
+function drawBubble(c, color, k, mood, want = 1) { // order bubble: drink icon + a patience arc that drains green → red
   const g = c.getContext('2d'); g.clearRect(0, 0, 128, 128);
   g.fillStyle = mood === 'angry' ? '#ff3b5c' : mood === 'happy' ? '#2fbf71' : '#fffdf6'; g.beginPath(); g.arc(64, 64, 50, 0, 7); g.fill();
   g.lineWidth = 11; g.lineCap = 'round'; g.strokeStyle = '#0002'; g.beginPath(); g.arc(64, 64, 56, 0, 7); g.stroke();
@@ -23,6 +23,7 @@ function drawBubble(c, color, k, mood) { // order bubble: drink icon + a patienc
   if (mood === 'wait') { // a glass in the customer's flavour
     g.fillStyle = color; g.beginPath(); g.moveTo(44, 46); g.lineTo(84, 46); g.lineTo(78, 92); g.lineTo(50, 92); g.closePath(); g.fill();
     g.strokeStyle = '#1b1530'; g.lineWidth = 5; g.stroke(); g.strokeStyle = '#ff4f6d'; g.lineWidth = 4; g.beginPath(); g.moveTo(70, 50); g.lineTo(80, 28); g.stroke();
+    if (want > 1) { g.fillStyle = '#1b1530'; g.beginPath(); g.arc(94, 96, 26, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = '900 30px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('x' + want, 94, 98); }
   } else { g.fillStyle = '#fff'; g.font = '900 54px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(mood === 'happy' ? '$' : '!', 64, 68); }
 }
 
@@ -32,7 +33,7 @@ export async function createShift(scene, seed, tray) {
   // seeded timeline: first customers quickly, then one every 5-8 s
   // seeded timeline: two quick openers, then one every 8-12 s; two of them are castaways on the far islet
   const names = r.shuffle(TOURISTS), schedule = [], farAt = [3, 6];
-  for (let t = 1.5, i = 0; t < 80; t += i < 2 ? 6 : r.range(8, 12), i++) schedule.push({ at: t, spots: farAt.includes(i) ? ['castaway'] : i === 0 ? ['lemon', 'coconut'] : r.shuffle(Object.keys(SPOTS)), flavour: r.pick(flavours), tourist: names[i % names.length] });
+  for (let t = 1.5, i = 0; t < 80; t += i < 2 ? 6 : r.range(8, 12), i++) schedule.push({ at: t, spots: farAt.includes(i) ? ['castaway'] : i === 0 ? ['lemon', 'coconut'] : r.shuffle(Object.keys(SPOTS)), flavour: r.pick(flavours), tourist: names[i % names.length], want: farAt.includes(i) ? 8 + i : i < 2 ? i + 1 : Math.min(7, 2 + Math.floor(r.range(0, 1 + i * .6))) }); // a table wants N drinks; the castaway party wants a LOT
   // the bar: Kenney counter + stools + pennant, a purple floor ring and a BAR sign
   const bar = new THREE.Group(); bar.position.set(BAR.x - .9, 0, BAR.z); scene.add(bar);
   for (const [n, z] of [['kitchenBar', -.9], ['kitchenBar', 0], ['kitchenBarEnd', .9]]) { const m = await model('furniture', n); m.position.set(0, 0, z); m.rotation.y = Math.PI / 2; bar.add(m); }
@@ -52,14 +53,13 @@ export async function createShift(scene, seed, tray) {
   async function arrive(slot) {
     const key = slot.spots.find(k => !S.customers.some(c => c.key === k)); if (!key) return;
     const far = key in FAR, [x, z] = far ? FAR[key] : SPOTS[key], name = draw(), patience = far ? PATIENCE * 1.6 : PATIENCE;
-    const c = { id: Math.random().toString(36).slice(2), key, x, z, far, user: name || slot.tourist, viewer: !!name, flavour: slot.flavour, color: INGREDIENTS[slot.flavour].color, patience, max: patience, mood: 'wait', t: 0, drawK: -1 };
+    const c = { id: Math.random().toString(36).slice(2), key, x, z, far, user: name || slot.tourist, viewer: !!name, flavour: slot.flavour, color: INGREDIENTS[slot.flavour].color, patience, max: patience, mood: 'wait', t: 0, drawK: -1, want: slot.want || 1 };
     S.customers.push(c);
     const fig = await viewer(c.user); fig.m.position.set(x, 0, z); fig.m.scale.setScalar(2); scene.add(fig.m); c.fig = fig;
     c.canvas = bubbleCanvas(); c.tex = new THREE.CanvasTexture(c.canvas); c.tex.colorSpace = THREE.SRGBColorSpace;
     c.bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: c.tex, depthTest: false })); c.bubble.scale.setScalar(1.1); c.bubble.renderOrder = 10; scene.add(c.bubble);
     c.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(c.user.slice(0, 18).toUpperCase(), { w: 512, h: 96, bg: c.viewer ? (colors.get(c.user) || '#a970ff') : '#1b1530cc', fg: light(colors.get(c.user)) ? '#1b1530' : '#fff', font: 'bold 54px system-ui' }), depthTest: false }));
     c.tag.scale.set(3.4, .64, 1); c.tag.renderOrder = 10; scene.add(c.tag);
-    if (S.next === 1) tray.add(c.id, c.color); // onboarding: your first order is already on the tray, so you learn SERVE before BAR
     S.onArrive?.(c); S.cb?.order?.(c);
   }
   S.arrive = arrive; S.schedule = schedule;
@@ -74,10 +74,9 @@ export async function createShift(scene, seed, tray) {
     // BAR: fresh glasses for every waiting customer (replaces salty / half-empty ones)
     S.atBar = !swim && Math.hypot(px - BAR.x, pz - BAR.z) < BAR.r;
     const waiting = S.customers.filter(c => c.mood === 'wait');
-    if (S.atBar) {
-      const stale = tray.glasses.some(g => g.gl.state.water < .9 || g.salt > 0), missing = waiting.some(c => !tray.glasses.some(g => g.id === c.id));
-      if ((stale || missing) && waiting.length) { tray.clear(); for (const c of waiting.slice(0, 5)) tray.add(c.id, c.color); cb.loaded?.(tray.count); }
-    }
+    // THE BAR: stand in the ring and the bartender stacks one more glass on your tower every 0.35 s. Leave when you dare.
+    if (S.atBar && (S.pourT = (S.pourT ?? 0) - dt) <= 0) { S.pourT = .35; if (tray.add(null, INGREDIENTS[r.pick(flavours)].color)) cb.loaded?.(tray.count); }
+    if (!S.atBar) S.pourT = .15; void waiting;
     barRing.material.opacity = .5 + Math.sin(t * 5) * .3 * (tray.count ? .3 : 1);
     S.near = null;
     for (const c of [...S.customers]) {
@@ -88,27 +87,27 @@ export async function createShift(scene, seed, tray) {
         c.patience -= dt; if (!c.hurried && c.patience / c.max < .3) { c.hurried = true; cb.hurry?.(c); }
         c.fig.m.rotation.y = Math.atan2(px - c.x, pz - c.z); // watches you
         if (d < 4) S.near = c;
-        if (d < 1.7 && !swim && tray.glasses.some(g => g.id === c.id)) {
-          const g = tray.take(c.id), clean = g.water >= .85 && g.salt <= 0, quick = c.patience / c.max > .5;
+        if (d < 1.7 && !swim && tray.count >= c.want) {
+          const tower = tray.count, g = tray.takeTop(c.want), clean = g.water >= .85 && g.salt <= 0, quick = c.patience / c.max > .5; c.tower = tower;
           S.streak = clean ? S.streak + 1 : 0; const mult = 1 + Math.min(4, Math.max(0, S.streak - 1)) * .25; // clean serves in a row multiply tips (up to x2)
-          const tip = Math.max(0, Math.round(10 * g.water * (1 - g.salt * .7) * mult * (c.far ? 2 : 1)) + (quick && clean ? 2 : 0)); // castaways tip double
+          const tip = Math.max(0, Math.round(5 * c.want * (1 + tower * .1) * g.water * (1 - g.salt * .7) * mult * (c.far ? 2 : 1)) + (quick && clean ? 2 : 0)); // the TALLER the tower when you serve, the bigger the tip
           c.mult = mult; c.quick = quick && clean;
           c.mood = g.water < .3 || tip < 3 ? 'angry' : 'happy'; c.t = 0; S.tips += tip; S.served++; S.servedBy.push(c.user); S.log.push({ user: c.user, tip, mood: c.mood });
           if (c.mood === 'happy') c.fig.cheer(); cb.served?.(c, tip, g.water);
-        } else if (c.patience <= 0) { c.mood = 'angry'; c.t = 0; S.walkouts++; S.streak = 0; S.log.push({ user: c.user, tip: 0, mood: 'walkout' }); tray.drop(c.id); cb.walkout?.(c); }
+        } else if (c.patience <= 0) { c.mood = 'angry'; c.t = 0; S.walkouts++; S.streak = 0; S.log.push({ user: c.user, tip: 0, mood: 'walkout' }); cb.walkout?.(c); }
       } else if ((c.t += dt) > 1.8) { // leaves: shrinks away
         const k = Math.max(0, 1 - (c.t - 1.8) * 3); c.fig.m.scale.setScalar(2 * k);
         if (k <= 0) { scene.remove(c.fig.m, c.bubble, c.tag); c.tex.dispose(); S.customers.splice(S.customers.indexOf(c), 1); continue; }
       }
       const k = Math.max(0, c.patience / c.max), key = c.mood + Math.round(k * 40);
-      if (key !== c.drawK) { c.drawK = key; drawBubble(c.canvas, c.color, k, c.mood); c.tex.needsUpdate = true; }
+      if (key !== c.drawK) { c.drawK = key; drawBubble(c.canvas, c.color, k, c.mood, c.want); c.tex.needsUpdate = true; }
       const bob = Math.sin(t * 3 + c.x) * .08, urgent = c.mood === 'wait' && k < .25 ? 1 + Math.sin(t * 14) * .08 : 1;
       c.bubble.position.set(c.x, 4 + bob, c.z); c.bubble.scale.setScalar((c.far ? 2.8 : 2.3) * urgent); c.tag.position.set(c.x, 2.4, c.z);
     }
   };
   // where the guide should send you: customers whose glass you carry, else the bar (if anyone is waiting)
   S.targets = () => {
-    const carry = S.customers.filter(c => c.mood === 'wait' && tray.glasses.some(g => g.id === c.id));
+    const carry = S.customers.filter(c => c.mood === 'wait' && tray.count >= c.want);
     if (carry.length) return carry.map(c => ({ x: c.x, z: c.z, color: c.color }));
     return S.customers.some(c => c.mood === 'wait') ? [{ x: BAR.x, z: BAR.z, color: '#a970ff', bar: true }] : [];
   };

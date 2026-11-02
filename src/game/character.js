@@ -97,7 +97,7 @@ export function createChaseCam(camera) {
   let dist = 3.4;
   const look = new THREE.Vector3(); let init = false;
   return function update(dt, player, colliders, eye = 1.6, roll = 0, shake = 0) {
-    const yaw = player.camYaw ?? player.yaw, back = 5.4, height = 1.55 + Math.max(0, player.pitch) * 2;
+    const tw = player.towerH || 0, yaw = player.camYaw ?? player.yaw, back = 5.4 + tw * 1.1, height = 1.55 + tw * .55 + Math.max(0, player.pitch) * 2; // a tall tower pulls the camera back so you can see it lean
     // a wider, higher view: the streamer, the tray and the boards ahead all fit; a little to the right so the tray stays clear
     target.set(player.pos.x + Math.cos(yaw) * .45, Math.max(player.y, -1.5) + eye * .75, player.pos.z + Math.sin(yaw) * .45);
     const dx = -Math.sin(yaw), dz = Math.cos(yaw);
@@ -110,7 +110,7 @@ export function createChaseCam(camera) {
     dist += (Math.max(.6, maxD - .2) - dist) * Math.min(1, dt * (maxD < dist ? 20 : 4));
     // as walls pull the boom in, rise over the head so the robot never fills the screen
     const squeeze = 1 - dist / back;
-    want.set(target.x + dx * dist, Math.min(3.6, target.y + height * dist / back + squeeze * 1.25), target.z + dz * dist);
+    want.set(target.x + dx * dist, Math.min(3.6 + tw * .8, target.y + height * dist / back + squeeze * 1.25), target.z + dz * dist);
     if (!init) { camera.position.copy(want); init = true; }
     camera.position.lerp(want, Math.min(1, dt * 7)); // softer follow: less rigid
     camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake;

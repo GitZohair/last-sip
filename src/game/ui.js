@@ -17,7 +17,7 @@ export const ui = {
     $('channel').value = localStorage.getItem('lastsip:channel') || '';
     $('signin').onclick = signIn;
     document.querySelectorAll('.ic').forEach(e => e.innerHTML = icon(e.dataset.ic));
-    $('mic-on').onclick = async () => { $('mic-on').textContent = (await mic()) ? 'MICROPHONE ON' : 'MIC BLOCKED: HOLD V TO SHOUT'; };
+    if ($('mic-on')) $('mic-on').onclick = async () => { $('mic-on').textContent = (await mic()) ? 'MICROPHONE ON' : 'MIC BLOCKED: HOLD V TO SHOUT'; };
     $('world').onclick = lock;
     addEventListener('keydown', e => { if (e.code === 'KeyR' && !$('results').hidden) practice(); });
   },
@@ -121,7 +121,7 @@ export const ui = {
     const near = Math.max(0, Math.min(1, 1 - (vacuum - 1) / 7)); $('vac').style.opacity = vacuum < 8 ? 1 : 0; $('vac-fill').style.transform = `scaleX(${near})`; $('vac').dataset.hot = vacuum < 2.5 ? '1' : '';
     if (voice) { const v = $('voice'); v.style.opacity = voice.lock >= 0 || voice.alert >= 0 ? 1 : 0; /* only when a set piece needs your voice */ $('voice-fill').style.transform = `scaleY(${voice.level.toFixed(3)})`; v.dataset.mode = voice.alert >= 0 ? 'quiet' : voice.lock >= 0 ? 'lock' : ''; $('voice-goal').style.transform = `scaleY(${Math.max(0, voice.lock >= 0 ? voice.lock : voice.alert).toFixed(3)})`; }
     if (style) { document.querySelector('.style-box').dataset.zero = style.points ? '' : '1'; set('style-pts', style.points); set('style-combo', style.combo > 1 ? `x${style.combo}` : ''); }
-    const ok = `${tips}|${tray}|${served}|${streak}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span>TRAY ${tray}/5</span>${streak > 1 ? `<span class="streak">CLEAN x${Math.min(2, 1 + (streak - 1) * .25)}</span>` : ''}`; }
+    const ok = `${tips}|${tray}|${served}|${streak}`; if ($('order').dataset.k !== ok) { $('order').dataset.k = ok; $('order').innerHTML = `<span class="tips"><b>$${tips}</b></span><span>${served} SERVED</span><span class="tower">TOWER ${tray}</span>${streak > 1 ? `<span class="streak">CLEAN x${Math.min(2, 1 + (streak - 1) * .25)}</span>` : ''}`; }
     $('progress-fill').style.transform = `scaleX(${progress})`;
     document.body.classList.toggle('low', tray > 0 && water < .25 && water > .001);
     document.body.classList.toggle('trayless', !tray); // empty tray: the drink meter fades instead of screaming 0%

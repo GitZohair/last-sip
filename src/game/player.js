@@ -16,6 +16,7 @@ export function createPlayer(dom) {
     mouseX += e.movementX; p.camYaw += e.movementX * .0022 * (p.mirror || 1); p.lookIdle = 0; p.pitch = Math.max(-1.2, Math.min(1.2, p.pitch + e.movementY * .0022));
   });
 
+  p.towerH = 0;
   p.reset = (spawn) => { Object.assign(p.pos, { x: spawn.x, z: spawn.z }); p.yaw = spawn.yaw; p.camYaw = spawn.yaw; p.pitch = 0; p.y = 0; p.vy = 0; p.vel.x = p.vel.z = 0; mouseX = 0; };
 
   p.step = (dt, { colliders, push = { x: 0, z: 0 }, slip = false, gravity = 14, speedMul = 1, mirror = 1, base = 0, noJump = false }) => {

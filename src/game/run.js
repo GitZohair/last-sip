@@ -48,7 +48,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
   const prompts = createPrompts(scene, hazards);
   const actors = createActors(scene, level, sfx);
   const rule = todaysRule(seed), wind = createWind(scene, seed, rule === 'windy'); // always present: SEA BREEZE cards use it too
-  hazards.vacuum.hungry = rule === 'hungry'; hazards.vacuum.enabled = rule === 'hungry'; // only on LOOSE CANNON days, and it naps after every hit
+  hazards.vacuum.hungry = false; hazards.vacuum.enabled = false; // only on LOOSE CANNON days, and it naps after every hit
   const guide = createGuide(scene, { shift, actors, level });
   const drops = createDrops(scene, level, { sfx, onImpact: (d, dist) => { gallery.shake(1); if (dist < 6) run.shakeT = .35; } });
   // where to drop: on the route a few metres ahead of the streamer (so it lands in their way, telegraphed)
@@ -189,6 +189,13 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (const c of level.colliders) if (c.beach) consider(Math.max(c.minX, Math.min(p.x, c.maxX)), Math.max(c.minZ, Math.min(p.z, c.maxZ)));
     return best;
   };
+  // TIMBER: the tower topples. Hit-stop, shake, slow-mo, and the blame goes to whoever hit you last (else gravity).
+  run.best = 0; run.drops = 0;
+  glass.onCollapse = n => {
+    const who = run.t - (run.lastHitT ?? -9) < 2.5 ? run.lastHitBy : 'GRAVITY';
+    run.drops++; run.hitStop = .12; run.shakeT = .6; sfx.shatter(n); shift.streak = 0; avatar.knock('fall', .9);
+    ledger.blame([who], 'TOWER', 2 + n * .5, run.t); hooks.toppled?.(n, who);
+  };
   let stepDist = 0, sloshCd = 0, spillCd = 0, creakCd = 0, zzzCd = 2;
   const lipPos = new THREE.Vector3();
   run.step = (dt) => {
@@ -223,7 +230,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     for (const hit of [...actors.update(dt, run.t, player), ...drops.update(dt, run.t, player)]) {
       if (hit.help) { run.buoy = hit.user; worn.visible = true; sfx.ding(); hooks.saved?.(0); hooks.buoy?.(hit.user); avatar.emote('ThumbsUp', .8); continue; }
       run.hitStop = .07; run.shakeT = Math.max(run.shakeT, .25); run.lastHit = { x: hit.dir.x, z: hit.dir.z, n: (run.lastHit?.n || 0) + 1 }; // juice: freeze-frame + shake + directional flash
-      conductor.hit(hit.power); sfx.hit(); player.vel.x += hit.dir.x * hit.power;
+      conductor.hit(hit.power); sfx.hit(); player.vel.x += hit.dir.x * hit.power; run.lastHitBy = hit.user; run.lastHitT = run.t;
       if (hit.drop) { avatar.knock(hit.direct ? 'flat' : 'fall', hit.direct ? 1.3 : 1.1); if (hit.direct) { player.vel.x *= .2; player.vel.z *= .2; sfx.boing(); } } // pancaked / knocked flat
       else if (hit.kind === 'BARREL') avatar.knock('fall', 1); player.vel.z += hit.dir.z * hit.power;
       glass.kick(hit.dir.x * hit.power * .4, -hit.power * .3); ledger.blame([hit.user], hit.kind, 3, run.t); hazard = `${hit.kind}: ${hit.user}`; hooks.hit?.(hit.user, hit.kind); avatar.emote('No', .6); style.combo = 1;
@@ -269,6 +276,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     if (player.justJumped) { player.justJumped = false; if (props.list.some(p => Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) < 1.2)) trick('hop'); }
     if (mods.lava && player.y < .05 && player.grounded) { glass.state.water = Math.max(0, glass.state.water - .06 * dt); hazard = 'KEEP HOPPING'; }
     const lost = glass.step(dt, { ax: player.accel.x, az: player.accel.z, turn: THREE.MathUtils.clamp(player.turnRate, -6, 6) * .25, steady: player.steady, calm: fx.calm, wobble: (shake + fx.kick + (mods.on('drunk') ? 2 : 0)) * 6, gain: mods.slosh * (rule === 'heavy' ? 1.3 : 1), noSpill: mods.noSpill });
+    run.best = Math.max(run.best, glass.count); player.towerH = player.towerH + (glass.count * .3 - player.towerH) * Math.min(1, dt * 2);
     if (lost > 0) {
       if ((spillCd -= dt) <= 0) { spillCd = .12; sfx.spill(lost); }
       run.roomLoss[room.key] += lost;
@@ -280,7 +288,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     splash.step(dt);
     const spd = Math.hypot(player.vel.x, player.vel.z);
     if (player.grounded && (stepDist += spd * dt) > (player.steady ? .55 : .8)) { stepDist = 0; sfx.step(player.steady); }
-    sloshCd -= dt; if (glass.state.danger > .55 && sloshCd <= 0) { sloshCd = .45; sfx.slosh(glass.state.danger); }
+    sloshCd -= dt; if (glass.state.danger > .45 && sloshCd <= 0) { sloshCd = .55 - glass.state.danger * .35; sfx.lean(glass.state.danger); } // the tower creaks faster as it leans
     creakCd -= dt; if (creakCd <= 0 && hazards.doorWarning(run.t, player)) { creakCd = 1.2; sfx.creak(); }
     if (hazards.mate?.inRoom && hazards.mate.awake <= 0 && (zzzCd -= dt) <= 0) { zzzCd = 1.8; sfx.zzz(); }
     sfx.frame(dt, { vacuum: hazards.vacuum.distance, stunned: hazards.vacuum.stunned, low: glass.count > 0 && glass.state.water < .15 });
@@ -310,7 +318,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
       if (player.keys.has('KeyE')) { sfx.ding(); glass.state.vx = glass.state.vz = 0; glass.state.tx *= .3; glass.state.tz *= .3; run.saves++; trick('catch'); run.catchWin = -1.2; hooks.saved?.(run.saves); avatar.emote('Yes', .6); }
       else if (run.catchWin <= 0) { run.catchWin = -1.2; hooks.catchPrompt?.(false); }
     } else if (run.catchWin < 0) run.catchWin = Math.min(0, run.catchWin + dt);
-    else if (glass.state.danger > .9 && glass.state.water > .02 && !run.atSink) { run.catchWin = .5; hooks.catchPrompt?.(true); }
+    // (catch-it removed: the tower is the whole skill now)
     // SCREAM TO DASH (mic): forward burst, but the glass hates it.
     // SHOUT: scares the vacuum if it's close (it spins out for 2.5 s), otherwise a forward dash. Both slosh.
     if (voice.shout && !hazards.lock.near) {
@@ -319,8 +327,8 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     }
     // THE SHIFT: load glasses at the bar, serve the customers on the islets. Tips are the score.
     shift.update(run.t, dt, player, {
-      loaded: n => { run.salt = 0; sfx.collect(0); hooks.loaded?.(n); },
-      served: (c, tip, water) => { if (c.mood === 'happy') { sfx.collect(Math.min(4, shift.served)); trick('collect'); } else sfx.wake(); hooks.served?.(c, tip, water); },
+      loaded: n => { run.salt = 0; sfx.stack(n); hooks.loaded?.(n); },
+      served: (c, tip, water) => { if (c.mood === 'happy') { sfx.cash(c.want); trick('collect'); } else sfx.wake(); hooks.served?.(c, tip, water); },
       order: c => hooks.order?.(c), hurry: c => hooks.hurry?.(c),
       walkout: c => { const v = ledger.villain(); if (v) ledger.blame([v.name], 'WALKOUT', 2, run.t); hooks.walkout?.(c, v?.name); },
     });

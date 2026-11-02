@@ -4,8 +4,8 @@ import { rng } from './rng.js';
 // DAILY HOUSE RULE: one seeded twist per day, the same for every streamer (shown next to today's order).
 export const RULES = {
   windy: { label: 'WINDY', tip: 'Gusts push you sideways on the boards' },
-  hungry: { label: 'LOOSE CANNON', tip: 'The runaway cannon starts early and rolls faster' },
-  heavy: { label: 'HEAVY GLASS', tip: 'The drink sloshes more' },
+  heavy: { label: 'TOP HEAVY', tip: 'The tower sways more' },
+  calm: { label: 'CALM SEAS', tip: 'A gentle day. Go tall.' },
 };
 export const todaysRule = seed => rng(seed + ':rule').pick(Object.keys(RULES));
 

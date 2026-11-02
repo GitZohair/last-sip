@@ -89,18 +89,19 @@ const simulate = text => onChat({ user: `test_viewer_${++simN % 6}`, login: `tes
 // ---------- runs
 async function start(asPour) {
   const d = today(seed); official = asPour && !d.poured;
-  sfx.unlock(); voice.enable(); // the mic is part of the game; V is the fallback if it's refused
+  sfx.unlock(); // no mic prompt: nothing in the game needs it
   ui.loading(true);
   run = await createRun(world, player, { seed, voice, profile: profile || (chat ? { name: chat.channel } : null), hooks: {
     spill: (who, amt) => ui.blame(who, amt), toast: (t, ico) => ui.feed(t, 'help', ico),
     house: card => card && ui.slot(card, 'THE HOUSE'),
     catchPrompt: on => ui.catchPrompt(on), saved: n => { slowmo = .35; ui.catchPrompt(false); },
     lastSip: () => { slowmo = 1.2; ui.lastSip(); clipIt('last sip'); }, clip: clipIt, end: finish, trick: () => {}, // style tricks no longer pop text: tips are the only score
-    fell: () => ui.big('SPLASH'), drowned: n => { ui.big('GLUG'); cues?.pop(n ? `${n} DRINK${n > 1 ? 'S' : ''} LOST AT SEA` : 'WASHED UP AT THE BAR', '#ff5c7a', true); },
+    fell: () => ui.big('SPLASH'),
+    toppled: (n, who) => { slowmo = 1.1; ui.big(n >= 8 ? 'TIMBER!' : 'CRASH'); cues?.pop(`${n} DRINKS DOWN${who !== 'GRAVITY' ? ` · THANKS ${who}` : ''}`, '#ff5c7a', true); }, drowned: n => { ui.big('GLUG'); cues?.pop(n ? `${n} DRINK${n > 1 ? 'S' : ''} LOST AT SEA` : 'WASHED UP AT THE BAR', '#ff5c7a', true); },
     order: c => { sfx.ding(); cues?.pop(c.far ? `ORDER ON THE ISLAND  ${c.user}` : `NEW ORDER  ${c.user}`, c.far ? '#ffd166' : c.color); },
     hurry: c => { sfx.beep(true); cues?.pop(`${c.user} IS LEAVING`, '#ffb020'); },
-    loaded: n => cues?.pop(`${n} DRINK${n > 1 ? 'S' : ''} LOADED`, '#c9a2ff'),
-    served: (c, tip) => cues?.pop(c.mood === 'happy' ? `+$${tip}${c.mult > 1 ? `  x${c.mult}` : ''}${c.quick ? '  QUICK' : ''}  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true),
+    loaded: n => { if (n % 5 === 0) cues?.pop(`TOWER x${n}`, n >= 15 ? '#ffd166' : '#c9a2ff', n >= 15); },
+    served: (c, tip) => cues?.pop(c.mood === 'happy' ? `+$${tip}  ${c.want > 1 ? `${c.want} DRINKS FROM` : 'FROM'} A x${c.tower} TOWER  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true),
     walkout: (c, v) => { cues?.pop(`${c.user} WALKED OUT`, '#ff5c7a', true); if (v) ui.feed(`Walkout blamed on ${v}`, 'muted', 'warning'); },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
     hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : kind === 'SNIPER' ? `SNIPED BY ${who}` : kind === 'BARREL' ? `ROLLED BY ${who}` : `${kind} FROM ${who}`, '#ff5c7a'),

@@ -40,7 +40,7 @@ export function createHudCues(root) {
     g.strokeStyle = '#0e2a3a'; g.lineWidth = 5; for (const [x, z, ax] of GAPS) { g.beginPath(); g.moveTo(mx(x) - (ax === 'z' ? 3 : 0), mz(z) - (ax === 'x' ? 3 : 0)); g.lineTo(mx(x) + (ax === 'z' ? 3 : 0), mz(z) + (ax === 'x' ? 3 : 0)); g.stroke(); }
     for (const [, [x, z]] of Object.entries(PADS)) { g.fillStyle = '#d9c39a55'; g.beginPath(); g.arc(mx(x), mz(z), 5, 0, 7); g.fill(); }
     g.fillStyle = '#a970ff'; g.fillRect(mx(BAR.x) - 5, mz(BAR.z) - 5, 10, 10); // the bar
-    for (const c of run.shift.customers) if (c.mood === 'wait') { g.fillStyle = c.color; g.beginPath(); g.arc(mx(c.x), mz(c.z), 6, 0, 7); g.fill(); if (run.glass.glasses.some(q => q.id === c.id)) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); } }
+    for (const c of run.shift.customers) if (c.mood === 'wait') { g.fillStyle = c.color; g.beginPath(); g.arc(mx(c.x), mz(c.z), 6, 0, 7); g.fill(); if (run.glass.count >= c.want) { g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); } }
     for (const [x, z] of TOWERS) { const busy = run.actors.list.some(a => a.tower && a.tower.x === x && a.tower.z === z); g.fillStyle = busy ? '#ff2040' : '#ffffff40'; g.fillRect(mx(x) - 3, mz(z) - 3, 6, 6); }
     for (const a of run.actors.list) if (a.kind === 'barrel') { g.fillStyle = '#ffb020'; g.beginPath(); g.arc(mx(a.x), mz(a.z), 3.5, 0, 7); g.fill(); }
     const bot = run.hazards.vacuum.mesh.position; if (run.hazards.vacuum.distance < 90) { g.fillStyle = '#ff3b5c'; g.beginPath(); g.arc(mx(bot.x), mz(bot.z), 3.5, 0, 7); g.fill(); }
@@ -61,7 +61,7 @@ export function createHudCues(root) {
       }
       for (const c of run.shift.customers) { // every waiting customer off screen: their colour, red when they're about to leave
         if (i >= edges.length - 1 || c.mood !== 'wait') continue;
-        const urgent = c.patience / c.max < .3, carried = run.glass.glasses.some(q => q.id === c.id);
+        const urgent = c.patience / c.max < .3, carried = run.glass.count >= c.want;
         edge(edges[i++], camera, { x: c.x, y: 1.5, z: c.z }, urgent ? '#ff3b5c' : c.color, 'glass', carried || urgent || c.far ? c.user : '');
       }
       const vac = run.hazards.vacuum;
