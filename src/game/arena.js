@@ -14,8 +14,8 @@ export function createArena(scene, { net, me }) {
   async function add(id, s) {
     const e = { s, p: puppet(), seen: performance.now(), loading: true }; peers.set(id, e);
     e.avatar = await createCharacter(scene, { color: s.color }); e.tray = createTray(e.avatar.holder);
-    e.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(s.name.slice(0, 16).toUpperCase(), { w: 512, h: 96, bg: s.color || '#a970ff', font: 'bold 56px system-ui' }), depthTest: false }));
-    e.tag.scale.set(2.6, .5, 1); e.tag.renderOrder = 11; scene.add(e.tag); e.loading = false;
+    e.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(s.name.slice(0, 16).toUpperCase(), { w: 512, h: 96, bg: s.color || '#a970ff', font: 'bold 56px system-ui' }), depthTest: false, sizeAttenuation: false }));
+    e.tag.scale.set(.16, .03, 1); e.tag.renderOrder = 11; scene.add(e.tag); e.loading = false;
   }
   function remove(id) { const e = peers.get(id); if (!e) return; e.avatar?.dispose(); scene.remove(e.tag); peers.delete(id); }
   const api = {
@@ -25,6 +25,7 @@ export function createArena(scene, { net, me }) {
       if (ev === 'state') { const e = peers.get(d.id); if (!e) add(d.id, d); else { e.s = d; e.seen = performance.now(); } return; }
       if (ev === 'leave') return remove(d.id);
       if (ev === 'bomb') return handlers.bomb?.(d);
+      if (ev === 'co2') return handlers.co2?.(d);
       if (d.to !== me.id) return; // hits and attacks are addressed
       if (ev === 'hit') handlers.hit?.(d);
       if (ev === 'attack') handlers.attack?.(d);

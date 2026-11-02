@@ -18,8 +18,8 @@ export function createBots(scene, level, { names = [], count = 3 } = {}) {
   async function spawn(i) {
     const name = (names[i] || HOUSE[i % HOUSE.length]).slice(0, 16), color = COLORS[i % COLORS.length];
     const avatar = await createCharacter(scene, { color }), tray = createTray(avatar.holder);
-    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(name.toUpperCase(), { w: 512, h: 96, bg: color, font: 'bold 56px system-ui' }), depthTest: false }));
-    tag.scale.set(2.4, .46, 1); tag.renderOrder = 11; scene.add(tag);
+    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(name.toUpperCase(), { w: 512, h: 96, bg: color, font: 'bold 56px system-ui' }), depthTest: false, sizeAttenuation: false }));
+    tag.scale.set(.16, .03, 1); tag.renderOrder = 11; scene.add(tag);
     const a = i / count * Math.PI * 2;
     const b = { name, color, avatar, tray, tag, tips: 0, slammedAt: -9, vy: 0, mode: 'stack', want: 3 + Math.floor(Math.random() * 6), goal: null, slamCd: 3 + i, slamT: 0, kb: { x: 0, z: 0 }, fall: 0, wait: 0,
       p: { pos: { x: Math.cos(a) * 3.5, z: Math.sin(a) * 2.5 }, y: 0, yaw: 0, vel: { x: 0, z: 0 }, vy: 0, grounded: true, steady: false } };
@@ -34,6 +34,11 @@ export function createBots(scene, level, { names = [], count = 3 } = {}) {
       api.t = t; const drunk = run.mods?.on('drunk');
       for (const b of bots) {
         const p = b.p;
+        if (b.inflateT > 0) { // CO2'd: swell, float up, POP, respawn at the plaza
+          b.inflateT -= dt; const k = Math.min(1, (2.4 - b.inflateT) / .8); b.avatar.inflate(k); p.y += dt * 2.4 * k; p.pos.x += Math.sin(t * 3 + b.want) * dt * .6;
+          if (b.inflateT <= 0) { b.avatar.inflate(0); run.onPop?.(p.pos, p.y); b.fall = .01; if (b.tray.count) b.tray.collapse(); p.y = -1; }
+          b.avatar.update(dt, p, b.tray.state, 'play'); b.tray.render(t); b.tag.position.set(p.pos.x, p.y + 3.2, p.pos.z); continue;
+        }
         if (b.fall > 0) { // ring-out: sink, then pop back at the plaza
           b.fall -= dt; p.y -= dt * 6; if (b.fall <= 0) { const a = Math.random() * 6.28; p.pos.x = Math.cos(a) * 3; p.pos.z = Math.sin(a) * 2; p.y = 0; b.mode = 'stack'; }
           b.avatar.update(dt, p, b.tray.state, 'play'); b.tag.position.set(p.pos.x, p.y + 2.5, p.pos.z); continue;

@@ -247,6 +247,11 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     let slip = chaos.slipAt(player.pos.x, player.pos.z) || (wet && !grip);
     if (run.slip) { const s = run.slip; s.t -= dt; player.yaw += s.dir * 1.8 * Math.max(0, s.t / .55) * dt; slip = true; if (s.t <= 0) run.slip = null; } // eased spin, low traction
     if (boatStep(dt)) { /* rowing: the boat carries you */ }
+    else if (run.inflateT > 0) { // CO2'd: you swell into a balloon, drift up helplessly, then POP and respawn at the bar
+      run.inflateT -= dt; const k = Math.min(1, (2.4 - run.inflateT) / .8); avatar.inflate?.(k);
+      player.y += dt * 2.4 * k; player.pos.x += Math.sin(run.t * 3) * dt * .6; player.vel.x = player.vel.z = 0; player.vy = 0; player.grounded = false;
+      if (run.inflateT <= 0) { avatar.inflate?.(0); hooks.popped?.({ x: player.pos.x, z: player.pos.z }, player.y); run.lastHitT = run.t; glass.collapse(); player.reset({ x: BAR.x + 2.6, z: BAR.z + 1.2, yaw: player.yaw }); player.grounded = true; }
+    }
     else if (run.drive?.(dt)) { if (player.y < SWIM_Y) fall(room); } // driving a car (cars.js moves the player)
     else if (run.climb) { // short climb-out tween onto the beach / ramp top
       const c = run.climb; c.t += dt / .45; const k = Math.min(1, c.t);
@@ -340,6 +345,7 @@ export async function createRun(world, player, { seed, profile, hooks, voice }) 
     // somebody slammed ME (arena): shove, knock down, big kick to the tower, and they get the blame
     run.applyHit = d => {
       if (run.state !== 'play') return;
+      if (d.kind === 'inflate') { if (!(run.inflateT > 0)) { run.inflateT = 2.4; run.lastHitBy = d.by; run.lastHitT = run.t; hooks.inflated?.(d.by); } return; }
       // YEET: you get launched in a spinning arc (your tower comes along for the ride)
       player.vel.x += d.dir.x * d.power; player.vel.z += d.dir.z * d.power; player.vy = 3 + d.power * .3 + (d.up || 0); player.grounded = false; player.spin = (Math.random() > .5 ? 1 : -1) * (8 + d.power);
       glass.kick(d.dir.x * 3 + (Math.random() - .5), d.dir.z * 3 + (Math.random() - .5));

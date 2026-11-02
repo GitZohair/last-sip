@@ -28,6 +28,7 @@ export async function createBean(scene, { color = '#ff7a2f' } = {}) {
   armR.rotation.x = -1.25; // holds the tower out front
   const holder = new THREE.Group(); holder.position.set(.5, .98, -.42); lean.add(holder); holder.scale.setScalar(1.4);
 
+  let puff = 0; // CO2: 0 = normal, 1 = full balloon
   let knockKind = null, knockT = 0, knockLen = 1, emoteT = 0, phase = 0, spin = 0;
   function knock(kind, seconds = 1) { knockKind = kind; knockT = knockLen = seconds; }
   function emote(_n, seconds = 1) { emoteT = seconds; }
@@ -56,6 +57,12 @@ export async function createBean(scene, { color = '#ff7a2f' } = {}) {
     if (state === 'done-win') body.position.y = Math.abs(Math.sin(performance.now() / 160)) * .4;
     else if (state === 'done-fail') lean.rotation.x = -1.4;
     if (player.swimming) body.position.y = -.4 + Math.sin(phase * .5) * .05;
+    if (puff > 0) { // BALLOON MODE: body swells round, limbs flap uselessly, eyes huge
+      torso.scale.set(1 + puff * 1.5, 1 + puff * .8, 1 + puff * 1.5); torso.position.y = .86 + puff * .3;
+      for (const [i, l] of [armL, armR, legL, legR].entries()) l.rotation.z = Math.sin(performance.now() / 60 + i) * .8 * puff;
+      for (const { e } of eyes) { e.position.z = -.33 - puff * .55; e.scale.setScalar(1 + puff * .6); }
+      body.rotation.z = Math.sin(performance.now() / 300) * .25 * puff;
+    } else if (torso.scale.x !== 1) { torso.scale.set(1, 1, 1); torso.position.y = .86; for (const { e } of eyes) { e.position.z = -.33; e.scale.setScalar(1); } }
   }
-  return { root, holder, HAND: new THREE.Vector3(), update, emote, play: () => {}, knock, get down() { return knockT > 0; }, dispose: () => scene.remove(root), torso };
+  return { root, holder, HAND: new THREE.Vector3(), inflate: k => { puff = k; }, update, emote, play: () => {}, knock, get down() { return knockT > 0; }, dispose: () => scene.remove(root), torso };
 }

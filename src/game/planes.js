@@ -7,7 +7,7 @@ import * as THREE from 'three';
 // With no chat connected, the house sends the odd plane with its own banner so the sky is never empty.
 const white = new THREE.MeshPhongMaterial({ color: '#f4f1ea', shininess: 60 }), red = new THREE.MeshPhongMaterial({ color: '#ff4f6d', shininess: 60 });
 const darkM = new THREE.MeshLambertMaterial({ color: '#2b2838' }), rope = new THREE.LineBasicMaterial({ color: '#2b2838' });
-function planeMesh(tint) {
+export function planeMesh(tint) {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; body.add(m); return m; };
   const tm = new THREE.MeshPhongMaterial({ color: tint, shininess: 60 });

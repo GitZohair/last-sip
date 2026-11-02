@@ -256,3 +256,10 @@ body.trayless .glass-meter { opacity: .3; filter: grayscale(1); transition: opac
 #today-order .rule { background: #18332e; color: #fff6e6; font: 900 .85rem system-ui; padding: .35em .8em; border-radius: 8px; letter-spacing: .06em; }
 #today-order .tip { font: 600 .9rem system-ui; opacity: .8; }
 #today-order .best { font: 800 .8rem system-ui; padding: .3em .7em; border-radius: 8px; background: #ff6a4d22; }
+#bombs i.co2 { border-radius: 8px; width: 16px; background: linear-gradient(#bff0ff, #3fb8e6); box-shadow: 0 0 0 3px #5dd6ff88, 0 4px 10px #0007; }
+#bombs i.co2::after { display: none; }
+#grades .podium { list-style: none; padding: 0; margin: .4em 0 1em; display: grid; gap: .35em; }
+#grades .podium li { display: flex; align-items: center; gap: .7em; padding: .45em .8em; border-radius: 10px; background: #18332e10; font: 800 1rem system-ui; }
+#grades .podium li:first-child { background: #ffd16655; font-size: 1.15rem; }
+#grades .podium li.me { outline: 3px solid #ff6a4d; }
+#grades .podium b { width: 1.6em; } #grades .podium span { flex: 1; } #grades .podium em { font-style: normal; }

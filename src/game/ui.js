@@ -137,14 +137,15 @@ export const ui = {
     document.body.classList.toggle('low', tray > 0 && water < .25 && water > .001);
     document.body.classList.toggle('trayless', !tray); // empty tray: the drink meter fades instead of screaming 0%
   },
-  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0, tips = 0, served = 0, walkouts = 0, servedBy = [] }) {
+  results({ rooms = [], won, water, time, score, credits, receipt, official, streak, board, salt = 0, tips = 0, served = 0, walkouts = 0, servedBy = [], podium = null }) {
     ui.show('results');
     set('r-kicker', official ? 'THE POUR · OFFICIAL' : 'PRACTICE RUN');
-    set('r-title', !served ? 'Nobody got a drink.' : walkouts > served ? 'The customers have left a review.' : tips >= served * 8 ? 'Five-star waiter.' : tips < served * 4 ? 'Mostly spilled, partly seawater.' : 'Technically hospitality.');
+    if (podium?.length > 1) { const w = podium[0], me = podium.findIndex(r => r.me); set('r-kicker', me === 0 ? 'TOP SCORER' : `YOU PLACED #${me + 1} OF ${podium.length}`); set('r-title', me === 0 ? 'You win the bar.' : `${w.name} wins. Blame them.`); }
+    else set('r-title', !served ? 'Nobody got a drink.' : walkouts > served ? 'The customers have left a review.' : tips >= served * 8 ? 'Five-star waiter.' : tips < served * 4 ? 'Mostly spilled, partly seawater.' : 'Technically hospitality.');
     $('r-stats').innerHTML = `<div><b>$${tips}</b><span>TIPS</span></div><div><b>${served}</b><span>SERVED</span></div>${walkouts ? `<div><b>${walkouts}</b><span>WALKOUTS</span></div>` : ''}<div><b>${score}</b><span>SCORE</span></div>${streak > 0 ? `<div><b>${streak}</b><span>DAY STREAK</span></div>` : ''}`;
     $('credits').innerHTML = credits.length ? credits.map((c, i) => `<li style="animation-delay:${i * .3}s"><span>${esc(c.name)}</span><b>${Math.round(c.amount * 100)}%</b></li>`).join('') : '<li><span>Nobody. A perfect pour.</span></li>';
     const grade = l => l < .03 ? 'A' : l < .08 ? 'B' : l < .15 ? 'C' : 'F';
-    $('grades').innerHTML = servedBy.length ? `<p class="served">SERVED: ${servedBy.map(esc).join(', ')}</p>` : '';
+    $('grades').innerHTML = (podium?.length > 1 ? `<ol class="podium">${podium.map((r, i) => `<li class="${r.me ? 'me' : ''}"><b>${i + 1}</b><span>${esc(r.name)}</span><em>$${r.tips}</em></li>`).join('')}</ol>` : '') + (servedBy.length ? `<p class="served">SERVED: ${servedBy.map(esc).join(', ')}</p>` : '');
     void rooms.map((x, i) => `<div class="g-${grade(x.lost)}" style="animation-delay:${.2 + i * .15}s"><b>${grade(x.lost)}</b><span>${x.key}</span></div>`).join('');
     $('receipt').textContent = receipt;
     $('share').onclick = () => { navigator.clipboard?.writeText(receipt); $('share').textContent = 'COPIED'; };

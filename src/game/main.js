@@ -25,8 +25,9 @@ let bubbles = null, bombs = null, cars = null, planes = null;
 const said = new Map(), chatLines = []; // viewer -> their last chat line; recent lines for the house banner planes
 const AIR = new Set(['bomb', 'drop', 'sniper', 'barrel', 'deck', 'crate', 'airstrike', 'storm', 'lights']), CARE = new Set(['calm', 'care']);
 function throwBomb() { const th = bombs?.throw(ME.name); if (th && arena) net?.send('bomb', { id: ME.id, by: ME.name, ...th }); }
-addEventListener('keydown', e => { if (e.code === 'KeyQ' && !e.repeat) throwBomb(); });
-addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement) throwBomb(); });
+function shootGas() { const sh = bombs?.shoot(ME.name); if (sh && arena) net?.send('co2', { id: ME.id, by: ME.name, ...sh }); return !!sh; }
+addEventListener('keydown', e => { if (e.repeat) return; if (e.code === 'KeyQ') throwBomb(); if (e.code === 'KeyR') shootGas(); });
+addEventListener('mousedown', e => { if (e.button === 0 && document.pointerLockElement && !shootGas()) throwBomb(); });
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 let twists = null;
 const recentChat = []; let bots = null;
@@ -51,7 +52,7 @@ function openRoom(code) {
     if (ev === 'lobby' || ev === 'state') { lobbyPeers.set(d.id, { name: d.name, color: d.color, seen: performance.now() }); }
     if (ev === 'start' && (!run || run.state !== 'play')) { if (d.id !== ME.id) { asRemote = true; start(false).finally(() => { asRemote = false; }); } return; } // somebody started the round: everyone in the room goes
     arena?.onMessage(ev, d, {
-      hit: d => run?.applyHit?.(d), bomb: d => bombs?.launch(d.x, d.y, d.z, d.vx, d.vy, d.vz, d.by, { mine: true, ghost: true }),
+      hit: d => run?.applyHit?.(d), bomb: d => bombs?.launch(d.x, d.y, d.z, d.vx, d.vy, d.vz, d.by, { mine: true, ghost: true }), co2: d => bombs?.fire(d.x, d.y, d.z, d.dx, d.dz, d.by, true, true),
       attack: d => { if (run?.summon(d.kind, `${d.from} CHAT: ${d.user}`, 'paid')) ui.feed(`${d.from.toUpperCase()}'S CHAT sent ${d.kind.toUpperCase()} (${d.user})`, 'legend', 'twitch'); },
     });
   } });
@@ -175,6 +176,7 @@ async function start(asPour) {
     served: (c, tip) => { if (twists?.T.happy > 0 && c.mood === 'happy') { run.shift.tips += tip; tip *= 2; } cues?.pop(c.mood === 'happy' ? `+$${tip}  ${c.want > 1 ? `${c.want} DRINKS FROM` : 'FROM'} A x${c.tower} TOWER  ${c.user}` : `1 STAR FROM ${c.user}`, c.mood === 'happy' ? '#5dff9b' : '#ff5c7a', true) },
     walkout: (c, v) => { cues?.pop(`${c.user} WALKED OUT`, '#ff5c7a', true); if (v) ui.feed(`Walkout blamed on ${v}`, 'muted', 'warning'); },
     buoy: who => cues?.pop(`LIFEBUOY FROM ${who}`, '#5dffa0'), rescued: who => { cues?.pop(`SAVED BY ${who}`, '#5dffa0', true); clipIt('rescue'); },
+    inflated: who => speak(who, 'POP GOES THE STREAMER', { bg: '#5dd6ff' }), popped: (pos, y) => bombs?.pop(pos, y),
     slammed: who => { sfx.say('hit'); speak(who, pickLine(LINES.slam)); },
     hit: (who, kind) => cues?.pop(kind === 'BUMPED' ? `${who}!` : kind === 'SNIPER' ? `SNIPED BY ${who}` : kind === 'BARREL' ? `ROLLED BY ${who}` : `${kind} FROM ${who}`, '#ff5c7a'),
   } });
@@ -183,16 +185,20 @@ async function start(asPour) {
   cues?.remove(); cues = createHudCues($('hud'));
   arena = net ? createArena(world.scene, { net, me: ME }) : null;
   bots = net ? null : createBots(world.scene, run.level, { names: recentChat.slice(0, 3) }); if (bots) await bots.ready;
-  document.getElementById('twist')?.remove(); bombs?.dispose(); bombs = createBombs({ scene: world.scene, level: run.level, player, run, bots, onHitPeers: (p, R, by) => {
+  document.getElementById('twist')?.remove(); bombs?.dispose(); bombs = createBombs({ scene: world.scene, level: run.level, player, run, bots, onInflatePeers: sh => {
+    for (const [id, e] of arena?.peers || []) if (Math.hypot(e.p.pos.x - sh.x, e.p.pos.z - sh.z) < .9 && !(e.puffed > performance.now())) { e.puffed = performance.now() + 3000; net.send('hit', { id: ME.id, to: id, by: ME.name, kind: 'inflate', dir: { x: sh.dx, z: sh.dz }, power: 0 }); run.onSlamLanded?.(e.s.name); return true; }
+    return false;
+  }, onHitPeers: (p, R, by) => {
     for (const [id, e] of arena?.peers || []) { const d = Math.hypot(e.p.pos.x - p.x, e.p.pos.z - p.z); if (d < R) net.send('hit', { id: ME.id, to: id, by, dir: { x: (e.p.pos.x - p.x) / (d || 1), z: (e.p.pos.z - p.z) / (d || 1) }, power: 6 + 8 * (1 - d / R), up: 3 }); }
   } });
-  cars?.dispose(); cars = createCars({ scene: world.scene, level: run.level, player, run, bots, avatar: run.avatar, onRam: (c, vx, vz) => {
+  cars?.dispose(); cars = createCars({ scene: world.scene, level: run.level, player, run, bots, bombs, avatar: run.avatar, onRam: (c, vx, vz) => {
     for (const [id, e] of arena?.peers || []) { const dx = e.p.pos.x - c.x, dz = e.p.pos.z - c.z, d = Math.hypot(dx, dz); if (d < 1.7 && !(e.rammed > performance.now())) { e.rammed = performance.now() + 800; net.send('hit', { id: ME.id, to: id, by: ME.name, dir: { x: dx / (d || 1), z: dz / (d || 1) }, power: Math.abs(c.speed), up: 5 }); } }
   } });
   planes?.dispose(); planes = createPlanes({ scene: world.scene, bombs, target: () => { // airstrikes home in on the leader (blue-shell rules); solo = your own chat bombs you
     const L = arena?.leader(); if (L && L.s.tips > run.shift.tips) { const e = arena.peers.get(L.id); return { x: e.p.pos.x, z: e.p.pos.z }; }
     return { x: player.pos.x, z: player.pos.z }; } });
-  bubbles = createBubbles(world.scene); twists = createTwists({ hud: $('hud'), run, player, bots, me: ME, speak }); twists.chatPicks = !!chat;
+  bubbles = createBubbles(world.scene);
+  run.onPop = (pos, y) => bombs.pop(pos, y); twists = createTwists({ hud: $('hud'), run, player, bots, me: ME, speak }); twists.chatPicks = !!chat;
   run.onBotRingout = b => { sfx.splash(); sfx.say('ringout'); speak(b.name, 'NOOOO', { bg: '#4fc3ff' }); };
   run.onSlamLanded = name => { speak(ME.name, pickLine(LINES.slam)); sfx.say('slam'); };
   if (bots) bots.onTopple = (b, n, byMe) => { // a bot drops its tower: if you slammed it, gloat; otherwise it blames YOU
@@ -226,7 +232,8 @@ async function finish(r) {
   const text = receipt({ tips: sh.tips, served: sh.served, walkouts: sh.walkouts, stars, falls: r.falls, saves: r.saves, number: dayNumber(seed), villain: villain?.name, duck: r.duck, streak: d.streak, official });
   if (official) submit(session, { saves: r.saves, seed, channel: session?.login || chat?.channel || 'anonymous', water, time, score, finished: sh.served > 0, credits: r.ledger.credits().slice(0, 10) });
   const board = await boards(seed).catch(() => null);
-  setTimeout(() => ui.results({ salt, rooms, tips: sh.tips, served: sh.served, walkouts: sh.walkouts, servedBy: sh.servedBy, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
+  const podium = arena ? arena.standings(run) : bots ? [{ name: ME.name, tips: sh.tips, me: true }, ...bots.standings()].sort((a, b) => b.tips - a.tips) : null;
+  setTimeout(() => ui.results({ podium, salt, rooms, tips: sh.tips, served: sh.served, walkouts: sh.walkouts, servedBy: sh.servedBy, won: r.won, water, time, score, credits: r.ledger.credits(), receipt: text, official, streak: d.streak, board }), 1600);
 }
 
 // ---------- boot
