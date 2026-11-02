@@ -36,6 +36,7 @@ Streamers already play party games *with* their chat watching. LAST SIP makes ch
 - **Kenney CC0 assets** for the island (Pirate Kit), the bar (Furniture Kit) and the vehicles (Car Kit).
 - **Twitch, zero setup:** the public chat WebSocket with an anonymous login, so a streamer types their channel and plays. No app registration, tokens or bot account. From that one connection we read chat, emotes, name colours, first-time chatters, bits, channel-point text rewards and highlighted messages, plus subs, resubs, gift subs, gift bombs and raids (USERNOTICE). A chat director runs ballots, the raffle, cooldowns and big-chat gating, and skips known chat bots.
 - **Live rooms:** Supabase Realtime broadcast over a raw WebSocket. Each client is authoritative for itself and sends state at 12 Hz; hits are sent to the victim, who applies them. Bombs and CO2 shots are mirrored so everyone sees them.
+- **Tested against live Twitch chat:** connected to a busy live channel, real chatters became the customers and rival bots, chat votes opened, and banner planes towed real chat lines.
 - **Built with OpenAI Codex and Claude Code.**
 
 ## Challenges
@@ -44,7 +45,7 @@ Streamers already play party games *with* their chat watching. LAST SIP makes ch
 - Making Twitch matter without a developer app: everything a viewer can do arrives through anonymous chat.
 
 ## What's next
-2v2 team rounds (pass drinks to your teammate mid-air), a Twitch Extension panel ("your banner flew over 40 streams today"), weekly leagues on top of the daily rule, and real voice clips from the streamers who play.
+Brand-safe sponsor banners (a native ad slot that is part of the game, not an overlay), 2v2 team rounds (pass drinks to your teammate mid-air), a Twitch Extension panel ("your banner flew over 40 streams today"), weekly leagues on top of the daily rule, and real voice clips from the streamers who play.
 
 ## Built with
 JavaScript · Three.js · Vite · Twitch chat (IRC over WebSocket) · Supabase Realtime + Postgres · Web Audio · Kenney CC0 assets · OpenAI Codex · Claude Code
