@@ -1,0 +1,74 @@
+{
+  "before": [
+    {
+      "name": "BARISTA BRAD",
+      "tips": 0,
+      "mode": "stack"
+    },
+    {
+      "name": "TIPLESS TOM",
+      "tips": 0,
+      "mode": "stack"
+    },
+    {
+      "name": "KAREN (MANAGER)",
+      "tips": 0,
+      "mode": "stack"
+    }
+  ],
+  "after": [
+    {
+      "name": "BARISTA BRAD",
+      "tips": 3,
+      "mode": "stack",
+      "distanceFromBar": 0.049999999999999996,
+      "destination": {
+        "x": 0,
+        "z": -21.204
+      }
+    },
+    {
+      "name": "TIPLESS TOM",
+      "tips": 3,
+      "mode": "stack",
+      "distanceFromBar": 0.049999999999999996,
+      "destination": {
+        "x": 0,
+        "z": -21.204
+      }
+    },
+    {
+      "name": "KAREN (MANAGER)",
+      "tips": 3,
+      "mode": "stack",
+      "distanceFromBar": 0.049999999999999996,
+      "destination": {
+        "x": -21.204,
+        "z": 21.204
+      }
+    }
+  ],
+  "instantDeliveryAtBar": true,
+  "coordinateSelection": {
+    "combinations": 16,
+    "diagonalOceanCombinations": 4,
+    "examples": [
+      [
+        21.204,
+        -21.204
+      ],
+      [
+        21.204,
+        21.204
+      ],
+      [
+        -21.204,
+        -21.204
+      ],
+      [
+        -21.204,
+        21.204
+      ]
+    ]
+  }
+}
