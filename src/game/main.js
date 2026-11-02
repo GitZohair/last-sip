@@ -23,7 +23,8 @@ import { createCars } from './cars.js';
 import { createPlanes } from './planes.js';
 import { createChatPanel } from './chatpanel.js';
 const chatPanel = createChatPanel(document.getElementById('hud'));
-{ const _feed = ui.feed; ui.feed = (text, kind, ico, key) => { if (key) return; if (chat) chatPanel.event('', text, kind === 'legend' ? '#ffd166' : kind === 'help' ? '#5dd39e' : '#bf94ff'); else _feed(text, kind, ico, key); }; }
+// the old text feed is gone: only things chat paid for or caused (subs, raids, channel points, chat attacks) reach the proof strip
+ui.feed = (text, kind) => { if (chat && kind === 'legend') chatPanel.event('', text, '#ffd166'); };
 // plain words anyone can type (no "!"), rare enough not to fire by accident
 const TRIGGERS = [[/\bkaboom\b/i, 'airstrike'], [/\bmayday\b/i, 'care'], [/\bseagull\b/i, 'gull'], [/\bswapsies\b/i, 'swap']];
 const trigAt = new Map(); let trigLast = 0;

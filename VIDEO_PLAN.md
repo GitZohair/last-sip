@@ -21,6 +21,6 @@ Judges: Twitch engineering (Aiden Wallis, Danny Chi), Twitch Developer Relations
 | 2:45-3:00 | Wide shot with a banner plane; URL on screen | "Banner planes could even carry brand-safe sponsor slots. Play it free in the browser: lastsip-seven.vercel.app" |
 
 ## Must be true on screen
-- Real Twitch chat visible next to the game, and a chat message visibly turning into a banner plane.
+- Real Twitch chat visible next to the game, and a chat message visibly turning into a banner plane. The bottom-left LIVE badge quotes the triggering message ("NAME: kaboom ↳ CALLED IN AN AIRSTRIKE"): hold on it for a second.
 - The words "OpenAI Codex" and a Codex window.
 - No dev hooks (`?dev`) in the URL bar.

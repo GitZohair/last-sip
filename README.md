@@ -33,7 +33,7 @@ No accounts, keys or Twitch developer app are needed to play or to connect chat.
 **Testing without going live:** connect the game to your own channel, then open `https://www.twitch.tv/popout/<your_channel>/chat` while signed in and type `!bomb hello`. A plane carrying "YOURNAME: HELLO" crosses the arena a few seconds later.
 
 ## Controls
-`W A S D` move · mouse look (click to lock) · `SPACE` hop · `SHIFT` careful walk · `E` body-slam · `Q` / click throw a bomb · `R` / click CO2 gun · `F` get in / out of a car or the plane (plane: `A D` bank, `W S` climb/dive, `Q` drop bombs) · `M` map
+`W A S D` move · mouse look (click to lock) · `SPACE` hop · `SHIFT` careful walk · `E` body-slam · `Q` / click throw a bomb · `R` / click CO2 gun · `F` get in / out of a car or the plane (plane: `A D` bank, `W S` climb/dive, `Q` drop bombs) · `M` map · `C` show / hide the full chat (by default only a LIVE badge and the chat messages that changed the game are shown)
 
 ## How it's built
 - `src/game/`: Three.js r180 game. `main.js` (boot, chat routing), `run.js` (round, physics loop), `tray.js` (leaning drink tower), `bean.js` (procedural characters), `bots.js` (rival AI), `bombs.js` (bombs, CO2 gun, care packages), `cars.js` (cars + flyable plane), `planes.js` (banner planes), `twists.js` (blame game, seagull, swaps), `bubbles.js` (speech bubbles), `island.js` (arena), `arena.js` + `src/net.js` (live rooms over Supabase Realtime broadcast).

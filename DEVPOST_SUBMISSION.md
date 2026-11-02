@@ -24,7 +24,7 @@ Streamers already play party games *with* their chat watching. LAST SIP makes ch
   - `!care`: a parachute crate of bombs lands next to the streamer.
   - `!swap` swaps your tower with a rival's; `!chairs` teleports you into a rival's spot; `!seagull` sends a gull to steal the top of the streamer's tower.
   - Plain words work too, so anyone can join in without learning commands: **kaboom** (airstrike), **mayday** (care package), **seagull**, **swapsies**.
-  - The real chat is on screen in a Twitch-style STREAM CHAT panel (badges, name colours, emotes), and every message that changes the game gets a highlighted line ("XQCFAN99 called in an AIRSTRIKE"). Votes show as a Twitch-style poll.
+  - Proof, not a second chat: streamers already show their chat, so the game only shows a small LIVE badge (channel + message count) in the corner and quotes the exact chat message that changed the game ("XQCFAN99: kaboom get him ↳ CALLED IN AN AIRSTRIKE"). `C` opens the full chat (Twitch style: badges, name colours, emotes). Votes show as a Twitch-style poll.
   - Every ~16 s chat votes (type `1 2 3`) on the next event, and a winning voter is drawn as its face.
   - Bits, subs, gift subs, raids and channel-point rewards send bigger airstrikes.
   - Every chatter enters the customer raffle; their name appears over the customer in their Twitch name colour. Rival bots take chatters' names.
