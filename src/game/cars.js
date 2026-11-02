@@ -72,7 +72,7 @@ export function createCars({ scene, level, player, run, bots, avatar, onRam, bom
     else { c.vy -= 12 * dt; c.y += c.vy * dt; } // out of fuel: nosedive
     const vx = Math.sin(c.yaw) * c.speed, vz = -Math.cos(c.yaw) * c.speed; c.x += vx * dt; c.z += vz * dt;
     if (Math.hypot(c.x, c.z) > 60) c.yaw += dt * 2.5; // the edge of the world turns you back
-    c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(c.fuel > 0 ? -up * .2 : .6, -c.yaw, -c.steer * .6, 'YXZ'); c.m.userData.prop && (c.m.userData.prop.rotation.z += dt * (c.fuel > 0 ? 40 : 4));
+    c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(c.fuel > 0 ? -up * .2 : .6, Math.PI - c.yaw, -c.steer * .6, 'YXZ'); // nose forward (same heading as the parked plane) c.m.userData.prop && (c.m.userData.prop.rotation.z += dt * (c.fuel > 0 ? 40 : 4));
     player.pos.x = c.x; player.pos.z = c.z; player.y = c.y + c.k.seat; player.yaw = c.yaw; player.vel.x = vx; player.vel.z = vz; player.grounded = true; player.vy = 0;
     player.accel.x = c.steer * 6; player.accel.z = 0; player.turnRate = c.steer * 1.5;
     { let d = c.yaw - player.camYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); player.camYaw += d * Math.min(1, dt * 2.5); }

@@ -348,12 +348,18 @@ if (film?.cine) document.body.classList.add('film');
 if (film) ME.name = 'STREAMER'; // film: house names only, no real chatters on screen
 async function record(name = 'take', fps = 60, maxSec = 110) {
   while (run?.state !== 'play') await new Promise(r => setTimeout(r, 100));
-  filming = true; world.fixed(1920, 1080); const cv = world.renderer.domElement; let tt = last, i = 0;
+  filming = true; world.fixed(1920, 1080); let tt = last, i = 0;
+  const gl = world.renderer.getContext(), W = 1920, H = 1080, px = new Uint8Array(W * H * 4), oc = new OffscreenCanvas(W, H), g2 = oc.getContext('2d'), img = g2.createImageData(W, H), pend = new Set();
   for (; i < maxSec * fps && !film.done; i++) {
     film.frame = i; tt += 1000 / fps; loop(tt);
-    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92));
-    await fetch(`/__film/${name}/f${String(i).padStart(5, '0')}.jpg`, { method: 'POST', body: blob });
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px); // straight after the render: works even when the tab is hidden
+    for (let y = 0; y < H; y++) img.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
+    g2.putImageData(img, 0, 0); const blob = await oc.convertToBlob({ type: 'image/jpeg', quality: .92 });
+    if (i % 300 === 299) fetch(`/__film/${name}/log.json`, { method: 'POST', body: JSON.stringify({ fps, frames: i + 1, shots: film.shots, sfx: film.sfx }) }).catch(() => {}); // survive a reload
+    while (pend.size >= 8) await Promise.race(pend);
+    const p = fetch(`/__film/${name}/f${String(i).padStart(5, '0')}.jpg`, { method: 'POST', body: blob }).catch(() => {}).finally(() => pend.delete(p)); pend.add(p);
   }
+  await Promise.all(pend);
   await fetch(`/__film/${name}/log.json`, { method: 'POST', body: JSON.stringify({ fps, frames: i, shots: film.shots, sfx: film.sfx }) });
   world.fixed(0); filming = false; last = performance.now(); return { frames: i, shots: film.shots.map(s => s.name) };
 }

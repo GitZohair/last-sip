@@ -49,6 +49,7 @@ export function createFilm({ world, player, get, cine = true }) {
   };
   film.io = io; film.rig = rig; film.get = get; film.player = player;
 
+  { const from = new URLSearchParams(location.search).get('from'); const k = BEATS.findIndex(b => b.name === from); if (k > 0) film.i = k - 1; } // ?from=plane: start mid-script
   function next() {
     film.i++; film.bt = 0; snap = true; io.hold();
     const b = BEATS[film.i]; if (!b) { film.done = true; film.beat = null; return; }

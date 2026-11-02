@@ -56,7 +56,7 @@ def title(d, frame, out, secs=2.2):
     img = os.path.join(d, f'f{frame:05d}.jpg')
     vf = (f"scale=1920:1080,boxblur=18:2,eq=brightness=-0.12,"
           f"drawtext=fontfile='{FONT}':text='LAST SIP':fontsize=230:fontcolor=white:x=(w-tw)/2:y=(h-th)/2-90:shadowcolor=0x1b1530AA:shadowx=0:shadowy=10,"
-          f"drawtext=fontfile='{FONT}':text='STACK DRINKS. SLAM STREAMERS.':fontsize=64:fontcolor=0xffd166:x=(w-tw)/2:y=(h/2)+90,"
+          f"drawtext=fontfile='{FONT}':text='STREAMERS COMPETE. CHAT DECIDES.':fontsize=64:fontcolor=0xffd166:x=(w-tw)/2:y=(h/2)+90,"
           f"drawtext=fontfile='{FONT}':text='lastsip-seven.vercel.app':fontsize=40:fontcolor=white@0.85:x=(w-tw)/2:y=h-140,"
           f"fade=in:st=0:d=0.15")
     run(['ffmpeg', '-y', '-loglevel', 'error', '-loop', '1', '-i', img, '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', str(secs), '-vf', vf, '-r', '60',
@@ -78,11 +78,12 @@ def concat(parts, out, music=None):
 
 # trailer: (shot, start s into the shot, length s, speed)
 # trailer: (shot, start s into the shot (negative = from its end), length s, speed, caption). ~2.5-4 s per idea.
-TRAILER = [('establish', 1.0, 3.2, 1, 'A STREAMER ARENA'), ('tower', .4, 3.0, 1, 'STACK DRINKS. CARRY THEM OUT.'),
-           ('airstrike', 3.6, 4.0, 1, 'YOUR CHAT CAN RUIN YOU'), ('airstrike', 8.6, 3.0, 1, 'OR SAVE YOU'),
-           ('slam', 0, 2.6, 1, 'SLAM YOUR RIVALS'), ('bombs', .5, 2.8, 1, 'BOMB THE BAR'),
+TRAILER = [('establish', 1.0, 3.4, 1, 'STREAMERS. ONE BAR. 90 SECONDS.'), ('tower', .4, 3.0, 1, 'STACK DRINKS. MOST TIPS WINS.'),
+           ('airstrike', 3.6, 4.0, 1, 'YOUR VIEWERS CAN RUIN YOU'), ('airstrike', 8.6, 3.0, 1, 'OR SAVE YOU'),
+           ('slam', 0, 2.6, 1, 'KNOCK OUT RIVAL STREAMERS'), ('bombs', .5, 2.8, 1, 'BOMB THE COMPETITION'),
            ('co2', 0, 3.2, 1, 'CO2 THEM UNTIL THEY POP'), ('taxi', .8, 2.6, 1, 'STEAL A TAXI'),
-           ('plane', .5, 2.8, 1, 'OR A PLANE'), ('plane', -3.4, 3.0, 1, None)]
+           ('plane2:plane', 1.5, 3.0, 1, 'OR A PLANE'), ('plane2:plane', -4.2, 3.4, 1, None),
+           ('plane2:finale', .8, 3.0, 1, 'STREAMERS COMPETE. CHAT PICKS SIDES.')]
 
 if __name__ == '__main__':
     take, mode = sys.argv[1], sys.argv[2]
@@ -92,10 +93,17 @@ if __name__ == '__main__':
         for name, s in S.items():
             clip(d, fps, s['from'], s['to'] - s['from'], os.path.join(out_dir, f'{name}.mp4'), events(log, s['from'], s['to'], fps)); print('broll', name)
     else:
-        parts = []; tmpd = os.path.join(ROOT, 'video', 'cut_v2'); os.makedirs(tmpd, exist_ok=True)
+        parts = []; tmpd = os.path.join(ROOT, 'video', 'cut_v3'); os.makedirs(tmpd, exist_ok=True)
+        takes = {take: (d, log, S)}
         for i, (name, st, ln, sp, cap) in enumerate(TRAILER):
-            s = S[name]; f0 = (s['to'] + int(st * fps)) if st < 0 else s['from'] + int(st * fps); n = int(ln * fps)
+            tk, _, nm = name.rpartition(':'); tk = tk or take
+            if tk not in takes:
+                if not os.path.exists(os.path.join(ROOT, 'film', tk, 'log.json')): print('skip', name); continue
+                takes[tk] = load(tk)
+            d, log, S2 = takes[tk]
+            if nm not in S2: print('skip', name); continue
+            s = S2[nm]; f0 = (s['to'] + int(st * fps)) if st < 0 else s['from'] + int(st * fps); n = int(ln * fps)
             f0 = max(s['from'], min(f0, s['to'] - n)); p = os.path.join(tmpd, f'p{i:02d}.mp4')
             clip(d, fps, f0, n, p, events(log, f0, f0 + n, fps), sp, cap); parts.append(p)
-        tp = os.path.join(tmpd, 'title.mp4'); title(d, S.get('finale', S['establish'])['from'] + int(2 * fps), tp, 3.2); parts.append(tp)
-        concat(parts, os.path.join(ROOT, 'video', 'trailer_v2.mp4'), sys.argv[3] if len(sys.argv) > 3 else None); print('trailer done')
+        d, log, S = takes[take]; tp = os.path.join(tmpd, 'title.mp4'); title(d, S['establish']['from'] + int(2 * fps), tp, 3.2); parts.append(tp)
+        concat(parts, os.path.join(ROOT, 'video', 'trailer_v3.mp4'), sys.argv[3] if len(sys.argv) > 3 else None); print('trailer done')
