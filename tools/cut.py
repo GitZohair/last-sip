@@ -82,7 +82,7 @@ TRAILER = [('establish', 1.0, 3.4, 1, 'STREAMERS. ONE BAR. 90 SECONDS.'), ('towe
            ('airstrike', 3.6, 4.0, 1, 'YOUR VIEWERS CAN RUIN YOU'), ('airstrike', 8.6, 3.0, 1, 'OR SAVE YOU'),
            ('slam', 0, 2.6, 1, 'KNOCK OUT RIVAL STREAMERS'), ('bombs', .5, 2.8, 1, 'BOMB THE COMPETITION'),
            ('co2', 0, 3.2, 1, 'CO2 THEM UNTIL THEY POP'), ('taxi', .8, 2.6, 1, 'STEAL A TAXI'),
-           ('plane2:plane', 1.5, 3.0, 1, 'OR A PLANE'), ('plane2:plane', -4.2, 3.4, 1, None),
+           ('plane2:plane', 1.2, 2.0, 1, 'OR A PLANE'), ('plane2:plane', 6.3, 3.0, 1, None),
            ('plane2:finale', .8, 3.0, 1, 'STREAMERS COMPETE. CHAT PICKS SIDES.')]
 
 if __name__ == '__main__':
